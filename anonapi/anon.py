@@ -2,6 +2,7 @@
 
 Modelled after command line interfaces of git and docker. Takes information from command line arguments but also saves
 more permanent information in a settings file"""
+
 import argparse
 import random
 import string
@@ -9,31 +10,10 @@ import sys
 import pathlib
 import os
 import textwrap
-import yaml
 
 from anonapi.client import WebAPIClient, APIClientException, APIClientAPIException
-
-
-class RemoteAnonServer:
-    """An anonymization server that can be talked to via the API
-
-    """
-
-    def __init__(self, name, url):
-        """Create a Remote anon server entry
-
-        Parameters
-        ----------
-        name: str
-            short keyword to identify this server
-        url: str
-            full url to a valid Anonymization server web API
-        """
-        self.name = name
-        self.url = url
-
-    def __str__(self):
-        return f"{self.name}: {self.url}"
+from anonapi.objects import RemoteAnonServer
+from anonapi.settings import AnonClientSettings, DefaultAnonClientSettings, AnonClientSettingsFromFile
 
 
 class AnonClientTool:
@@ -58,6 +38,11 @@ class AnonClientTool:
         self.token = token
 
     def get_client(self, url):
+        """
+        Returns
+        -------
+        WebAPIClient
+        """
         client = WebAPIClient(hostname=url,
                               username=self.username,
                               token=self.token)
@@ -182,131 +167,6 @@ class AnonClientTool:
         return info
 
         pass
-
-
-class AnonClientSettings:
-    """Settings used by anonymization web API client """
-
-    def __init__(self, servers, user_name, user_token):
-        """
-        Parameters
-        ----------
-        servers: List(:obj:`RemoteAnonServer`)
-            all servers
-        user_name: str
-            user name
-        user_token: str
-            API token
-
-        """
-        self.servers = servers
-        self.user_name = user_name
-        self.user_token = user_token
-        if servers:
-            self.active_server = servers[0]
-        else:
-            self.active_server = None
-
-    def to_datamap(self):
-        """Convert these settings to a dict that can be used by YAML
-
-        """
-        datamap = {'servers': {x.name: x.url for x in self.servers},
-                   'user_name': self.user_name,
-                   'user_token': self.user_token}
-        if self.active_server:
-            datamap['active_server_name'] = self.active_server.name
-        else:
-            datamap['active_server_name'] = None
-        return datamap
-
-    def save_to_file(self, filename):
-        """ Putting save to file method here in base class so I can write settings files generated from code
-
-        """
-        datamap = self.to_datamap()
-        with open(filename, 'w') as f:
-            yaml.dump(datamap, f, default_flow_style=False)
-
-    def save(self):
-        """ Implementing save() here to fulfil settings object signature
-        """
-        pass  # can't really save anything
-
-
-class DefaultAnonClientSettings(AnonClientSettings):
-    """ For testing and for writing settings when none are available
-
-    """
-
-    def __init__(self):
-        """Create default settings object:
-
-        >>> servers = [RemoteAnonServer("test", "https://hostname_of_api")]
-        >>> user_name='username'
-        >>> user_token=ttoken       """
-        super().__init__(servers=[RemoteAnonServer("test", "https://hostname_of_api")], user_name='username',
-                         user_token='token')
-
-
-class DataMap:
-    """Structure to hold output from a yaml load(). Raises error when you cannot get() an expected key
-    Poor man's substitute for schema validation.
-
-    """
-
-    def __init__(self, datamap):
-        self._datamap = datamap
-
-    def get(self, key):
-        if key not in self._datamap.keys():
-            msg = f"expected to find key '{key}'"
-            raise AnonClientSettingsFromFileException(msg)
-        return self._datamap[key]
-
-
-class AnonClientSettingsFromFile(AnonClientSettings):
-    """ Settings which are bound to a file. Can load and save from there.
-    """
-
-    def __init__(self, filename):
-        self.filename = filename
-        with open(filename) as f:
-            datamap = yaml.safe_load(f)
-
-        self.parse_datamap(DataMap(datamap))
-
-    def __str__(self):
-        return f"Settings at {self.filename}"
-
-    def parse_datamap(self, datamap: DataMap):
-        try:
-            servers = datamap.get('servers')
-            user_name = datamap.get('user_name')
-            user_token = datamap.get('user_token')
-            active_server_name = datamap.get('active_server_name')
-        except AnonClientSettingsFromFileException as e:
-            msg = f"Could not read all settings from {self.filename}: {e}"
-            raise AnonClientSettingsException(msg)
-
-        servers_parsed = {}
-        for name, url in servers.items():
-            servers_parsed[name] = RemoteAnonServer(name=name, url=url)
-        super().__init__(servers=list(servers_parsed.values()), user_name=user_name,
-                         user_token=user_token)
-        # set active server
-        if active_server_name is None:
-            self.active_server = None
-        else:
-            try:
-                self.active_server = servers_parsed[active_server_name]
-            except KeyError:
-                msg = f"Active server name '{active_server_name}' was not found in list of servers_parsed " \
-                      f"'{list(servers_parsed.keys())}'. I don't know what the active server is supposed to be"
-                raise AnonClientSettingsException(msg)
-
-    def save(self):
-        super().save_to_file(self.filename)
 
 
 class AnonCommandLineParser:
@@ -504,7 +364,7 @@ class AnonCommandLineParser:
 
         server = self.get_server_or_active_server(short_name)
         response = self.client_tool.get_server_status(server)
-        self.print_to_console(response)
+        self.print_to_console(str(response))
 
     def server_jobs(self, short_name=None):
         """List latest 100 jobs for active server, or given server
@@ -564,6 +424,11 @@ class AnonCommandLineParser:
 
     def get_active_server(self):
         """ Active server can be None, hence the check and exception
+
+        Returns
+        -------
+        RemoteAnonServer
+            The currently active server
 
         Raises
         ------
@@ -637,14 +502,6 @@ class AnonCommandLineParser:
 
 
 class AnonCommandLineParserException(Exception):
-    pass
-
-
-class AnonClientSettingsException(Exception):
-    pass
-
-
-class AnonClientSettingsFromFileException(AnonClientSettingsException):
     pass
 
 
