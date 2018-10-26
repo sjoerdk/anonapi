@@ -28,6 +28,7 @@ class WebAPIClient:
         self.username = username
         self.token = token
         self.validate_https = bool(validate_https)
+        self.requestslib = requests   # mostly for clean testing. Allows to switch out the actual http-calling code
 
     def __str__(self):
         return f"WebAPIClient for {self.username}@{self.hostname}"
@@ -69,8 +70,8 @@ class WebAPIClient:
         else:
             validate = None
 
-        response = requests.get(function_url, data=self.add_user_name_to_args(kwargs), verify=validate,
-                                headers={'Authorization': f'Token {self.token}'})
+        response = self.requestslib.get(function_url, data=self.add_user_name_to_args(kwargs), verify=validate,
+                                        headers={'Authorization': f'Token {self.token}'})
 
         self.interpret_response(response)
         return json.loads(response.text)
@@ -105,8 +106,8 @@ class WebAPIClient:
         """
 
         function_url = self.hostname + "/" + function_name
-        response = requests.post(function_url, data=self.add_user_name_to_args(kwargs), verify=self.validate_https,
-                                 headers={'Authorization': f'Token {self.token}'})
+        response = self.requestslib.post(function_url, data=self.add_user_name_to_args(kwargs), verify=self.validate_https,
+                                         headers={'Authorization': f'Token {self.token}'})
 
         self.interpret_response(response)
         return json.loads(response.text)

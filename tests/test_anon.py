@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Tests for `anonapi` package."""
+"""Tests for the `anonapi.anon` module."""
 from unittest.mock import patch, Mock
 
 import pytest
