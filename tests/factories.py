@@ -31,6 +31,12 @@ class RequestsMock:
         self.requests.get.return_value = response
         self.requests.post.return_value = response
 
+    def set_response_exception(self, exception):
+        """Any call to get() or post() will yield the given exception
+        """
+        self.requests.get.side_effect = exception
+        self.requests.post.side_effect = exception
+
     def get(self, *args, **kwargs):
         return self.requests.get(*args, **kwargs)
 

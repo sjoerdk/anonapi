@@ -58,7 +58,8 @@ class WebAPIClient:
             when API call is successful, but the API returns some reason for error (for example 'job_id not found',
             or 'missing parameter')
 
-
+        APIClientException:
+            When server cannot be found
 
         """
 
@@ -70,8 +71,11 @@ class WebAPIClient:
         else:
             validate = None
 
-        response = self.requestslib.get(function_url, data=self.add_user_name_to_args(kwargs), verify=validate,
-                                        headers={'Authorization': f'Token {self.token}'})
+        try:
+            response = self.requestslib.get(function_url, data=self.add_user_name_to_args(kwargs), verify=validate,
+                                            headers={'Authorization': f'Token {self.token}'})
+        except ConnectionError as e:
+            raise APIClientException(e)
 
         self.interpret_response(response)
         return json.loads(response.text)
@@ -101,13 +105,17 @@ class WebAPIClient:
             when API call is successful, but the API returns some reason for error (for example 'job_id not found',
             or 'missing parameter')
 
-
-
+        APIClientException:
+            When server cannot be found
         """
 
         function_url = self.hostname + "/" + function_name
-        response = self.requestslib.post(function_url, data=self.add_user_name_to_args(kwargs), verify=self.validate_https,
-                                         headers={'Authorization': f'Token {self.token}'})
+        try:
+            response = self.requestslib.post(function_url, data=self.add_user_name_to_args(kwargs),
+                                             verify=self.validate_https,
+                                             headers={'Authorization': f'Token {self.token}'})
+        except ConnectionError as e:
+            raise APIClientException(e)
 
         self.interpret_response(response)
         return json.loads(response.text)
