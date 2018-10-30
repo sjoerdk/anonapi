@@ -1,5 +1,5 @@
 """ Shared classes used in other tests. For generating test data """
-
+import json
 from unittest.mock import Mock
 from requests.models import Response
 
@@ -35,4 +35,39 @@ class RequestsMock:
         return self.requests.get(*args, **kwargs)
 
     def post(self, *args, **kwargs):
-        return self.requests.get(*args, **kwargs)
+        return self.requests.post(*args, **kwargs)
+
+    def reset(self):
+        self.requests.reset_mock()
+
+
+
+class RequestsMockResponseExamples:
+    """Some examples of http response texts that an anonymization web API server might send back.
+
+    """
+
+    API_CALL_NOT_DEFINED = r'{"404": "The API call you tried to make is not defined, here is some documentation", ' \
+                           r'"documentation":{"overview":"some docs"}}'
+
+    JOBS_LIST = '{"1": {"job_id": 1, "date": "2018-10-26T14:56:34", "user_name": "z123sandbox", "status":' \
+                ' "INACTIVE", "error": null, "description": null, "project_name": "Wetenschap-Algemeen", "priority": 0,' \
+                ' "files_downloaded": null, "files_processed": null}, "2": {"job_id": 2, ' \
+                '"date": "2018-09-19T11:16:57", "user_name": "z123sandbox", "status": "ACTIVE", "error": null,' \
+                ' "description": "For RSNA2018. see ticket #1672", "project_name": "ProCAD", "priority": 0,' \
+                ' "files_downloaded": null, "files_processed": null}}'
+
+    JOB_INFO = r'{"job_id": 3, "date": "2018-08-31T11:11:05", "user_name": "z123sandbox", "status": "INACTIVE",' \
+               r' "error": null, "description": null, "project_name": "Wetenschap-Algemeen", "priority": 10,' \
+               r' "files_downloaded": null, "files_processed": null, "destination_id": 44777, ' \
+               r'"destination_name": null, "destination_path": "\\\\resfilsp10\\imaging\\temp\\test_output",' \
+               r' "destination_network": null, "destination_status": "BASE", "destination_type": "PATH",' \
+               r' "source_id": 44777, "source_instance_id": null, "source_status": "NEW", "source_type": "PATH",' \
+               r' "source_anonymizedpatientid": null, "source_anonymizedpatientname": null, "source_name": null,' \
+               r' "source_path": "f", "source_protocol": 3178, "source_subject": 3178}'
+
+    JOB_DOES_NOT_EXIST = r'{"errors": {"job_id": "Job with id 447783 does not exist"}}'
+
+    REQUIRED_PARAMETER_NOT_SUPPLIED = r'{"errors": {"job_id": "Required parameter job_id not supplied"}}'
+
+
