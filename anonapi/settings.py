@@ -67,7 +67,9 @@ class DefaultAnonClientSettings(AnonClientSettings):
 
         >>> servers = [RemoteAnonServer("test", "https://hostname_of_api")]
         >>> user_name='username'
-        >>> user_token=ttoken       """
+        >>> user_token='12345abc'
+
+        """
         super().__init__(servers=[RemoteAnonServer("test", "https://hostname_of_api")], user_name='username',
                          user_token='token')
 

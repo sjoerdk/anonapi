@@ -11,7 +11,7 @@ import pathlib
 import os
 import textwrap
 
-from anonapi.client import WebAPIClient, APIClientException, APIClientAPIException
+from anonapi.client import WebAPIClient, APIClientException
 from anonapi.objects import RemoteAnonServer
 from anonapi.settings import AnonClientSettings, DefaultAnonClientSettings, AnonClientSettingsFromFile
 
@@ -90,7 +90,7 @@ class AnonClientTool:
             info_string = f"job {job_id} on {server.name}:\n\n"
             info_string += "\n".join([str(x) for x in list(response.items())])
 
-        except APIClientAPIException as e:
+        except APIClientException as e:
             info_string = f'Error getting job info from {server}:\n{str(e)}'
         return info_string
 
@@ -102,11 +102,15 @@ class AnonClientTool:
         server: :obj:`RemoteAnonServer`
             get job info from this server
 
-
         Returns
         -------
         str:
             string describing job, or error if job could not be found
+
+        Raises
+        ------
+        APIClientException:
+            if something goes wrong getting jobs info from server
 
         """
         job_limit = 50  # reduce number of jobs shown for less screen clutter.
@@ -128,7 +132,7 @@ class AnonClientTool:
                 info_string += "\n" + info_line
             return info_string
 
-        except APIClientAPIException as e:
+        except APIClientException as e:
             response = f'Error getting jobs from {server}:\n{str(e)}'
         return response
 
@@ -144,7 +148,7 @@ class AnonClientTool:
         try:
             _ = client.post('cancel_job', job_id=job_id)
             info = f"Cancelled job {job_id} on {server.name}"
-        except APIClientAPIException as e:
+        except APIClientException as e:
             info = f"Error cancelling job on{server}:\n{str(e)}"
         return info
 
@@ -162,7 +166,7 @@ class AnonClientTool:
             _ = client.post('modify_job', job_id=job_id, status='ACTIVE', files_downloaded=0,
                             files_processed=0, error=' ')
             info = f"Reset job {job_id} on {server}"
-        except APIClientAPIException as e:
+        except APIClientException as e:
             info = f"Error resetting job on{server.name}:\n{str(e)}"
         return info
 
@@ -193,7 +197,7 @@ class AnonCommandLineParser:
         self.parser = self.create_parser()
 
     def create_parser(self):
-        """The thing that actually parses the input commmands.
+        """The thing that actually parses the input commands.
 
         Notes
         -----

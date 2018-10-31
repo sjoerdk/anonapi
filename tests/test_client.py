@@ -2,31 +2,12 @@
 # -*- coding: utf-8 -*-
 
 """Tests for the `anonapi.client` module."""
-import json
 
 import pytest
-from _pytest.fixtures import fixture
 
 from anonapi.client import WebAPIClient, APIClientAPIException, APIClientAuthorizationFailedException, \
     APIClientException
 from tests.factories import RequestsMock, RequestsMockResponseExamples
-
-
-@fixture
-def mocked_requests_client():
-    """A WebAPIClient instance that does not actually do http calls but uses mocked responses
-
-    Returns
-    -------
-    (WebAPIClient, RequestsMock)
-        client with mocked requests lib, and te mocked requests lib itself
-
-    """
-    client = WebAPIClient(hostname='test.host', username='testuser', token='token')
-
-    requests_mock = RequestsMock()
-    client.requestslib = requests_mock
-    return client, requests_mock
 
 
 def test_basic_client(mocked_requests_client: WebAPIClient):

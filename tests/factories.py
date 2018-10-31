@@ -46,10 +46,14 @@ class RequestsMock:
     def reset(self):
         self.requests.reset_mock()
 
+    def called(self):
+        """True if either get() or post() was called"""
+        return self.requests.get.called or self.requests.post.called
 
 
 class RequestsMockResponseExamples:
-    """Some examples of http response texts that an anonymization web API server might send back.
+    """Some examples of http response texts that an anonymization web API server might send back. Harvested and
+    simplified these from a live API server running git revision 9c36082e3dafab5fac0fb9d34963970493b20776 in diag repo
 
     """
 
