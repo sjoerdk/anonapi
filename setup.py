@@ -11,7 +11,7 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = [ ]
+requirements = ['pyaml', ]
 
 setup_requirements = ['pytest-runner', ]
 
@@ -41,7 +41,7 @@ setup(
     packages=find_packages(include=['anonapi']),
     entry_points={
         'console_scripts': [
-            'anon = anonapi.anon.main'
+            'anon = anonapi.anon:main'
         ]
     },
     setup_requires=setup_requirements,
