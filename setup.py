@@ -39,6 +39,11 @@ setup(
     keywords='anonapi',
     name='anonapi',
     packages=find_packages(include=['anonapi']),
+    entry_points={
+        'console_scripts': [
+            'anon = anonapi.anon.main'
+        ]
+    },
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,

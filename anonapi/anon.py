@@ -509,13 +509,17 @@ class AnonCommandLineParserException(Exception):
     pass
 
 
-if __name__ == "__main__":
+def main():
+    global settings_file
     settings_file = pathlib.Path.home() / 'AnonWebAPIClientSettings.yml'
     if not os.path.exists(settings_file):
         print(f"Settings file did not exist. creating '{settings_file}'")
         DefaultAnonClientSettings().save_to_file(filename=settings_file)
-
     settings = AnonClientSettingsFromFile(settings_file)
     tool = AnonClientTool(username=settings.user_name, token=settings.user_token)
     parser = AnonCommandLineParser(client_tool=tool, settings=settings)
     parser.execute_command(sys.argv[1:])
+
+
+if __name__ == "__main__":
+    main()
