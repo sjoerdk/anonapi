@@ -6,7 +6,6 @@ import json
 
 
 class WebAPIClient:
-
     def __init__(self, hostname, username, token, validate_https=True):
         """Makes calls to hug web API, handles errors
 
@@ -28,7 +27,9 @@ class WebAPIClient:
         self.username = username
         self.token = token
         self.validate_https = bool(validate_https)
-        self.requestslib = requests   # mostly for clean testing. Allows to switch out the actual http-calling code
+        self.requestslib = (
+            requests
+        )  # mostly for clean testing. Allows to switch out the actual http-calling code
 
     def __str__(self):
         return f"WebAPIClient for {self.username}@{self.hostname}"
@@ -72,8 +73,12 @@ class WebAPIClient:
             validate = None
 
         try:
-            response = self.requestslib.get(function_url, data=self.add_user_name_to_args(kwargs), verify=validate,
-                                            headers={'Authorization': f'Token {self.token}'})
+            response = self.requestslib.get(
+                function_url,
+                data=self.add_user_name_to_args(kwargs),
+                verify=validate,
+                headers={"Authorization": f"Token {self.token}"},
+            )
         except ConnectionError as e:
             raise APIClientException(e)
 
@@ -111,9 +116,12 @@ class WebAPIClient:
 
         function_url = self.hostname + "/" + function_name
         try:
-            response = self.requestslib.post(function_url, data=self.add_user_name_to_args(kwargs),
-                                             verify=self.validate_https,
-                                             headers={'Authorization': f'Token {self.token}'})
+            response = self.requestslib.post(
+                function_url,
+                data=self.add_user_name_to_args(kwargs),
+                verify=self.validate_https,
+                headers={"Authorization": f"Token {self.token}"},
+            )
         except ConnectionError as e:
             raise APIClientException(e)
 
@@ -159,7 +167,7 @@ class WebAPIClient:
 
         response = self.get("")
 
-        return response['documentation']
+        return response["documentation"]
 
     def interpret_response(self, response):
         """Check HTTP response and throw helpful python exception if needed.
@@ -208,14 +216,16 @@ class WebAPIClient:
             return
 
         elif response.status_code == 401:
-            msg = "Server '{0}' returned 401 - Unauthorized, Your credentials do not seem to work".format(self.hostname)
+            msg = "Server '{0}' returned 401 - Unauthorized, Your credentials do not seem to work".format(
+                self.hostname
+            )
             raise APIClientAuthorizationFailedException(msg)
 
         elif response.status_code == 400:
             error_response = json.loads(response.text)
 
-            if 'errors' in error_response.keys():
-                errors = error_response['errors']
+            if "errors" in error_response.keys():
+                errors = error_response["errors"]
             else:
                 errors = error_response
 
@@ -223,28 +233,34 @@ class WebAPIClient:
             raise APIClientAPIException(msg, api_errors=errors)
 
         elif response.status_code == 405:
-            msg = ("'{0}' returned 405 - Method not allowed. Probably you are using GET where POST is "
-                   "needed, or vice versa. See APIClient.get_documentation() for usage").format(self)
+            msg = (
+                "'{0}' returned 405 - Method not allowed. Probably you are using GET where POST is "
+                "needed, or vice versa. See APIClient.get_documentation() for usage"
+            ).format(self)
             raise APIClientException(msg)
 
         else:
-            msg = "Unexpected response from {0}: code '{1}', reason '{2}'".format(self, response.status_code,
-                                                                                  response.reason)
+            msg = "Unexpected response from {0}: code '{1}', reason '{2}'".format(
+                self, response.status_code, response.reason
+            )
             raise APIClientException(msg)
 
 
 class ClientInterfaceException(Exception):
     """A general problem with client interface """
+
     pass
 
 
 class APIClientException(Exception):
     """A general problem with the APIClient """
+
     pass
 
 
 class APIClient404Exception(Exception):
     """object not found. Made this into a separate function to be able to ignore it in special cases"""
+
     pass
 
 
@@ -254,6 +270,7 @@ class APIClientAuthorizationFailedException(APIClientException):
 
 class APIClientAPIException(APIClientException):
     """The API was called successfully, but there was a problem within the API itself """
+
     def __init__(self, msg, api_errors):
         """
 

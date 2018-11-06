@@ -34,13 +34,15 @@ class AnonClientSettings:
         """Convert these settings to a dict that can be used by YAML
 
         """
-        datamap = {'servers': {x.name: x.url for x in self.servers},
-                   'user_name': self.user_name,
-                   'user_token': self.user_token}
+        datamap = {
+            "servers": {x.name: x.url for x in self.servers},
+            "user_name": self.user_name,
+            "user_token": self.user_token,
+        }
         if self.active_server:
-            datamap['active_server_name'] = self.active_server.name
+            datamap["active_server_name"] = self.active_server.name
         else:
-            datamap['active_server_name'] = None
+            datamap["active_server_name"] = None
         return datamap
 
     def save_to_file(self, filename):
@@ -48,7 +50,7 @@ class AnonClientSettings:
 
         """
         datamap = self.to_datamap()
-        with open(filename, 'w') as f:
+        with open(filename, "w") as f:
             yaml.dump(datamap, f, default_flow_style=False)
 
     def save(self):
@@ -70,8 +72,11 @@ class DefaultAnonClientSettings(AnonClientSettings):
         >>> user_token='12345abc'
 
         """
-        super().__init__(servers=[RemoteAnonServer("test", "https://hostname_of_api")], user_name='username',
-                         user_token='token')
+        super().__init__(
+            servers=[RemoteAnonServer("test", "https://hostname_of_api")],
+            user_name="username",
+            user_token="token",
+        )
 
 
 class DataMap:
@@ -107,10 +112,10 @@ class AnonClientSettingsFromFile(AnonClientSettings):
 
     def parse_datamap(self, datamap: DataMap):
         try:
-            servers = datamap.get('servers')
-            user_name = datamap.get('user_name')
-            user_token = datamap.get('user_token')
-            active_server_name = datamap.get('active_server_name')
+            servers = datamap.get("servers")
+            user_name = datamap.get("user_name")
+            user_token = datamap.get("user_token")
+            active_server_name = datamap.get("active_server_name")
         except AnonClientSettingsFromFileException as e:
             msg = f"Could not read all settings from {self.filename}: {e}"
             raise AnonClientSettingsException(msg)
@@ -118,8 +123,11 @@ class AnonClientSettingsFromFile(AnonClientSettings):
         servers_parsed = {}
         for name, url in servers.items():
             servers_parsed[name] = RemoteAnonServer(name=name, url=url)
-        super().__init__(servers=list(servers_parsed.values()), user_name=user_name,
-                         user_token=user_token)
+        super().__init__(
+            servers=list(servers_parsed.values()),
+            user_name=user_name,
+            user_token=user_token,
+        )
         # set active server
         if active_server_name is None:
             self.active_server = None
@@ -127,8 +135,10 @@ class AnonClientSettingsFromFile(AnonClientSettings):
             try:
                 self.active_server = servers_parsed[active_server_name]
             except KeyError:
-                msg = f"Active server name '{active_server_name}' was not found in list of servers_parsed " \
-                      f"'{list(servers_parsed.keys())}'. I don't know what the active server is supposed to be"
+                msg = (
+                    f"Active server name '{active_server_name}' was not found in list of servers_parsed "
+                    f"'{list(servers_parsed.keys())}'. I don't know what the active server is supposed to be"
+                )
                 raise AnonClientSettingsException(msg)
 
     def save(self):

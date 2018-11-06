@@ -8,7 +8,11 @@ from unittest.mock import patch, Mock
 import pytest
 from pytest import fixture
 
-from anonapi.anon import AnonCommandLineParser, AnonClientTool, AnonCommandLineParserException
+from anonapi.anon import (
+    AnonCommandLineParser,
+    AnonClientTool,
+    AnonCommandLineParserException,
+)
 from anonapi.client import APIClientAPIException
 from anonapi.objects import RemoteAnonServer
 from anonapi.settings import DefaultAnonClientSettings
@@ -17,6 +21,7 @@ from tests.factories import RequestsMock, RequestsMockResponseExamples
 
 class NonPrintingAnonCommandLineParser(AnonCommandLineParser):
     """For test purposes. Just to indicate that this class has a mock_console attribute"""
+
     mock_console = None
 
 
@@ -24,6 +29,7 @@ class MockConsole:
     """A console with a print function that just records
 
     """
+
     def __init__(self):
         self.content = []
 
@@ -76,13 +82,16 @@ def test_parser_and_mock_requests(mocked_requests_client):
     """
 
     client, requests_mock = mocked_requests_client
-    client_tool = AnonClientTool(username='testuser', token='test_token')
+    client_tool = AnonClientTool(username="testuser", token="test_token")
 
     def mock_get_client(url):
         client.hostname = url
         return client
+
     client_tool.get_client = mock_get_client
-    parser = AnonCommandLineParser(client_tool=client_tool, settings=DefaultAnonClientSettings())
+    parser = AnonCommandLineParser(
+        client_tool=client_tool, settings=DefaultAnonClientSettings()
+    )
     return parser, requests_mock
 
 
@@ -104,23 +113,33 @@ def extended_test_parser_and_mock_requests(test_parser_and_mock_requests):
     """
     parser, requests_mock = test_parser_and_mock_requests
     settings = parser.settings
-    settings.servers.append(RemoteAnonServer(name='sandbox', url='https://umcradanonp11.umcn.nl/sandbox'))
-    settings.servers.append(RemoteAnonServer(name='wrong', url='https://umcradanonp11.umcn.nl/non_existant'))
-    settings.servers.append(RemoteAnonServer(name='p01', url='https://umcradanonp11.umcn.nl/p01'))
+    settings.servers.append(
+        RemoteAnonServer(name="sandbox", url="https://umcradanonp11.umcn.nl/sandbox")
+    )
+    settings.servers.append(
+        RemoteAnonServer(name="wrong", url="https://umcradanonp11.umcn.nl/non_existant")
+    )
+    settings.servers.append(
+        RemoteAnonServer(name="p01", url="https://umcradanonp11.umcn.nl/p01")
+    )
 
     return parser, requests_mock
 
 
-def test_command_line_tool_basic(test_parser_and_mock_requests: Tuple[AnonCommandLineParser, RequestsMock], capsys):
+def test_command_line_tool_basic(
+    test_parser_and_mock_requests: Tuple[AnonCommandLineParser, RequestsMock], capsys
+):
     """Test some commands"""
     parser, requests_mock = test_parser_and_mock_requests
     parser.execute_command("status".split(" "))
 
     captured = capsys.readouterr()
-    assert 'Available servers' in str(captured)
+    assert "Available servers" in str(captured)
 
 
-def test_command_line_tool_status_without_active_server(test_parser_and_mock_requests, capsys):
+def test_command_line_tool_status_without_active_server(
+    test_parser_and_mock_requests, capsys
+):
     """Error found live, making sure its fixed """
     parser, requests_mock = test_parser_and_mock_requests
     parser.settings.active_server = None
@@ -128,16 +147,23 @@ def test_command_line_tool_status_without_active_server(test_parser_and_mock_req
     # this should not crash
     parser.get_status()
 
-    assert 'Available servers' in str(capsys.readouterr().out)
+    assert "Available servers" in str(capsys.readouterr().out)
 
 
-@pytest.mark.parametrize('command, expected_server_list_length', [
-    ("server list".split(" "), 1),  # you start with one server
-    ("server add server2 https://something.com".split(" "), 2),  # after adding a server you should have two
-    ("server remove test".split(" "), 0)  # if you remove it there should be none
-])
-def test_command_line_tool_add_remove_server(test_parser_and_mock_requests, capsys, command,
-                                             expected_server_list_length):
+@pytest.mark.parametrize(
+    "command, expected_server_list_length",
+    [
+        ("server list".split(" "), 1),  # you start with one server
+        (
+            "server add server2 https://something.com".split(" "),
+            2,
+        ),  # after adding a server you should have two
+        ("server remove test".split(" "), 0),  # if you remove it there should be none
+    ],
+)
+def test_command_line_tool_add_remove_server(
+    test_parser_and_mock_requests, capsys, command, expected_server_list_length
+):
     """Test commands to add, remove servers and see whether the number servers that are known is correct"""
     parser, _ = test_parser_and_mock_requests
     parser.execute_command(command)
@@ -152,19 +178,19 @@ def test_command_line_tool_server_status(test_parser_and_mock_requests, capsys):
 
     # A server that is not in the list should generate a nice message, but not hit any server
     parser.execute_command("server status some_server".split(" "))
-    assert 'Unknown server' in capsys.readouterr().out
+    assert "Unknown server" in capsys.readouterr().out
     assert not requests_mock.called()
 
     # 'test': a server that is in the list and responds. This should give you an OK message
     # API_CALL_NOT_DEFINED is a response that is used to check the liveness of a server currently.
     requests_mock.set_response(RequestsMockResponseExamples.API_CALL_NOT_DEFINED)
     parser.execute_command("server status test".split(" "))
-    assert 'OK' in capsys.readouterr().out
+    assert "OK" in capsys.readouterr().out
 
     # now test a non-responsive server:
     requests_mock.set_response_exception(ConnectionError)
     parser.execute_command("server status test".split(" "))
-    assert 'ERROR' in capsys.readouterr().out
+    assert "ERROR" in capsys.readouterr().out
 
 
 def test_command_line_tool_job_info(extended_test_parser_and_mock_requests, capsys):
@@ -182,20 +208,24 @@ def test_command_line_tool_job_info(extended_test_parser_and_mock_requests, caps
     assert "'user_name', 'z123sandbox'" in output
 
 
-def test_command_line_tool_activate_server(extended_test_parser_and_mock_requests, capsys):
+def test_command_line_tool_activate_server(
+    extended_test_parser_and_mock_requests, capsys
+):
     """Test activating a server"""
     parser, _ = extended_test_parser_and_mock_requests
 
     parser.execute_command("server activate sandbox".split(" "))
-    parser.get_active_server().name == 'sandbox'
+    parser.get_active_server().name == "sandbox"
 
     # activate a non-existant server name should just give a nice message, no crashes
     parser.execute_command("server activate yomomma".split(" "))
-    assert 'Unknown server' in capsys.readouterr().out
-    assert parser.get_active_server().name == 'sandbox'
+    assert "Unknown server" in capsys.readouterr().out
+    assert parser.get_active_server().name == "sandbox"
 
 
-def test_command_line_tool_job_functions(extended_test_parser_and_mock_requests, capsys):
+def test_command_line_tool_job_functions(
+    extended_test_parser_and_mock_requests, capsys
+):
     """Check a whole lot of commands without doing actual queries
 
     Kind of a mop up test trying to get coverage up"""
@@ -223,17 +253,41 @@ def test_command_line_tool_job_functions(extended_test_parser_and_mock_requests,
     requests_mock.reset()
     parser.execute_command("job reset 1234".split(" "))
     assert requests_mock.requests.post.called is False
-    assert 'No active server. Which one do you want to use?' in capsys.readouterr().out
+    assert "No active server. Which one do you want to use?" in capsys.readouterr().out
 
 
-@pytest.mark.parametrize('command, server_response, expected_print', [
-    ("server jobs".split(" "), RequestsMockResponseExamples.JOBS_LIST, 'most recent 50 jobs on test:'),
-    ("server jobs no-server".split(" "), "", 'Unknown server'),  # server no-server does not exist. No calls to client expected
-    ("server status test".split(" "), RequestsMockResponseExamples.API_CALL_NOT_DEFINED, 'OK'),  # server test exists, should work
-    ("status".split(" "), "", 'Available servers'),  # general status should not hit server
-])
-def test_command_line_tool_server_functions(extended_test_parser_and_mock_requests, capsys,
-                                            command, server_response, expected_print):
+@pytest.mark.parametrize(
+    "command, server_response, expected_print",
+    [
+        (
+            "server jobs".split(" "),
+            RequestsMockResponseExamples.JOBS_LIST,
+            "most recent 50 jobs on test:",
+        ),
+        (
+            "server jobs no-server".split(" "),
+            "",
+            "Unknown server",
+        ),  # server no-server does not exist. No calls to client expected
+        (
+            "server status test".split(" "),
+            RequestsMockResponseExamples.API_CALL_NOT_DEFINED,
+            "OK",
+        ),  # server test exists, should work
+        (
+            "status".split(" "),
+            "",
+            "Available servers",
+        ),  # general status should not hit server
+    ],
+)
+def test_command_line_tool_server_functions(
+    extended_test_parser_and_mock_requests,
+    capsys,
+    command,
+    server_response,
+    expected_print,
+):
     """Check a whole lot of commands without doing actual queries
 
     Kind of a mop up test trying to get coverage up"""
@@ -253,12 +307,14 @@ def test_get_server_when_none_is_active(extended_test_parser_and_mock_requests, 
     parser, _ = extended_test_parser_and_mock_requests
     capsys.readouterr()  # stop any printing to console
     parser.settings.active_server = None
-    #Calling for server here should fail because there is no active server
+    # Calling for server here should fail because there is no active server
     with pytest.raises(AnonCommandLineParserException):
         parser.get_active_server()
 
 
-def test_command_line_tool_user_functions(extended_test_parser_and_mock_requests, capsys):
+def test_command_line_tool_user_functions(
+    extended_test_parser_and_mock_requests, capsys
+):
     parser, _ = extended_test_parser_and_mock_requests
     parser: AnonCommandLineParser
     assert parser.settings.user_name != "test_changed"
@@ -267,24 +323,29 @@ def test_command_line_tool_user_functions(extended_test_parser_and_mock_requests
     assert parser.settings.user_name == "test_changed"
 
     parser.execute_command("user info".split(" "))
-    assert 'user' in capsys.readouterr().out
+    assert "user" in capsys.readouterr().out
 
     token_before = parser.settings.user_token
     parser.execute_command("user get_token".split(" "))
-    assert 'Got and saved api token' in capsys.readouterr().out
+    assert "Got and saved api token" in capsys.readouterr().out
     token_after = parser.settings.user_token
-    assert token_before != token_after   #token should have changed
+    assert token_before != token_after  # token should have changed
 
 
-@pytest.mark.parametrize("command, expected_output", [
-    ("server jobs", "Error getting jobs"),
-    ("job info 123", "Error getting job info"),
-    ("server status", "is not responding properly"),
-    ("job cancel 123", "Error cancelling job"),
-    ("job reset 123", "Error resetting job"),
-    ("server status", "is not responding properly")
-])
-def test_client_tool_exception_response(test_parser_and_mock_requests,capsys, command, expected_output):
+@pytest.mark.parametrize(
+    "command, expected_output",
+    [
+        ("server jobs", "Error getting jobs"),
+        ("job info 123", "Error getting job info"),
+        ("server status", "is not responding properly"),
+        ("job cancel 123", "Error cancelling job"),
+        ("job reset 123", "Error resetting job"),
+        ("server status", "is not responding properly"),
+    ],
+)
+def test_client_tool_exception_response(
+    test_parser_and_mock_requests, capsys, command, expected_output
+):
     """The client that the command line tool is using might yield exceptions. Handle gracefully
 
     """
@@ -295,11 +356,3 @@ def test_client_tool_exception_response(test_parser_and_mock_requests,capsys, co
 
     parser.execute_command(command.split(" "))
     assert expected_output in capsys.readouterr().out
-
-
-
-
-
-
-
-

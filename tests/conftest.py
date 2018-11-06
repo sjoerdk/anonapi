@@ -15,7 +15,7 @@ def mocked_requests_client():
         client with mocked requests lib, and te mocked requests lib itself
 
     """
-    client = WebAPIClient(hostname='test.host', username='testuser', token='token')
+    client = WebAPIClient(hostname="test.host", username="testuser", token="token")
 
     requests_mock = RequestsMock()
     client.requestslib = requests_mock

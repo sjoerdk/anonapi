@@ -13,7 +13,11 @@ import textwrap
 
 from anonapi.client import WebAPIClient, APIClientException
 from anonapi.objects import RemoteAnonServer
-from anonapi.settings import AnonClientSettings, DefaultAnonClientSettings, AnonClientSettingsFromFile
+from anonapi.settings import (
+    AnonClientSettings,
+    DefaultAnonClientSettings,
+    AnonClientSettingsFromFile,
+)
 
 
 class AnonClientTool:
@@ -43,9 +47,7 @@ class AnonClientTool:
         -------
         WebAPIClient
         """
-        client = WebAPIClient(hostname=url,
-                              username=self.username,
-                              token=self.token)
+        client = WebAPIClient(hostname=url, username=self.username, token=self.token)
         return client
 
     def get_server_status(self, server: RemoteAnonServer):
@@ -86,12 +88,12 @@ class AnonClientTool:
         client = self.get_client(server.url)
 
         try:
-            response = client.get('get_job', job_id=job_id)
+            response = client.get("get_job", job_id=job_id)
             info_string = f"job {job_id} on {server.name}:\n\n"
             info_string += "\n".join([str(x) for x in list(response.items())])
 
         except APIClientException as e:
-            info_string = f'Error getting job info from {server}:\n{str(e)}'
+            info_string = f"Error getting job info from {server}:\n{str(e)}"
         return info_string
 
     def get_jobs(self, server: RemoteAnonServer):
@@ -117,23 +119,29 @@ class AnonClientTool:
 
         client = self.get_client(server.url)
         try:
-            response = client.get('get_jobs')
+            response = client.get("get_jobs")
             info_string = f"most recent {job_limit} jobs on {server.name}:\n\n"
 
-            header = 'id     date                 status   downloaded processed  user\n' \
-                     '---------------------------------------------------------------'
+            header = (
+                "id     date                 status   downloaded processed  user\n"
+                "---------------------------------------------------------------"
+            )
             info_string += "\n" + header
             job_infos = list(response.values())
-            job_infos = job_infos[:job_limit]  # reduce number of jobs shown for less screen clutter.
+            job_infos = job_infos[
+                :job_limit
+            ]  # reduce number of jobs shown for less screen clutter.
             for job_info in job_infos:
                 x = job_info
-                info_line = f"{x['job_id']:<6} {x['date']:<20} {x['status']:<8} {str(x['files_downloaded']):<10} " \
-                            f"{str(x['files_processed']):<10} {x['user_name']}"
+                info_line = (
+                    f"{x['job_id']:<6} {x['date']:<20} {x['status']:<8} {str(x['files_downloaded']):<10} "
+                    f"{str(x['files_processed']):<10} {x['user_name']}"
+                )
                 info_string += "\n" + info_line
             return info_string
 
         except APIClientException as e:
-            response = f'Error getting jobs from {server}:\n{str(e)}'
+            response = f"Error getting jobs from {server}:\n{str(e)}"
         return response
 
     def cancel_job(self, server: RemoteAnonServer, job_id: int):
@@ -146,7 +154,7 @@ class AnonClientTool:
         """
         client = self.get_client(server.url)
         try:
-            _ = client.post('cancel_job', job_id=job_id)
+            _ = client.post("cancel_job", job_id=job_id)
             info = f"Cancelled job {job_id} on {server.name}"
         except APIClientException as e:
             info = f"Error cancelling job on{server}:\n{str(e)}"
@@ -163,8 +171,14 @@ class AnonClientTool:
 
         client = self.get_client(server.url)
         try:
-            _ = client.post('modify_job', job_id=job_id, status='ACTIVE', files_downloaded=0,
-                            files_processed=0, error=' ')
+            _ = client.post(
+                "modify_job",
+                job_id=job_id,
+                status="ACTIVE",
+                files_downloaded=0,
+                files_processed=0,
+                error=" ",
+            )
             info = f"Reset job {job_id} on {server}"
         except APIClientException as e:
             info = f"Error resetting job on{server.name}:\n{str(e)}"
@@ -208,32 +222,47 @@ class AnonCommandLineParser:
         # create the top-level parser
         parser = argparse.ArgumentParser(
             formatter_class=argparse.RawDescriptionHelpFormatter,
-            description=textwrap.dedent('''
+            description=textwrap.dedent(
+                """
                 anonymization web API tool
                 Controls remote anonymization servers via the anonymization web API       
                 Use the commands below with -h for more info
-            '''))
+            """
+            ),
+        )
         parser.set_defaults(func=lambda: parser.print_help())
         subparsers = parser.add_subparsers()
 
         # ============================================================================================
-        status_parser = subparsers.add_parser('status', help='show tool status',
-                                              description="show overview of this tool's status")
+        status_parser = subparsers.add_parser(
+            "status",
+            help="show tool status",
+            description="show overview of this tool's status",
+        )
         status_parser.set_defaults(func=self.get_status)
 
         # ============================================================================================
-        server_parser = subparsers.add_parser('server', help='manage anonymization servers',
-                                              description='manage anonymization servers')
+        server_parser = subparsers.add_parser(
+            "server",
+            help="manage anonymization servers",
+            description="manage anonymization servers",
+        )
         self.add_server_actions(parser=server_parser)
 
         # ============================================================================================
-        job_parser = subparsers.add_parser('job', help='manage anonymization jobs',
-                                           description="manage anonymization jobs on active server")
+        job_parser = subparsers.add_parser(
+            "job",
+            help="manage anonymization jobs",
+            description="manage anonymization jobs on active server",
+        )
         self.add_job_actions(parser=job_parser)
 
         # ============================================================================================
-        user_parser = subparsers.add_parser('user', help='manage API credentials',
-                                            description="manage username and API key")
+        user_parser = subparsers.add_parser(
+            "user",
+            help="manage API credentials",
+            description="manage username and API key",
+        )
         self.add_user_actions(parser=user_parser)
 
         return parser
@@ -242,72 +271,119 @@ class AnonCommandLineParser:
         parser.set_defaults(func=lambda: parser.print_help())
         parser_sub = parser.add_subparsers()
 
-        parser_add = parser_sub.add_parser('add', help='add a server',
-                                           description="add an anonymization server to the list of servers")
-        parser_add.add_argument('short_name', type=str, help='short name to use in commands')
-        parser_add.add_argument('url', type=str, help='full path including https:// to server')
+        parser_add = parser_sub.add_parser(
+            "add",
+            help="add a server",
+            description="add an anonymization server to the list of servers",
+        )
+        parser_add.add_argument(
+            "short_name", type=str, help="short name to use in commands"
+        )
+        parser_add.add_argument(
+            "url", type=str, help="full path including https:// to server"
+        )
         parser_add.set_defaults(func=self.server_add)
 
-        parser_remove = parser_sub.add_parser('remove', help='remove a server',
-                                              description="remove a server from list of servers")
-        parser_remove.add_argument('short_name', type=str, help='short name of server to remove')
+        parser_remove = parser_sub.add_parser(
+            "remove",
+            help="remove a server",
+            description="remove a server from list of servers",
+        )
+        parser_remove.add_argument(
+            "short_name", type=str, help="short name of server to remove"
+        )
         parser_remove.set_defaults(func=self.server_remove)
 
-        parser_add = parser_sub.add_parser('list', help='list anon servers', description="list anon servers")
+        parser_add = parser_sub.add_parser(
+            "list", help="list anon servers", description="list anon servers"
+        )
         parser_add.set_defaults(func=self.server_list)
 
-        parser_status = parser_sub.add_parser('status', help='get status of active server',
-                                              description="get status of active server, or given server")
-        parser_status.add_argument('short_name', nargs="?", type=str,
-                                   help='optional short name of server to show status for. Defaults to active server')
+        parser_status = parser_sub.add_parser(
+            "status",
+            help="get status of active server",
+            description="get status of active server, or given server",
+        )
+        parser_status.add_argument(
+            "short_name",
+            nargs="?",
+            type=str,
+            help="optional short name of server to show status for. Defaults to active server",
+        )
         parser_status.set_defaults(func=self.server_status)
 
-        parser_jobs = parser_sub.add_parser('jobs', help='list latest 50 jobs', description="list latest 50 jobs")
-        parser_jobs.add_argument('short_name', nargs='?', type=str,
-                                 help='optional short name of server to list jobs for. Defaults to active server')
+        parser_jobs = parser_sub.add_parser(
+            "jobs", help="list latest 50 jobs", description="list latest 50 jobs"
+        )
+        parser_jobs.add_argument(
+            "short_name",
+            nargs="?",
+            type=str,
+            help="optional short name of server to list jobs for. Defaults to active server",
+        )
         parser_jobs.set_defaults(func=self.server_jobs)
 
-        parser_activate = parser_sub.add_parser('activate', help='set active server',
-                                                description="set given server as active. Commands that require a server"
-                                                            " will use this server by default from now on")
-        parser_activate.add_argument('short_name', type=str, help='short name of server to activate')
+        parser_activate = parser_sub.add_parser(
+            "activate",
+            help="set active server",
+            description="set given server as active. Commands that require a server"
+            " will use this server by default from now on",
+        )
+        parser_activate.add_argument(
+            "short_name", type=str, help="short name of server to activate"
+        )
         parser_activate.set_defaults(func=self.server_activate)
 
     def add_job_actions(self, parser):
         parser.set_defaults(func=lambda: parser.print_help())
         parser_sub = parser.add_subparsers()
 
-        parser_info = parser_sub.add_parser('info', help='print job info',
-                                            description='query the active server to retrieve info for this job')
-        parser_info.add_argument('job_id', type=int, help='Job id to check')
+        parser_info = parser_sub.add_parser(
+            "info",
+            help="print job info",
+            description="query the active server to retrieve info for this job",
+        )
+        parser_info.add_argument("job_id", type=int, help="Job id to check")
         parser_info.set_defaults(func=self.get_job_info)
 
-        parser_restart = parser_sub.add_parser('reset', help='reset job, process again',
-                                               description="reset job, process again")
-        parser_restart.add_argument('job_id', type=int, help='Job id to reset')
+        parser_restart = parser_sub.add_parser(
+            "reset",
+            help="reset job, process again",
+            description="reset job, process again",
+        )
+        parser_restart.add_argument("job_id", type=int, help="Job id to reset")
         parser_restart.set_defaults(func=self.job_reset)
 
-        parser_cancel = parser_sub.add_parser('cancel', help='sets job status to inactive',
-                                               description="cancel job")
-        parser_cancel.add_argument('job_id', type=int, help='Job id to cancel')
+        parser_cancel = parser_sub.add_parser(
+            "cancel", help="sets job status to inactive", description="cancel job"
+        )
+        parser_cancel.add_argument("job_id", type=int, help="Job id to cancel")
         parser_cancel.set_defaults(func=self.job_cancel)
 
     def add_user_actions(self, parser):
         parser.set_defaults(func=lambda: parser.print_help())
         parser_sub = parser.add_subparsers()
 
-        parser_info = parser_sub.add_parser('info', help='print current credentials',
-                                            description="print current credentials")
+        parser_info = parser_sub.add_parser(
+            "info",
+            help="print current credentials",
+            description="print current credentials",
+        )
         parser_info.set_defaults(func=self.user_info)
 
-        parser_username = parser_sub.add_parser('set_username', help='set username', description="print job info")
-        parser_username.add_argument('user_name', type=str, help='set username to this')
+        parser_username = parser_sub.add_parser(
+            "set_username", help="set username", description="print job info"
+        )
+        parser_username.add_argument("user_name", type=str, help="set username to this")
         parser_username.set_defaults(func=self.set_username)
 
-        parser_get_api_token = parser_sub.add_parser('get_token', help='retrieve an API token for the current user. '
-                                                                       'Requires valid UMCN credentials',
-                                                     description='retrieve an api token for the current user. '
-                                                                 'Requires valid UMCN credentials')
+        parser_get_api_token = parser_sub.add_parser(
+            "get_token",
+            help="retrieve an API token for the current user. "
+            "Requires valid UMCN credentials",
+            description="retrieve an api token for the current user. "
+            "Requires valid UMCN credentials",
+        )
         parser_get_api_token.set_defaults(func=self.get_token)
 
     def get_status(self):
@@ -318,11 +394,13 @@ class AnonCommandLineParser:
         str
         """
         server_list = self.create_server_list()
-        status = f"Available servers (* = active)\n\n" \
-                 f"{server_list}\n" \
-                 f"Using username: '{self.settings.user_name}'\n" \
-                 f"Reading settings from \n" \
-                 f"{self.settings}"
+        status = (
+            f"Available servers (* = active)\n\n"
+            f"{server_list}\n"
+            f"Using username: '{self.settings.user_name}'\n"
+            f"Reading settings from \n"
+            f"{self.settings}"
+        )
 
         self.print_to_console(status)
 
@@ -337,16 +415,16 @@ class AnonCommandLineParser:
     def server_list(self):
         """show all servers in settings """
         server_list = self.create_server_list()
-        self.print_to_console(f'Available servers (* = active):\n\n{server_list}')
+        self.print_to_console(f"Available servers (* = active):\n\n{server_list}")
 
     def create_server_list(self):
         server_list = ""
         for server in self.settings.servers:
-            line = f'{server.name:<10} {server.url}'
+            line = f"{server.name:<10} {server.url}"
             if server == self.settings.active_server:
-                line = '* ' + line
+                line = "* " + line
             else:
-                line = '  ' + line
+                line = "  " + line
             server_list += line + "\n"
         return server_list
 
@@ -441,13 +519,17 @@ class AnonCommandLineParser:
         """
         server = self.settings.active_server
         if not server:
-            msg = f"No active server. Which one do you want to use? Please activate one by using 'server activate <servername>. " \
-                  f"Available:{str([x.name for x in self.settings.servers])}"
+            msg = (
+                f"No active server. Which one do you want to use? Please activate one by using 'server activate <servername>. "
+                f"Available:{str([x.name for x in self.settings.servers])}"
+            )
             raise AnonCommandLineParserException(msg)
         return server
 
     def user_info(self):
-        self.print_to_console(f"username is {self.settings.user_name}\nAPI token: {self.settings.user_token}")
+        self.print_to_console(
+            f"username is {self.settings.user_name}\nAPI token: {self.settings.user_token}"
+        )
 
     def set_username(self, user_name):
         """Set the given username in settings
@@ -463,11 +545,17 @@ class AnonCommandLineParser:
         self.print_to_console(f"username is now '{user_name}'")
 
     def get_token(self):
-        token = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.ascii_lowercase + string.digits)
-                        for _ in range(64))
+        token = "".join(
+            random.SystemRandom().choice(
+                string.ascii_uppercase + string.ascii_lowercase + string.digits
+            )
+            for _ in range(64)
+        )
         self.settings.user_token = token
         self.settings.save()
-        self.print_to_console(f"Got and saved api token for username {self.settings.user_name}")
+        self.print_to_console(
+            f"Got and saved api token for username {self.settings.user_name}"
+        )
 
     @staticmethod
     def print_to_console(msg):
@@ -498,7 +586,7 @@ class AnonCommandLineParser:
         """
         args = self.parser.parse_args(cmd)
         args_dict = vars(args)
-        func = args_dict.pop('func')
+        func = args_dict.pop("func")
         try:
             func(**args_dict)
         except AnonCommandLineParserException as e:
@@ -511,7 +599,7 @@ class AnonCommandLineParserException(Exception):
 
 def main():
     global settings_file
-    settings_file = pathlib.Path.home() / 'AnonWebAPIClientSettings.yml'
+    settings_file = pathlib.Path.home() / "AnonWebAPIClientSettings.yml"
     if not os.path.exists(settings_file):
         print(f"Settings file did not exist. creating '{settings_file}'")
         DefaultAnonClientSettings().save_to_file(filename=settings_file)
