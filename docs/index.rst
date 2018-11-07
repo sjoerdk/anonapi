@@ -1,5 +1,5 @@
 Welcome to AnonAPI's documentation!
-======================================
+===================================
 
 .. toctree::
    :maxdepth: 2

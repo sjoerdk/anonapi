@@ -2,19 +2,11 @@
 Usage
 =====
 
-The anonapi package contains two distinct ways of interacting with an IDIS anonymization server API:
+The anonapi package contains two distinct ways of interacting with an IDIS anonymization server API.
 
-    * The command line interface 'anon', used for quick overview of jobs and cancel/restart (See :ref:`usage-cli`).
+    * :ref:`usage-cli` : for quick overview of jobs and cancel/restart.
 
-    * The Web API Python client classes, for creating, modifying and automating job creation (see :ref:`usage-client`).
-
-
-Prerequisites
--------------
-
-    * python 3.6
-
-    * pip
+    * :ref:`usage-client` : for creating, modifying and automation.
 
 
 .. _usage-cli:
@@ -100,5 +92,7 @@ Example commands
 
 .. _usage-client:
 
-Web API Python client
-=====================
+WebAPIClient python class
+=========================
+
+
