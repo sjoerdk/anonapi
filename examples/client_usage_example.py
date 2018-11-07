@@ -1,6 +1,7 @@
 """ Examples of using the client to call the web API.
 
 """
+import getpass
 
 from anonapi.client import WebAPIClient, APIClientAPIException
 
@@ -8,7 +9,7 @@ from anonapi.client import WebAPIClient, APIClientAPIException
 def print_to_console(msg):
     """Separate function to get some control over formatting
     """
-    print("* "+msg)
+    print("* " + msg)
 
 
 def example_run():
@@ -26,9 +27,11 @@ def example_run():
 
     # Create a client that will talk to the web API. The hostname is not a live anonymization server. The username is
     # the only one that is authorized on the sandbox server.
-    client = WebAPIClient(hostname="https://umcradanonp11.umcn.nl/sandbox",
-                          username='z123sandbox',
-                          token='token')
+    client = WebAPIClient(
+        hostname="https://umcradanonp11.umcn.nl/sandbox",
+        username="z123sandbox",
+        token="token",
+    )
     print_to_console(f"Using client: {client}")
 
     # Get some information on first few jobs
@@ -44,35 +47,78 @@ def example_run():
     # this to work.
     anon_name = "TEST_NAME_01"
     anon_id = "01"
-    new_job_info = client.post("create_job", source_type="PATH", source_path=r"\\resfilsp10\imaging\temp\test",
-                           destination_type="PATH", project_name="Wetenschap-Algemeen",
-                           destination_path=r"\\resfilsp10\imaging\temp\test_output", anonymizedpatientname=anon_name,
-                           anonymizedpatientid=anon_id)
-    # this response contain extended info on the new job that has just been created
+    source_path = r"\\umcsanfsclp01\radng_imaging\temp\test"
+    destination_path = r"\\umcsanfsclp01\radng_imaging\temptest_output"
+    network_job_info = client.post(
+        "create_job",
+        source_type="PATH",
+        source_path=source_path,
+        destination_type="PATH",
+        project_name="Wetenschap-Algemeen",
+        destination_path=destination_path,
+        anonymizedpatientname=anon_name,
+        anonymizedpatientid=anon_id,
+        description=f"A test path job for {getpass.getuser()}",
+    )
+    # new_job_info response contain extended info on the new job that has just been created
+    print_to_console(
+        f"Succesfully created a job in {client}, job_id={network_job_info['job_id']}"
+    )
 
-    print_to_console("Succesfully created a job in {0}, job_id={1}, priority={2}".format(client, new_job_info['job_id'],
-                                                                                         new_job_info['priority']))
-    new_job_id = new_job_info['job_id']
+    # Create a job that takes data from the IDC (formally IMPAX) directly
+    anon_name = "TEST_NAME_02"
+    anon_id = "02"
+    sid = "123.12335.3353.36464.343435677"
+    destination_path = r"\\umcsanfsclp01\radng_imaging\temptest_output"
+    idc_job_info = client.post(
+        "create_job",
+        source_type="WADO",
+        source_name="IDC_WADO",
+        source_instance_id=sid,
+        anonymizedpatientname=anon_name,
+        anonymizedpatientid=anon_id,
+        destination_type="PATH",
+        project_name="Wetenschap-Algemeen",
+        destination_path=destination_path,
+        description=f"A test idc job for {getpass.getuser()}",
+    )
+    print_to_console(
+        f"Succesfully created a job in {client}, job_id={idc_job_info['job_id']}"
+    )
+
+    new_job_id = idc_job_info["job_id"]
 
     # Check the status of your newly created job
     response = client.get("get_job", job_id=new_job_id)
-    print_to_console("For the new job ({0}) that was just created, the status is {1}".format(new_job_id, response['status']))
+    print_to_console(
+        f"For the new job ({new_job_id}) that was just created, the status is {response['status']}"
+    )
 
     # Modify the new job.
-    response = client.post("modify_job", job_id=new_job_id, source_path=r"\\resfilsp10\imaging\temp\modified\test")
-    print_to_console("Changing source path for job ({0}). Changed to {1}".format(new_job_id, response['source_path']))
+    response = client.post(
+        "modify_job",
+        job_id=new_job_id,
+        source_path=r"\\umcsanfsclp01\radng_imaging\temp\modified\test",
+    )
+    print_to_console(
+        f"After modification of job ({new_job_id}) source path is {response['source_path']}"
+    )
 
     # Cancel your new job
     response = client.post("cancel_job", job_id=new_job_id)
-    print_to_console("After cancelling the new job ({0}), the status is {1}".format(new_job_id, response['status']))
+    print_to_console(
+        f"After cancelling of job ({new_job_id}) status is {response['status']}"
+    )
 
     # To show how errors coming from the API are handled: forget to include job_id as parameter
     try:
         _ = client.post("cancel_job")
     except APIClientAPIException as e:
-        msg = "Errors returned by the API are returned as exceptions by the client.\n" \
-              "In response to a call with missing parameters this error is raised:\n" \
-              f"{str(e)}"
+        msg = (
+            "Errors returned by the API are returned as exceptions by the client.\n"
+            "In response to a call with missing parameters this error is raised:\n"
+            f"{str(e)}"
+        )
         print_to_console(msg)
 
 
