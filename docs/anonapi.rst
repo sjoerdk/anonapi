@@ -1,6 +1,0 @@
-anonapi package
-===============
-
-Submodules
-----------
-
