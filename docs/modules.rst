@@ -33,3 +33,12 @@ Settings
     :members:
     :undoc-members:
     :show-inheritance:
+
+
+Examples
+--------
+
+.. automodule:: examples.client_usage_example
+    :members:
+    :undoc-members:
+    :show-inheritance:
