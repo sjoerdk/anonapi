@@ -36,7 +36,11 @@ Client and tools for working with the anoymization web API
 Features
 --------
 
-* TODO
+* Interact with IDIS anonymization server web API via https
+* Create, modify, cancel anonymization jobs
+* CLI (Command Line Interface) for quick overview of jobs and cancel/restart job.
+* CLI can save servers and credentials locally for convenience
+* Python code with examples for fully automated interaction
 
 Credits
 -------
