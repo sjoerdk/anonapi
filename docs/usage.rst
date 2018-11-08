@@ -37,7 +37,7 @@ Add a server to the CLI
 -----------------------
 The CLI saves server locations locally for easy access. To add a server follow these steps:
 
-First Find the url of an IDIS anonymization web API. An overview of servers without the radboudumc can found
+First Find the url of an IDIS anonymization web API. An overview of servers within the radboudumc can be found
 `here <https://repos.diagnijmegen.nl/trac/wiki/IDIS_web_API#servers>`_.
 
 Lets say the server address is https://anonapi.org/server1. you can now add this server as 'server1':
