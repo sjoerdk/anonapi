@@ -14,11 +14,11 @@ AnonAPI
         :alt: Documentation Status
 
 .. image:: https://api.codeclimate.com/v1/badges/5c3b7f45f6a476d0f21e/maintainability
-       :target: https://codeclimate.com/github/comic/evalutils/maintainability
+       :target: https://codeclimate.com/github/sjoerdk/anonapi/maintainability
        :alt: Maintainability
 
 .. image:: https://pyup.io/repos/github/comic/evalutils/shield.svg
-       :target: https://pyup.io/repos/github/comic/evalutils/
+       :target: https://pyup.io/repos/github/sjoerdk/anonapi/
        :alt: Updates
 
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
