@@ -26,7 +26,7 @@ AnonAPI
 
 
 
-Client and tools for working with the anoymization web API
+Client and tools for working with the IDIS web API
 
 
 * Free software: MIT license
