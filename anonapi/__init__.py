@@ -4,5 +4,5 @@
 
 __author__ = """Sjoerd Kerkstra"""
 __email__ = 'sjoerd.kerkstra@radboudumc.nl'
-__version__ = '0.0.17'
+__version__ = '0.0.18'
 
