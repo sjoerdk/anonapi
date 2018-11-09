@@ -17,7 +17,7 @@ AnonAPI
     :alt: Maintainability
 
 .. image:: https://codecov.io/gh/sjoerdk/anonapi/branch/master/graph/badge.svg
-    :target: https://codecov.io/gh/comic/grand-challenge.org
+    :target: https://codecov.io/gh/sjoerdk/anonapi
 
 .. image:: https://pyup.io/repos/github/comic/evalutils/shield.svg
     :target: https://pyup.io/repos/github/sjoerdk/anonapi/
