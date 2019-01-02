@@ -29,6 +29,7 @@ setup(
         'Programming Language :: Python :: 3.7',
     ],
     description="Client and tools for working with the anoymization web API",
+    python_requires='>=3.6',
     install_requires=requirements,
     license="MIT license",
     long_description=readme + '\n\n' + history,
@@ -45,6 +46,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/sjoerdk/anonapi',
-    version='0.0.18',
+    version='0.0.19',
     zip_safe=False,
 )
