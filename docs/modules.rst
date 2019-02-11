@@ -37,8 +37,29 @@ Settings
 
 Examples
 --------
+To see the source code for these examples, press the [source] link to the right of each title
 
-.. automodule:: examples.client_usage_example
+.. automodule:: examples.anonymize_files_from_idc
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: examples.anonymize_files_from_share
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: examples.cancel_job
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: examples.get_api_definition
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: examples.get_job_status
     :members:
     :undoc-members:
     :show-inheritance:

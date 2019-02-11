@@ -112,4 +112,4 @@ To use it in a python file:
     jobs_info = client.get("get_jobs")
 
 A more extended example of creating, modifying and cancelling jobs can be found in the source of
-:mod:`examples.client_usage_example`
+:mod:`examples`
