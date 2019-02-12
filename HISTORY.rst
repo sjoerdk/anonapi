@@ -18,11 +18,16 @@ History
 * Added distutil entry_points to have 'anon' console command after pip install
 
 0.0.10-0.0.18 (2018-11-12)
-------------------
+--------------------------
 
 * Fixed deployment, docs
 
 0.0.19 (2018-11-14)
-------------------
+-------------------
 
 * set python 3.6 Required in setup.py
+
+0.0.20 (2019-02-11)
+-------------------
+
+* Improved examples
