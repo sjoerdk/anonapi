@@ -111,5 +111,5 @@ To use it in a python file:
     # Get some information on first few jobs
     jobs_info = client.get("get_jobs")
 
-A more extended example of creating, modifying and cancelling jobs can be found in the source of
-:mod:`examples`
+A more extended python example of creating, modifying and cancelling jobs can be found in the in
+:ref:`examples`.

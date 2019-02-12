@@ -35,6 +35,8 @@ Settings
     :show-inheritance:
 
 
+.. _examples:
+
 Examples
 --------
 To see the source code for these examples, press the [source] link to the right of each title
