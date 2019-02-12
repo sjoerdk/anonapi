@@ -4,4 +4,5 @@ channels:
 dependencies:
  - pip:
     - sphinx-autodoc-typehints
+    - pyyaml
  - python=3.6
