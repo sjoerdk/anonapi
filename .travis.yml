@@ -2,7 +2,7 @@ language: python
 python:
 - 3.6
 before_install:
-- pip install codecov pytest-cov
+- pip install codecov pytest-cov pyyaml
 install:
 - pip install -U tox-travis
 script:
