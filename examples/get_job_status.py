@@ -2,7 +2,7 @@ from anonapi.client import WebAPIClient
 
 
 def get_job_status():
-    """Create an IDIS job that pulls files from a network share
+    """Get information about a number of jobs
 
     """
 

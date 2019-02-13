@@ -2,9 +2,6 @@ from anonapi.client import WebAPIClient
 
 
 def cancel_job():
-    """Create an IDIS job that pulls files from a network share
-
-    """
 
     # Create a client that will talk to the web API
     client = WebAPIClient(
