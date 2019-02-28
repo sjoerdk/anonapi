@@ -51,6 +51,11 @@ To see the source code for these examples, press the [source] link to the right 
     :undoc-members:
     :show-inheritance:
 
+.. automodule:: examples.anonymize_files_sop_class_filter
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 .. automodule:: examples.cancel_job
     :members:
     :undoc-members:
