@@ -1,5 +1,4 @@
 """ Shared classes used in other tests. For generating test data """
-import json
 from unittest.mock import Mock
 from requests.models import Response
 

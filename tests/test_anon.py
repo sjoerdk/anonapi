@@ -13,7 +13,6 @@ from anonapi.anon import (
     AnonClientTool,
     AnonCommandLineParserException,
 )
-from anonapi.client import APIClientAPIException
 from anonapi.objects import RemoteAnonServer
 from anonapi.settings import DefaultAnonClientSettings
 from tests.factories import RequestsMock, RequestsMockResponseExamples
