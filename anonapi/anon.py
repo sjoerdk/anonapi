@@ -265,6 +265,14 @@ class AnonCommandLineParser:
         )
         self.add_user_actions(parser=user_parser)
 
+        # ============================================================================================
+        batch_parser = subparsers.add_parser(
+            "batch",
+            help="Manage job batch",
+            description="Work with multiple jobs at the same time",
+        )
+        self.add_batch_actions(parser=batch_parser)
+
         return parser
 
     def add_server_actions(self, parser):
@@ -385,6 +393,22 @@ class AnonCommandLineParser:
             "Requires valid UMCN credentials",
         )
         parser_get_api_token.set_defaults(func=self.get_token)
+
+    def add_batch_actions(self, parser):
+        parser.set_defaults(func=lambda: parser.print_help())
+        parser_sub = parser.add_subparsers()
+
+        parser_batch_info = parser_sub.add_parser(
+            "info",
+            help="print overview of all jobs in current folder",
+            description="show batch in current folder",
+        )
+        parser_batch_info.set_defaults(func=self.batch_info)
+
+        parser_batch_status = parser_sub.add_parser(
+            "get_status", help="get_status for entire batch", description="get batch status"
+        )
+        parser_batch_status.set_defaults(func=self.batch_status)
 
     def get_status(self):
         """Get general status of this tool, show currently active server etc.
