@@ -581,6 +581,12 @@ class AnonCommandLineParser:
             f"Got and saved api token for username {self.settings.user_name}"
         )
 
+    def batch_info(self):
+        self.print_to_console("batch info")
+
+    def batch_status(self):
+        self.print_to_console("batch status")
+
     @staticmethod
     def print_to_console(msg):
         """Print this message to console. With minimal formatting.

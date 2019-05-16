@@ -1,5 +1,10 @@
-"""Work with batches of jobs
+"""Work with batches of jobs. Batches are modeled on git repos; being present in a certain folder.
+
+You can create and edit a batch as long as you are in that folder
 """
+import os
+from pathlib import Path
+
 import yaml
 
 from anonapi.objects import RemoteAnonServer
@@ -88,6 +93,76 @@ class JobBatch(YamlSavable):
     @classmethod
     def from_dict(cls, dict_in):
         return cls(job_ids=dict_in['job_ids'], server=RemoteAnonServer.from_dict(dict_in['server']))
+
+
+class BatchFolder:
+    """A folder in which a batch might be defined
+
+    """
+
+    BATCH_FILE_NAME = '.anonbatch'
+
+    def __init__(self, path):
+        """
+
+        Parameters
+        ----------
+        path: Pathlike
+            path to this folder
+        """
+        self.path = Path(path)
+
+    @property
+    def batch_file_path(self):
+        return self.path / self.BATCH_FILE_NAME
+
+    def has_batch(self):
+        return self.batch_file_path.exists()
+
+    def load(self):
+        """Load batch from the current folder
+
+        Returns
+        -------
+        JobBatch:
+            If there is a batch defined in this folder
+        None:
+            If not
+        """
+        if not self.has_batch():
+            return None
+        else:
+            with open(self.batch_file_path, 'r') as f:
+                return JobBatch.load(f)
+
+    def save(self, batch):
+        """Save the given batch to this folder
+
+        Parameters
+        ----------
+        batch: JobBatch
+            job batch to save in this folder
+
+
+        """
+        with open(self.batch_file_path, 'w') as f:
+            batch.save(f)
+
+    def delete_batch(self):
+        """Delete the batch file in this folder
+
+        Raises
+        ------
+        BatchFolderException:
+            if remove does not work for some reason
+
+        """
+
+        os.remove(self.batch_file_path)
+
+
+class BatchFolderException(Exception):
+    pass
 
 
 
