@@ -87,10 +87,10 @@ def test_server_not_found(mocked_requests_client: WebAPIClient):
     requests_mock: RequestsMock
 
     requests_mock.set_response_exception(ConnectionError)
-    with pytest.raises(APIClientException) as exception:
+    with pytest.raises(APIClientException):
         _ = client.get("anything")
 
-    with pytest.raises(APIClientException) as exception:
+    with pytest.raises(APIClientException):
         _ = client.post("anything")
 
 

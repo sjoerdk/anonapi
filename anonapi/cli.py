@@ -11,6 +11,7 @@ import pathlib
 import os
 import textwrap
 
+from anonapi.batch import BatchFolder, JobBatch
 from anonapi.client import WebAPIClient, APIClientException
 from anonapi.objects import RemoteAnonServer
 from anonapi.settings import (
@@ -42,7 +43,8 @@ class AnonClientTool:
         self.token = token
 
     def get_client(self, url):
-        """
+        """Create an API client with the information in this tool
+
         Returns
         -------
         WebAPIClient
@@ -55,7 +57,7 @@ class AnonClientTool:
 
         Returns
         -------
-        str
+        str:
             status of the given server
         """
         client = self.get_client(server.url)
@@ -200,15 +202,20 @@ class AnonCommandLineParser:
 
         Parameters
         ----------
-        client_tool: :obj:`AnonClientTool`
+        client_tool: AnonClientTool
             The tool that that communicates with the web API.
-        settings: :obj:`AnonClientSettings`
+        settings: AnonClientSettings
             Settings object to use for reading and writing settings.
 
         """
         self.client_tool = client_tool
         self.settings = settings
         self.parser = self.create_parser()
+
+    @staticmethod
+    def current_dir():
+        """Return full path to the folder this command line parser is called from"""
+        return os.getcwd()
 
     def create_parser(self):
         """The thing that actually parses the input commands.
@@ -406,9 +413,45 @@ class AnonCommandLineParser:
         parser_batch_info.set_defaults(func=self.batch_info)
 
         parser_batch_status = parser_sub.add_parser(
-            "get_status", help="get_status for entire batch", description="get batch status"
+            "get_status",
+            help="get_status for entire batch",
+            description="get batch status",
         )
         parser_batch_status.set_defaults(func=self.batch_status)
+
+        parser_batch_init = parser_sub.add_parser(
+            "init",
+            help="Create empty batch in current folder",
+            description="Create empty batch in current folder",
+        )
+        parser_batch_init.set_defaults(func=self.batch_init)
+
+        parser_batch_delete = parser_sub.add_parser(
+            "delete",
+            help="Delete batch in current folder",
+            description="Delete batch in current folder",
+        )
+        parser_batch_delete.set_defaults(func=self.batch_delete)
+
+        parser_batch_add_ids = parser_sub.add_parser(
+            "add",
+            help="Add job ids to batch",
+            description="Add the given space-separated list of jobs ids to batch. Will not add already existing ids",
+        )
+        parser_batch_add_ids.add_argument(
+            "ids", type=str, help="space-separate list of job ids to add", nargs="*"
+        )
+        parser_batch_add_ids.set_defaults(func=self.batch_add_ids)
+
+        parser_batch_remove_ids = parser_sub.add_parser(
+            "remove",
+            help="Remove job ids from batch",
+            description="Remove the given space-separated list of jobs ids from batch",
+        )
+        parser_batch_remove_ids.add_argument(
+            "ids", type=str, help="space-separate list of job ids to remove", nargs="*"
+        )
+        parser_batch_remove_ids.set_defaults(func=self.batch_remove_ids)
 
     def get_status(self):
         """Get general status of this tool, show currently active server etc.
@@ -581,8 +624,66 @@ class AnonCommandLineParser:
             f"Got and saved api token for username {self.settings.user_name}"
         )
 
+    def get_batch(self):
+        """Get batch defined in current folder"""
+
+        batch = BatchFolder(self.current_dir()).load()
+        if not batch:
+            raise AnonCommandLineParserException("No batch defined in current folder")
+        else:
+            return batch
+
+    def get_batch_folder(self):
+        """True if there is a batch defined in this folder"""
+        return BatchFolder(self.current_dir())
+
+    def batch_init(self):
+        """Save an empty batch in the current folder, for current server"""
+        batch_folder = self.get_batch_folder()
+        if batch_folder.has_batch():
+            raise AnonCommandLineParserException(
+                "Cannot init, A batch is already defined in this folder"
+            )
+        else:
+            server = self.get_active_server()
+            batch_folder.save(JobBatch(job_ids=[], server=server))
+            self.print_to_console(f"Initialised batch for {server} in current dir")
+
     def batch_info(self):
-        self.print_to_console("batch info")
+        self.print_to_console(self.get_batch().to_string())
+
+    def batch_delete(self):
+        self.get_batch_folder().delete_batch()
+        self.print_to_console(f"Removed batch in current dir")
+
+    def batch_add_ids(self, ids):
+        """Add ids to current batch. Will not add already existing
+
+        Parameters
+        ----------
+        ids: List[str]
+            list of job ids
+        """
+        batch_folder = self.get_batch_folder()
+        batch: JobBatch = batch_folder.load()
+        batch.job_ids = sorted(list(set(batch.job_ids) | set(ids)))
+        batch_folder.save(batch)
+        self.print_to_console(f"Added {ids} to batch")
+
+    def batch_remove_ids(self, ids):
+        """Remove ids from current batch
+
+        Parameters
+        ----------
+        ids: List[str]
+            list of job ids
+        """
+        batch_folder = self.get_batch_folder()
+        batch: JobBatch = batch_folder.load()
+        batch.job_ids = sorted(list(set(batch.job_ids) - set(ids)))
+        batch_folder.save(batch)
+
+        self.print_to_console(f"Removed {ids} from batch")
 
     def batch_status(self):
         self.print_to_console("batch status")
@@ -620,7 +721,7 @@ class AnonCommandLineParser:
         try:
             func(**args_dict)
         except AnonCommandLineParserException as e:
-            self.print_to_console(str(e))
+            self.print_to_console("Error: " + str(e))
 
 
 class AnonCommandLineParserException(Exception):

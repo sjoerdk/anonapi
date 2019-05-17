@@ -8,11 +8,12 @@ from unittest.mock import patch, Mock
 import pytest
 from pytest import fixture
 
-from anonapi.anon import (
+from anonapi.cli import (
     AnonCommandLineParser,
     AnonClientTool,
     AnonCommandLineParserException,
 )
+from anonapi.batch import BatchFolder, JobBatch
 from anonapi.objects import RemoteAnonServer
 from anonapi.settings import DefaultAnonClientSettings
 from tests.factories import RequestsMock, RequestsMockResponseExamples
@@ -95,6 +96,38 @@ def test_parser_and_mock_requests(mocked_requests_client):
 
 
 @fixture
+def test_parser_and_mock_requests_non_printing(mocked_requests_client, non_printing_test_parser):
+    """Same as test_parser_and_mock_requests, but the returned parser has a .mock_console attribute that records all
+    printing to console
+
+    Parameters
+    ----------
+    mocked_requests_client: conftest.mocked_requests_client pytest fixture
+
+    Returns
+    -------
+    AnonCommandLineParser, RequestsMock:
+        A console client instance that does not call real servers, but calls a mock requests lib (RequestsMock)
+        instead. the RequestMock responses can be set to arbitrary values
+
+    """
+
+    client, requests_mock = mocked_requests_client
+    client_tool = AnonClientTool(username="testuser", token="test_token")
+
+    def mock_get_client(url):
+        client.hostname = url
+        return client
+
+    client_tool.get_client = mock_get_client
+
+    parser = non_printing_test_parser
+    parser.client_tool = client_tool
+
+    return parser, requests_mock
+
+
+@fixture
 def extended_test_parser_and_mock_requests(test_parser_and_mock_requests):
     """Identical to test_parser_and_mock_requests(), but the console client instance has 3 extra servers
 
@@ -105,7 +138,7 @@ def extended_test_parser_and_mock_requests(test_parser_and_mock_requests):
 
     Returns
     -------
-    AnonCommandLineParser, RequestsMock:
+    (AnonCommandLineParser, RequestsMock):
         A console client instance that does not call real servers, but calls a mock requests lib (RequestsMock)
         instead. the RequestMock responses can be set to arbitrary values
 
@@ -355,3 +388,49 @@ def test_client_tool_exception_response(
 
     parser.execute_command(command.split(" "))
     assert expected_output in capsys.readouterr().out
+
+
+def test_cli_batch(test_parser_and_mock_requests_non_printing, tmpdir):
+    """Try working with a batch of job ids from console"""
+    parser, _ = test_parser_and_mock_requests_non_printing
+    parser.current_dir = lambda: str(
+        tmpdir
+    )  # make parser thinks tmpdir is its working dir
+
+    parser.execute_command("batch info".split(" "))
+    assert "Error: No batch defined" in parser.mock_console.content[0]
+
+    assert not BatchFolder(tmpdir).has_batch()
+    parser.execute_command("batch init".split(" "))
+    assert BatchFolder(tmpdir).has_batch()
+
+    parser.execute_command("batch add 1 2 3 345".split(" "))
+    assert BatchFolder(tmpdir).load().job_ids == ['1', '2', '3', '345']
+
+    parser.execute_command("batch add 1 2 50".split(" "))  # duplicates should be silently ignored
+    assert BatchFolder(tmpdir).load().job_ids == ['1', '2', '3', '345', '50']
+
+    parser.execute_command("batch remove 50 345 1000".split(" "))  # non-existing keys should be ignored
+    assert BatchFolder(tmpdir).load().job_ids == ['1', '2', '3']
+
+    parser.execute_command("batch remove 1 2 3".split(" "))
+    assert BatchFolder(tmpdir).load().job_ids == []
+
+    parser.execute_command("batch delete".split(" "))
+    assert not BatchFolder(tmpdir).has_batch()
+
+
+def test_cli_batch_status(extended_test_parser_and_mock_requests):
+    """Try operations actually calling server"""
+
+    parser, requests_mock = extended_test_parser_and_mock_requests
+    batch = JobBatch(job_ids=['1', '3', '10'], server=parser.get_server_or_active_server())
+
+    # set current batch to mock batch and capture printing to console
+    parser.get_batch = lambda: batch
+    printed = []
+    parser.print_to_console = lambda x: printed.append(x)
+
+    parser.batch_status()
+
+    test = 1

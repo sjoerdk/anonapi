@@ -87,8 +87,18 @@ class JobBatch(YamlSavable):
         str
 
         """
-        return {'job_ids': self.job_ids,
-                'server': self.server.to_dict()}
+        return {'server': self.server.to_dict(),
+                'job_ids': self.job_ids}
+
+    def to_string(self):
+        """This batch as string
+
+        Returns
+        -------
+        str:
+            String with newlines representing this batch
+        """
+        return yaml.dump(self.to_dict())
 
     @classmethod
     def from_dict(cls, dict_in):
@@ -126,6 +136,7 @@ class BatchFolder:
         -------
         JobBatch:
             If there is a batch defined in this folder
+
         None:
             If not
         """
