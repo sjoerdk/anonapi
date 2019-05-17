@@ -96,7 +96,9 @@ def test_parser_and_mock_requests(mocked_requests_client):
 
 
 @fixture
-def test_parser_and_mock_requests_non_printing(mocked_requests_client, non_printing_test_parser):
+def test_parser_and_mock_requests_non_printing(
+    mocked_requests_client, non_printing_test_parser
+):
     """Same as test_parser_and_mock_requests, but the returned parser has a .mock_console attribute that records all
     printing to console
 
@@ -288,12 +290,23 @@ def test_command_line_tool_job_functions(
     assert "No active server. Which one do you want to use?" in capsys.readouterr().out
 
 
+def test_command_line_tool_job_list(
+    extended_test_parser_and_mock_requests, capsys
+):
+    parser, requests_mock = extended_test_parser_and_mock_requests
+    requests_mock: RequestsMock
+
+    requests_mock.reset()
+    parser.execute_command("job list 1 2 3 445".split(" "))
+    assert requests_mock.requests.get.called is True
+
+
 @pytest.mark.parametrize(
     "command, server_response, expected_print",
     [
         (
             "server jobs".split(" "),
-            RequestsMockResponseExamples.JOBS_LIST,
+            RequestsMockResponseExamples.JOBS_LIST_GET_JOBS,
             "most recent 50 jobs on test:",
         ),
         (
@@ -405,13 +418,17 @@ def test_cli_batch(test_parser_and_mock_requests_non_printing, tmpdir):
     assert BatchFolder(tmpdir).has_batch()
 
     parser.execute_command("batch add 1 2 3 345".split(" "))
-    assert BatchFolder(tmpdir).load().job_ids == ['1', '2', '3', '345']
+    assert BatchFolder(tmpdir).load().job_ids == ["1", "2", "3", "345"]
 
-    parser.execute_command("batch add 1 2 50".split(" "))  # duplicates should be silently ignored
-    assert BatchFolder(tmpdir).load().job_ids == ['1', '2', '3', '345', '50']
+    parser.execute_command(
+        "batch add 1 2 50".split(" ")
+    )  # duplicates should be silently ignored
+    assert BatchFolder(tmpdir).load().job_ids == ["1", "2", "3", "345", "50"]
 
-    parser.execute_command("batch remove 50 345 1000".split(" "))  # non-existing keys should be ignored
-    assert BatchFolder(tmpdir).load().job_ids == ['1', '2', '3']
+    parser.execute_command(
+        "batch remove 50 345 1000".split(" ")
+    )  # non-existing keys should be ignored
+    assert BatchFolder(tmpdir).load().job_ids == ["1", "2", "3"]
 
     parser.execute_command("batch remove 1 2 3".split(" "))
     assert BatchFolder(tmpdir).load().job_ids == []
@@ -424,7 +441,9 @@ def test_cli_batch_status(extended_test_parser_and_mock_requests):
     """Try operations actually calling server"""
 
     parser, requests_mock = extended_test_parser_and_mock_requests
-    batch = JobBatch(job_ids=['1', '3', '10'], server=parser.get_server_or_active_server())
+    batch = JobBatch(
+        job_ids=["1", "3", "10"], server=parser.get_server_or_active_server()
+    )
 
     # set current batch to mock batch and capture printing to console
     parser.get_batch = lambda: batch

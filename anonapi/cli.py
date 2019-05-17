@@ -14,6 +14,7 @@ import textwrap
 from anonapi.batch import BatchFolder, JobBatch
 from anonapi.client import WebAPIClient, APIClientException
 from anonapi.objects import RemoteAnonServer
+from anonapi.responses import JobShortInfo, format_job_info_list, parse_job_infos_response, APIParseResponseException
 from anonapi.settings import (
     AnonClientSettings,
     DefaultAnonClientSettings,
@@ -70,7 +71,7 @@ class AnonClientTool:
         return status
 
     def get_job_info(self, server: RemoteAnonServer, job_id: int):
-        """
+        """Full description of a single job
 
         Parameters
         ----------
@@ -98,6 +99,43 @@ class AnonClientTool:
             info_string = f"Error getting job info from {server}:\n{str(e)}"
         return info_string
 
+    def get_job_info_list(self, server: RemoteAnonServer, job_ids):
+        """Get a list of info on the given job ids. Info is shorter then full info
+
+        Parameters
+        ----------
+        server: RemoteAnonServer
+            get job info from this server
+        job_ids: List(str)
+            list of jobs to get info for
+
+        Returns
+        -------
+        str:
+            string describing job, or error if job could not be found
+
+        Raises
+        ------
+        APIClientException:
+            if something goes wrong getting jobs info from server
+
+        """
+        client = self.get_client(server.url)
+        try:
+            response_raw = client.get("get_jobs_list", job_ids=job_ids)
+            response = parse_job_infos_response(response_raw)
+
+            info_string = f"Job info for {len(job_ids)} jobs on {server.name}:\n"
+            info_string += "\n" + format_job_info_list(response)
+            return info_string
+
+        except APIClientException as e:
+            response = f"Error getting jobs from {server}:\n{str(e)}"
+        except APIParseResponseException as e:
+            response = f"Error parsing server response: from {server}:\n{str(e)}"
+
+        return response
+
     def get_jobs(self, server: RemoteAnonServer):
         """Get list of info on most recent jobs in server
 
@@ -121,29 +159,18 @@ class AnonClientTool:
 
         client = self.get_client(server.url)
         try:
-            response = client.get("get_jobs")
-            info_string = f"most recent {job_limit} jobs on {server.name}:\n\n"
+            response_raw = client.get("get_jobs")
+            response = parse_job_infos_response(response_raw)
 
-            header = (
-                "id     date                 status   downloaded processed  user\n"
-                "---------------------------------------------------------------"
-            )
-            info_string += "\n" + header
-            job_infos = list(response.values())
-            job_infos = job_infos[
-                :job_limit
-            ]  # reduce number of jobs shown for less screen clutter.
-            for job_info in job_infos:
-                x = job_info
-                info_line = (
-                    f"{x['job_id']:<6} {x['date']:<20} {x['status']:<8} {str(x['files_downloaded']):<10} "
-                    f"{str(x['files_processed']):<10} {x['user_name']}"
-                )
-                info_string += "\n" + info_line
+            info_string = f"most recent {job_limit} jobs on {server.name}:\n\n"
+            info_string += "\n" + format_job_info_list(response)
             return info_string
 
         except APIClientException as e:
             response = f"Error getting jobs from {server}:\n{str(e)}"
+        except APIParseResponseException as e:
+            response = f"Error parsing server response: from {server}:\n{str(e)}"
+
         return response
 
     def cancel_job(self, server: RemoteAnonServer, job_id: int):
@@ -375,6 +402,14 @@ class AnonCommandLineParser:
         parser_cancel.add_argument("job_id", type=int, help="Job id to cancel")
         parser_cancel.set_defaults(func=self.job_cancel)
 
+        parser_list = parser_sub.add_parser(
+            "list",
+            help="List info for multiple job ids",
+            description="list info for space-separated list of job ids",
+        )
+        parser_list.add_argument("job_ids", help="space-separated list of job ids", nargs='*')
+        parser_list.set_defaults(func=self.get_job_info_list)
+
     def add_user_actions(self, parser):
         parser.set_defaults(func=lambda: parser.print_help())
         parser_sub = parser.add_subparsers()
@@ -413,7 +448,7 @@ class AnonCommandLineParser:
         parser_batch_info.set_defaults(func=self.batch_info)
 
         parser_batch_status = parser_sub.add_parser(
-            "get_status",
+            "status",
             help="get_status for entire batch",
             description="get batch status",
         )
@@ -553,6 +588,13 @@ class AnonCommandLineParser:
         info = self.client_tool.get_job_info(server=server, job_id=job_id)
         self.print_to_console(info)
 
+    def get_job_info_list(self, job_ids):
+        """ Query active server for info on this job
+        """
+        server = self.get_active_server()
+        info = self.client_tool.get_job_info_list(server=server, job_ids=job_ids)
+        self.print_to_console(info)
+
     def job_reset(self, job_id):
         server = self.get_active_server()
         info = self.client_tool.reset_job(server=server, job_id=job_id)
@@ -686,7 +728,9 @@ class AnonCommandLineParser:
         self.print_to_console(f"Removed {ids} from batch")
 
     def batch_status(self):
-        self.print_to_console("batch status")
+        batch = self.get_batch()
+        info = self.client_tool.get_job_info_list(server=batch.server, job_ids=batch.job_ids)
+        self.print_to_console(info)
 
     @staticmethod
     def print_to_console(msg):

@@ -62,14 +62,25 @@ class RequestsMockResponseExamples:
         r'"documentation":{"overview":"some docs"}}'
     )
 
-    JOBS_LIST = (
+    JOBS_LIST_GET_JOBS = (
         '{"1": {"job_id": 1, "date": "2018-10-26T14:56:34", "user_name": "z123sandbox", "status":'
         ' "INACTIVE", "error": null, "description": null, "project_name": "Wetenschap-Algemeen", "priority": 0,'
         ' "files_downloaded": null, "files_processed": null}, "2": {"job_id": 2, '
         '"date": "2018-09-19T11:16:57", "user_name": "z123sandbox", "status": "ACTIVE", "error": null,'
         ' "description": "For RSNA2018. see ticket #1672", "project_name": "ProCAD", "priority": 0,'
         ' "files_downloaded": null, "files_processed": null}}'
-    )
+    )  # Response to 'get_jobs'
+
+    JOBS_LIST_GET_JOBS_LIST = (
+        '{"1000": {"job_id": 1000, "date": "2016-08-26T15:04:44", "user_name": "Z495159", '
+        '"status": "DONE", "error": null, "description": null, "project_name": "testproject", "priority": 1,'
+        ' "files_downloaded": 0, "files_processed": 0}, "1002": {"job_id": 1002, "date": "2016-08-26T15:04:44",'
+        ' "user_name": "Z495159", "status": "UPLOADED", "error": null, "description": null, '
+        '"project_name": "testproject", "priority": 1, "files_downloaded": 0, "files_processed": 0},'
+        ' "5000": {"job_id": 5000, "date": "2016-09-23T20:46:51", "user_name": "Z495159", "status": '
+        '"UPLOADED", "error": null, "description": null, "project_name": "testproject", "priority": 1,'
+        ' "files_downloaded": 3, "files_processed": 3}}'
+    )  # Response to 'get_jobs_list'
 
     JOB_INFO = (
         r'{"job_id": 3, "date": "2018-08-31T11:11:05", "user_name": "z123sandbox", "status": "INACTIVE",'

@@ -1,6 +1,5 @@
-"""Work with batches of jobs. Batches are modeled on git repos; being present in a certain folder.
+"""Work with batches of jobs. Batches are modeled on git repos; state is maintained via hidden file in current folder.
 
-You can create and edit a batch as long as you are in that folder
 """
 import os
 from pathlib import Path

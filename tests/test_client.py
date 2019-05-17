@@ -29,7 +29,7 @@ def test_get_jobs(mocked_requests_client: WebAPIClient):
     client, requests_mock = mocked_requests_client
 
     # job list with two jobs.
-    requests_mock.set_response(text=RequestsMockResponseExamples.JOBS_LIST)
+    requests_mock.set_response(text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS)
     response = client.get("get_jobs")
     assert len(response) == 2
 
