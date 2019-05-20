@@ -468,4 +468,4 @@ def test_cli_batch_status_errors(test_parser_and_mock_requests_non_printing):
         text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST
     )
     parser.batch_status()
-    assert "NOT_FOUND    1" in  parser.mock_console.content[2]
+    assert "NOT_FOUND    1" in parser.mock_console.content[3]
