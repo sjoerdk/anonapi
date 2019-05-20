@@ -12,7 +12,7 @@ from anonapi.cli import (
     AnonCommandLineParser,
     AnonClientTool,
     AnonCommandLineParserException,
-)
+    ClientToolException)
 from anonapi.batch import BatchFolder, JobBatch
 from anonapi.objects import RemoteAnonServer
 from anonapi.settings import DefaultAnonClientSettings
@@ -290,15 +290,13 @@ def test_command_line_tool_job_functions(
     assert "No active server. Which one do you want to use?" in capsys.readouterr().out
 
 
-def test_command_line_tool_job_list(
-    extended_test_parser_and_mock_requests, capsys
-):
+def test_command_line_tool_job_list(extended_test_parser_and_mock_requests, capsys):
     parser, requests_mock = extended_test_parser_and_mock_requests
     requests_mock: RequestsMock
 
     requests_mock.reset()
-    parser.execute_command("job list 1 2 3 445".split(" "))
-    assert requests_mock.requests.get.called is True
+    with pytest.raises(ClientToolException):
+        parser.execute_command("job list 1 2 3 445".split(" "))
 
 
 @pytest.mark.parametrize(
@@ -437,19 +435,37 @@ def test_cli_batch(test_parser_and_mock_requests_non_printing, tmpdir):
     assert not BatchFolder(tmpdir).has_batch()
 
 
-def test_cli_batch_status(extended_test_parser_and_mock_requests):
+def test_cli_batch_status(test_parser_and_mock_requests_non_printing):
     """Try operations actually calling server"""
 
-    parser, requests_mock = extended_test_parser_and_mock_requests
+    parser, requests_mock = test_parser_and_mock_requests_non_printing
     batch = JobBatch(
-        job_ids=["1", "3", "10"], server=parser.get_server_or_active_server()
+        job_ids=["1000", "1002", "5000"], server=parser.get_server_or_active_server()
+    )
+    parser.get_batch = lambda: batch  # set current batch to mock batch
+
+    requests_mock.set_response(
+        text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST
+    )
+    parser.batch_status()
+    assert all(
+        text in parser.mock_console.content[1]
+        for text in ["DONE", "UPLOAD", "1000", "1002", "5000"]
     )
 
-    # set current batch to mock batch and capture printing to console
-    parser.get_batch = lambda: batch
-    printed = []
-    parser.print_to_console = lambda x: printed.append(x)
 
+def test_cli_batch_status_errors(test_parser_and_mock_requests_non_printing):
+    """Call server, but not all jobs exist. This should appear in the status message to the user"""
+
+    parser, requests_mock = test_parser_and_mock_requests_non_printing
+    batch = JobBatch(
+        job_ids=["1000", "1002", "5000", "100000"],
+        server=parser.get_server_or_active_server(),
+    )
+    parser.get_batch = lambda: batch  # set current batch to mock batch
+
+    requests_mock.set_response(
+        text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST
+    )
     parser.batch_status()
-
-    test = 1
+    assert "NOT_FOUND    1" in  parser.mock_console.content[2]

@@ -5,6 +5,8 @@ client side. But we're not using django yet.
 
 """
 
+from collections import UserList
+
 
 class APIResponse:
     """A response from the Anonymizationserver web API
@@ -83,6 +85,30 @@ class JobShortInfo:
         self.priority = json_raw['priority']
         self.files_downloaded = json_raw['files_downloaded']
         self.files_processed = json_raw['files_processed']
+
+
+class JobsInfoList(UserList):
+
+    def __init__(self, job_infos):
+        """A list job infos that can be conveniently printed
+
+        Parameters
+        ----------
+        job_infos: List(JobShortInfo)
+
+        """
+        self.data = job_infos
+
+    def as_table_string(self):
+        """As a string with newlines, forming a neat table
+
+        Returns
+        -------
+        str:
+            string with newlines
+
+        """
+        return format_job_info_list(self.data)
 
 
 class APIParseResponseException(Exception):

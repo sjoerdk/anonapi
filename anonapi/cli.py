@@ -11,10 +11,16 @@ import pathlib
 import os
 import textwrap
 
+from collections import Counter
+
 from anonapi.batch import BatchFolder, JobBatch
 from anonapi.client import WebAPIClient, APIClientException
 from anonapi.objects import RemoteAnonServer
-from anonapi.responses import JobShortInfo, format_job_info_list, parse_job_infos_response, APIParseResponseException
+from anonapi.responses import (
+    format_job_info_list,
+    parse_job_infos_response,
+    APIParseResponseException,
+    JobsInfoList)
 from anonapi.settings import (
     AnonClientSettings,
     DefaultAnonClientSettings,
@@ -22,11 +28,13 @@ from anonapi.settings import (
 )
 
 
+
+
 class AnonClientTool:
     """Performs several actions via the Anonymization web API interface.
 
     One abstraction level above anonymization.client.WebAPIClient. Client deals with https calls, get and post,
-    this tool should not do any http operations, and instead deal with servers and jobs.
+    this tool should not do any http operations, and instead deal with seresponse =rvers and jobs.
     """
 
     def __init__(self, username, token):
@@ -111,28 +119,22 @@ class AnonClientTool:
 
         Returns
         -------
-        str:
-            string describing job, or error if job could not be found
+        JobsInfoList:
+            info describing each job. Info is omitted if job id could not be found
 
         Raises
         ------
-        APIClientException:
+        ClientToolException:
             if something goes wrong getting jobs info from server
 
         """
         client = self.get_client(server.url)
         try:
-            response_raw = client.get("get_jobs_list", job_ids=job_ids)
-            response = parse_job_infos_response(response_raw)
-
-            info_string = f"Job info for {len(job_ids)} jobs on {server.name}:\n"
-            info_string += "\n" + format_job_info_list(response)
-            return info_string
-
+            return JobsInfoList(parse_job_infos_response(client.get("get_jobs_list", job_ids=job_ids)))
         except APIClientException as e:
-            response = f"Error getting jobs from {server}:\n{str(e)}"
+            raise ClientToolException(f"Error getting jobs from {server}:\n{str(e)}")
         except APIParseResponseException as e:
-            response = f"Error parsing server response: from {server}:\n{str(e)}"
+            raise ClientToolException(f"Error parsing server response: from {server}:\n{str(e)}")
 
         return response
 
@@ -407,7 +409,9 @@ class AnonCommandLineParser:
             help="List info for multiple job ids",
             description="list info for space-separated list of job ids",
         )
-        parser_list.add_argument("job_ids", help="space-separated list of job ids", nargs='*')
+        parser_list.add_argument(
+            "job_ids", help="space-separated list of job ids", nargs="*"
+        )
         parser_list.set_defaults(func=self.get_job_info_list)
 
     def add_user_actions(self, parser):
@@ -448,9 +452,7 @@ class AnonCommandLineParser:
         parser_batch_info.set_defaults(func=self.batch_info)
 
         parser_batch_status = parser_sub.add_parser(
-            "status",
-            help="get_status for entire batch",
-            description="get batch status",
+            "status", help="get_status for entire batch", description="get batch status"
         )
         parser_batch_status.set_defaults(func=self.batch_status)
 
@@ -728,9 +730,30 @@ class AnonCommandLineParser:
         self.print_to_console(f"Removed {ids} from batch")
 
     def batch_status(self):
+        """Print status overview for all jobs in batch"""
         batch = self.get_batch()
-        info = self.client_tool.get_job_info_list(server=batch.server, job_ids=batch.job_ids)
-        self.print_to_console(info)
+        ids_queried = batch.job_ids
+        infos = self.client_tool.get_job_info_list(
+            server=batch.server, job_ids=ids_queried
+        )
+
+        self.print_to_console(f"Job info for {len(infos)} jobs on {batch.server}:")
+        self.print_to_console(infos.as_table_string())
+
+        summary = ["Status       count   percentage",
+                   "-------------------------------"]
+        status_count = Counter([x.status for x in infos])
+        status_count['NOT_FOUND'] = len(ids_queried) - len(infos)
+        for key, value in status_count.items():
+            percentage = f'{(value / len(ids_queried) * 100):.1f} %'
+            msg = f"{key:<12} {str(value):<8} {percentage:<8}"
+            summary.append(msg)
+
+        summary.append('-------------------------------')
+        summary.append(f"Total        {str(len(ids_queried)):<8} 100%")
+
+        self.print_to_console(f"Summary for all {len(ids_queried)} jobs:")
+        self.print_to_console("\n".join(summary))
 
     @staticmethod
     def print_to_console(msg):
@@ -769,6 +792,9 @@ class AnonCommandLineParser:
 
 
 class AnonCommandLineParserException(Exception):
+    pass
+
+class ClientToolException(Exception):
     pass
 
 
