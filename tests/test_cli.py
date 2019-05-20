@@ -3,7 +3,7 @@
 
 """Tests for the `anonapi.anon` module."""
 from typing import Tuple
-from unittest.mock import patch, Mock
+from unittest.mock import Mock
 
 import pytest
 from pytest import fixture

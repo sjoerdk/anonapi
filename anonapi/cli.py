@@ -305,7 +305,7 @@ class AnonCommandLineParser:
         batch_parser = subparsers.add_parser(
             "batch",
             help="Manage job batch",
-            description="Work with multiple jobs at the same time",
+            description="Work with multiple jobs at the same time. A batch is saved in a single directory",
         )
         self.add_batch_actions(parser=batch_parser)
 
