@@ -11,4 +11,4 @@ sphinx_rtd_theme==0.4.2
 factory-boy==2.12
 twine==1.12.1
 pytest==4.1.1
-pytest-runner==4.2
+pytest-runner==5.0
