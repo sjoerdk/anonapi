@@ -3,17 +3,17 @@
 
 """Tests for the `anonapi.anon` module."""
 from typing import Tuple
-from unittest.mock import patch, Mock
+from unittest.mock import Mock
 
 import pytest
 from pytest import fixture
 
-from anonapi.anon import (
+from anonapi.cli import (
     AnonCommandLineParser,
     AnonClientTool,
     AnonCommandLineParserException,
-)
-from anonapi.client import APIClientAPIException
+    ClientToolException)
+from anonapi.batch import BatchFolder, JobBatch
 from anonapi.objects import RemoteAnonServer
 from anonapi.settings import DefaultAnonClientSettings
 from tests.factories import RequestsMock, RequestsMockResponseExamples
@@ -96,6 +96,40 @@ def test_parser_and_mock_requests(mocked_requests_client):
 
 
 @fixture
+def test_parser_and_mock_requests_non_printing(
+    mocked_requests_client, non_printing_test_parser
+):
+    """Same as test_parser_and_mock_requests, but the returned parser has a .mock_console attribute that records all
+    printing to console
+
+    Parameters
+    ----------
+    mocked_requests_client: conftest.mocked_requests_client pytest fixture
+
+    Returns
+    -------
+    AnonCommandLineParser, RequestsMock:
+        A console client instance that does not call real servers, but calls a mock requests lib (RequestsMock)
+        instead. the RequestMock responses can be set to arbitrary values
+
+    """
+
+    client, requests_mock = mocked_requests_client
+    client_tool = AnonClientTool(username="testuser", token="test_token")
+
+    def mock_get_client(url):
+        client.hostname = url
+        return client
+
+    client_tool.get_client = mock_get_client
+
+    parser = non_printing_test_parser
+    parser.client_tool = client_tool
+
+    return parser, requests_mock
+
+
+@fixture
 def extended_test_parser_and_mock_requests(test_parser_and_mock_requests):
     """Identical to test_parser_and_mock_requests(), but the console client instance has 3 extra servers
 
@@ -106,7 +140,7 @@ def extended_test_parser_and_mock_requests(test_parser_and_mock_requests):
 
     Returns
     -------
-    AnonCommandLineParser, RequestsMock:
+    (AnonCommandLineParser, RequestsMock):
         A console client instance that does not call real servers, but calls a mock requests lib (RequestsMock)
         instead. the RequestMock responses can be set to arbitrary values
 
@@ -256,12 +290,21 @@ def test_command_line_tool_job_functions(
     assert "No active server. Which one do you want to use?" in capsys.readouterr().out
 
 
+def test_command_line_tool_job_list(extended_test_parser_and_mock_requests, capsys):
+    parser, requests_mock = extended_test_parser_and_mock_requests
+    requests_mock: RequestsMock
+
+    requests_mock.reset()
+    with pytest.raises(ClientToolException):
+        parser.execute_command("job list 1 2 3 445".split(" "))
+
+
 @pytest.mark.parametrize(
     "command, server_response, expected_print",
     [
         (
             "server jobs".split(" "),
-            RequestsMockResponseExamples.JOBS_LIST,
+            RequestsMockResponseExamples.JOBS_LIST_GET_JOBS,
             "most recent 50 jobs on test:",
         ),
         (
@@ -356,3 +399,73 @@ def test_client_tool_exception_response(
 
     parser.execute_command(command.split(" "))
     assert expected_output in capsys.readouterr().out
+
+
+def test_cli_batch(test_parser_and_mock_requests_non_printing, tmpdir):
+    """Try working with a batch of job ids from console"""
+    parser, _ = test_parser_and_mock_requests_non_printing
+    parser.current_dir = lambda: str(
+        tmpdir
+    )  # make parser thinks tmpdir is its working dir
+
+    parser.execute_command("batch info".split(" "))
+    assert "Error: No batch defined" in parser.mock_console.content[0]
+
+    assert not BatchFolder(tmpdir).has_batch()
+    parser.execute_command("batch init".split(" "))
+    assert BatchFolder(tmpdir).has_batch()
+
+    parser.execute_command("batch add 1 2 3 345".split(" "))
+    assert BatchFolder(tmpdir).load().job_ids == ["1", "2", "3", "345"]
+
+    parser.execute_command(
+        "batch add 1 2 50".split(" ")
+    )  # duplicates should be silently ignored
+    assert BatchFolder(tmpdir).load().job_ids == ["1", "2", "3", "345", "50"]
+
+    parser.execute_command(
+        "batch remove 50 345 1000".split(" ")
+    )  # non-existing keys should be ignored
+    assert BatchFolder(tmpdir).load().job_ids == ["1", "2", "3"]
+
+    parser.execute_command("batch remove 1 2 3".split(" "))
+    assert BatchFolder(tmpdir).load().job_ids == []
+
+    parser.execute_command("batch delete".split(" "))
+    assert not BatchFolder(tmpdir).has_batch()
+
+
+def test_cli_batch_status(test_parser_and_mock_requests_non_printing):
+    """Try operations actually calling server"""
+
+    parser, requests_mock = test_parser_and_mock_requests_non_printing
+    batch = JobBatch(
+        job_ids=["1000", "1002", "5000"], server=parser.get_server_or_active_server()
+    )
+    parser.get_batch = lambda: batch  # set current batch to mock batch
+
+    requests_mock.set_response(
+        text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST
+    )
+    parser.batch_status()
+    assert all(
+        text in parser.mock_console.content[1]
+        for text in ["DONE", "UPLOAD", "1000", "1002", "5000"]
+    )
+
+
+def test_cli_batch_status_errors(test_parser_and_mock_requests_non_printing):
+    """Call server, but not all jobs exist. This should appear in the status message to the user"""
+
+    parser, requests_mock = test_parser_and_mock_requests_non_printing
+    batch = JobBatch(
+        job_ids=["1000", "1002", "5000", "100000"],
+        server=parser.get_server_or_active_server(),
+    )
+    parser.get_batch = lambda: batch  # set current batch to mock batch
+
+    requests_mock.set_response(
+        text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST
+    )
+    parser.batch_status()
+    assert "NOT_FOUND    1" in parser.mock_console.content[3]

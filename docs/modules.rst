@@ -5,7 +5,7 @@ Modules
 Anon
 ----
 
-.. automodule:: anonapi.anon
+.. automodule:: anonapi.cli
     :members:
     :undoc-members:
     :show-inheritance:

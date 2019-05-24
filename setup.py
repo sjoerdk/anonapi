@@ -39,13 +39,13 @@ setup(
     packages=find_packages(include=['anonapi']),
     entry_points={
         'console_scripts': [
-            'anon = anonapi.anon:main'
+            'anon = anonapi.cli:main'
         ]
     },
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/sjoerdk/anonapi',
-    version='0.0.22',
+    version='0.0.24',
     zip_safe=False,
 )
