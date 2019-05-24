@@ -28,8 +28,6 @@ from anonapi.settings import (
 )
 
 
-
-
 class AnonClientTool:
     """Performs several actions via the Anonymization web API interface.
 
