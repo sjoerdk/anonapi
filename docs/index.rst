@@ -7,7 +7,8 @@ Welcome to AnonAPI's documentation!
 
    readme
    installation
-   usage
+   cli_usage
+   python_usage
    modules
    contributing
    authors

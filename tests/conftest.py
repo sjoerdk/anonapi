@@ -20,3 +20,5 @@ def mocked_requests_client():
     requests_mock = RequestsMock()
     client.requestslib = requests_mock
     return client, requests_mock
+
+
