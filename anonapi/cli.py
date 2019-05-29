@@ -765,7 +765,7 @@ class AnonCommandLineParser:
         Parameters
         ----------
         question: str
-            Show this tes
+            Show this question to answer yes or no to
 
         Returns
         -------
@@ -776,7 +776,7 @@ class AnonCommandLineParser:
 
         """
         while True:
-            choice = input("Confirm [Y/n]?").lower()
+            choice = input(question).lower()
             if choice in ['yes', 'y'] or not choice:
                 return True
             if choice in ['no', 'n']:
