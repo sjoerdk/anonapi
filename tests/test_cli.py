@@ -469,3 +469,22 @@ def test_cli_batch_status_errors(test_parser_and_mock_requests_non_printing):
     )
     parser.batch_status()
     assert "NOT_FOUND    1" in parser.mock_console.content[3]
+
+
+def test_cli_batch_status(test_parser_and_mock_requests_non_printing):
+    """Try operations actually calling server"""
+
+    parser, requests_mock = test_parser_and_mock_requests_non_printing
+    batch = JobBatch(
+        job_ids=["1000", "1002", "5000"], server=parser.get_server_or_active_server()
+    )
+    parser.get_batch = lambda: batch  # set current batch to mock batch
+    parser.confirm = lambda x: True  # always answer yes on any user question
+    parser.batch_reset()
+
+    assert requests_mock.requests.post.call_count == 3  # Reset request should have been sent for each job id
+
+    requests_mock.requests.reset_mock()
+    parser.confirm = lambda x: False  # now answer no when asked are you sure
+    parser.batch_reset()
+    assert requests_mock.requests.post.call_count == 0  # No requests should have been sent

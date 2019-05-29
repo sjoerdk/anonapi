@@ -10,6 +10,7 @@ import sys
 import pathlib
 import os
 import textwrap
+import click
 
 from collections import Counter
 
@@ -454,6 +455,11 @@ class AnonCommandLineParser:
         )
         parser_batch_status.set_defaults(func=self.batch_status)
 
+        parser_batch_reset = parser_sub.add_parser(
+            "reset", help="reset every job in this batch", description="reset batch"
+        )
+        parser_batch_reset.set_defaults(func=self.batch_reset)
+
         parser_batch_init = parser_sub.add_parser(
             "init",
             help="Create empty batch in current folder",
@@ -752,6 +758,41 @@ class AnonCommandLineParser:
 
         self.print_to_console(f"Summary for all {len(ids_queried)} jobs:")
         self.print_to_console("\n".join(summary))
+
+    @staticmethod
+    def confirm(question="Are you sure? (y/n)"):
+        """ Ask user confirmation. Stand in function until this code gets ported to click
+
+        Parameters
+        ----------
+        question: str
+            Show this tes
+
+        Returns
+        -------
+        True
+            If user answered affirmatively
+        False
+            Otherwise
+
+        """
+        while True:
+            choice = input("Confirm [Y/n]?").lower()
+            if choice in ['yes', 'y'] or not choice:
+                return True
+            if choice in ['no', 'n']:
+                return False
+            print(question)
+
+    def batch_reset(self):
+        """Reset every job in the current batch"""
+        batch: JobBatch = self.get_batch()
+
+        if self.confirm(f"This will reset {len(batch.job_ids)} jobs on {batch.server}. Are you sure?"):
+            for job_id in batch.job_ids:
+                self.print_to_console(self.client_tool.reset_job(server=batch.server, job_id=job_id))
+
+        self.print_to_console("Done")
 
     @staticmethod
     def print_to_console(msg):
