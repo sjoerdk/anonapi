@@ -10,7 +10,6 @@ import sys
 import pathlib
 import os
 import textwrap
-import click
 
 from collections import Counter
 
