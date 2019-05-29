@@ -46,6 +46,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/sjoerdk/anonapi',
-    version='0.0.25',
+    version='0.0.26',
     zip_safe=False,
 )
