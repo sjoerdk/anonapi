@@ -20,7 +20,8 @@ from anonapi.responses import (
     format_job_info_list,
     parse_job_infos_response,
     APIParseResponseException,
-    JobsInfoList)
+    JobsInfoList,
+)
 from anonapi.settings import (
     AnonClientSettings,
     DefaultAnonClientSettings,
@@ -128,11 +129,15 @@ class AnonClientTool:
         """
         client = self.get_client(server.url)
         try:
-            return JobsInfoList(parse_job_infos_response(client.get("get_jobs_list", job_ids=job_ids)))
+            return JobsInfoList(
+                parse_job_infos_response(client.get("get_jobs_list", job_ids=job_ids))
+            )
         except APIClientException as e:
             raise ClientToolException(f"Error getting jobs from {server}:\n{str(e)}")
         except APIParseResponseException as e:
-            raise ClientToolException(f"Error parsing server response: from {server}:\n{str(e)}")
+            raise ClientToolException(
+                f"Error parsing server response: from {server}:\n{str(e)}"
+            )
 
         return response
 
@@ -743,16 +748,15 @@ class AnonCommandLineParser:
         self.print_to_console(f"Job info for {len(infos)} jobs on {batch.server}:")
         self.print_to_console(infos.as_table_string())
 
-        summary = ["Status       count   percentage",
-                   "-------------------------------"]
+        summary = ["Status       count   percentage", "-------------------------------"]
         status_count = Counter([x.status for x in infos])
-        status_count['NOT_FOUND'] = len(ids_queried) - len(infos)
+        status_count["NOT_FOUND"] = len(ids_queried) - len(infos)
         for key, value in status_count.items():
-            percentage = f'{(value / len(ids_queried) * 100):.1f} %'
+            percentage = f"{(value / len(ids_queried) * 100):.1f} %"
             msg = f"{key:<12} {str(value):<8} {percentage:<8}"
             summary.append(msg)
 
-        summary.append('-------------------------------')
+        summary.append("-------------------------------")
         summary.append(f"Total        {str(len(ids_queried)):<8} 100%")
 
         self.print_to_console(f"Summary for all {len(ids_queried)} jobs:")
@@ -777,9 +781,9 @@ class AnonCommandLineParser:
         """
         while True:
             choice = input(question).lower()
-            if choice in ['yes', 'y'] or not choice:
+            if choice in ["yes", "y"] or not choice:
                 return True
-            if choice in ['no', 'n']:
+            if choice in ["no", "n"]:
                 return False
             print(question)
 
@@ -787,9 +791,45 @@ class AnonCommandLineParser:
         """Reset every job in the current batch"""
         batch: JobBatch = self.get_batch()
 
-        if self.confirm(f"This will reset {len(batch.job_ids)} jobs on {batch.server}. Are you sure?"):
+        if self.confirm(
+            f"This will reset {len(batch.job_ids)} jobs on {batch.server}. Are you sure?"
+        ):
             for job_id in batch.job_ids:
-                self.print_to_console(self.client_tool.reset_job(server=batch.server, job_id=job_id))
+                self.print_to_console(
+                    self.client_tool.reset_job(server=batch.server, job_id=job_id)
+                )
+
+        self.print_to_console("Done")
+
+    def batch_cancel(self):
+        """Cancel every job in the current batch"""
+        batch: JobBatch = self.get_batch()
+
+        if self.confirm(
+            f"This will cancel {len(batch.job_ids)} jobs on {batch.server}. Are you sure?"
+        ):
+            for job_id in batch.job_ids:
+                self.print_to_console(
+                    self.client_tool.cancel_job(server=batch.server, job_id=job_id)
+                )
+
+        self.print_to_console("Done")
+
+    def batch_reset_errors(self):
+        """Reset all jobs with error status in the current batch"""
+        batch: JobBatch = self.get_batch()
+        infos = self.client_tool.get_job_info_list(
+            server=batch.server, job_ids=batch.job_ids
+        )
+        job_ids = [x for x in infos if x.status == 'ERROR']
+
+        if self.confirm(
+            f"This will reset {job_ids} jobs on {batch.server}. Are you sure?"
+        ):
+            for job_id in job_ids:
+                self.print_to_console(
+                    self.client_tool.reset_job(server=batch.server, job_id=job_id)
+                )
 
         self.print_to_console("Done")
 
@@ -831,6 +871,7 @@ class AnonCommandLineParser:
 
 class AnonCommandLineParserException(Exception):
     pass
+
 
 class ClientToolException(Exception):
     pass

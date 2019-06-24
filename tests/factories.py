@@ -84,8 +84,8 @@ class RequestsMockResponseExamples:
 
     JOBS_LIST_GET_JOBS_LIST_WITH_ERROR = (
         '{"1": {"job_id": 1, "date": "2016-08-26T15:04:44", "user_name": "Z495159", '
-        '"status": "ERROR", "Something wrong": null, "description": null, "project_name": "testproject", "priority": 1,'
-        ' "files_downloaded": 0, "files_processed": 0}, "2": {"job_id": 2, "date": "2016-08-26T15:04:44",'
+        '"status": "ERROR", "error": "Something wrong", "description": null, "project_name": "testproject", '
+        '"priority": 1, "files_downloaded": 0, "files_processed": 0}, "2": {"job_id": 2, "date": "2016-08-26T15:04:44",'
         ' "user_name": "Z495159", "status": "UPLOADED", "error": null, "description": null, '
         '"project_name": "testproject", "priority": 1, "files_downloaded": 0, "files_processed": 0},'
         ' "3": {"job_id": 3, "date": "2016-09-23T20:46:51", "user_name": "Z495159", "status": '
