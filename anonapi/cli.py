@@ -21,7 +21,7 @@ from anonapi.responses import (
     parse_job_infos_response,
     APIParseResponseException,
     JobsInfoList,
-)
+    JobStatus)
 from anonapi.settings import (
     AnonClientSettings,
     DefaultAnonClientSettings,
@@ -498,6 +498,20 @@ class AnonCommandLineParser:
         )
         parser_batch_remove_ids.set_defaults(func=self.batch_remove_ids)
 
+        parser_batch_cancel = parser_sub.add_parser(
+            "cancel",
+            help="Cancel all jobs in this batch",
+            description="Cancel all",
+        )
+        parser_batch_cancel.set_defaults(func=self.batch_cancel)
+
+        parser_batch_reset_error = parser_sub.add_parser(
+            "reset_error",
+            help=f"Reset all jobs with error status in current batch",
+            description="Reset all error jobs",
+        )
+        parser_batch_reset_error.set_defaults(func=self.batch_reset_errors)
+
     def get_status(self):
         """Get general status of this tool, show currently active server etc.
 
@@ -821,7 +835,7 @@ class AnonCommandLineParser:
         infos = self.client_tool.get_job_info_list(
             server=batch.server, job_ids=batch.job_ids
         )
-        job_ids = [x for x in infos if x.status == 'ERROR']
+        job_ids = [x for x in infos if x.status == JobStatus.ERROR]
 
         if self.confirm(
             f"This will reset {job_ids} jobs on {batch.server}. Are you sure?"

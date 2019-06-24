@@ -8,6 +8,16 @@ client side. But we're not using django yet.
 from collections import UserList
 
 
+class JobStatus:
+    """ Job status string the API server uses
+    """
+    ERROR = 'ERROR'
+    DONE = 'DONE'
+    UPLOADED = 'UPLOADED'
+    INACTIVE = 'INACTIVE'
+    ACTIVE = 'ACTIVE'
+
+
 class APIResponse:
     """A response from the Anonymizationserver web API
     """
