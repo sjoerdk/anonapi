@@ -36,7 +36,7 @@ Client and tools for working with the IDIS web API
 
 
 Features
---------
+--------an
 
 * Interact with IDIS anonymization server web API via https
 * Create, modify, cancel anonymization jobs

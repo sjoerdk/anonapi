@@ -169,3 +169,19 @@ that folder. For example:
           2      2016-08-26T15:04:44  ERROR    503        100        z123456
           3      2016-08-26T15:04:44  DONE     1155       1155       z123456
 
+
+batch command overview:
+
+=======             ===========
+Command             Description
+=======             ===========
+info                print overview of all jobs in current folder
+status              get_status for entire batch
+reset               reset every job in this batch
+init                Create empty batch in current folder
+delete              Delete batch in current folder
+add                 Add job ids to batch
+remove              Remove job ids from batch
+cancel              Cancel all jobs in this batch
+reset_error         Reset all jobs with error status in current batch
+=======             ===========

@@ -835,10 +835,10 @@ class AnonCommandLineParser:
         infos = self.client_tool.get_job_info_list(
             server=batch.server, job_ids=batch.job_ids
         )
-        job_ids = [x for x in infos if x.status == JobStatus.ERROR]
+        job_ids = [x.job_id for x in infos if x.status == JobStatus.ERROR]
 
         if self.confirm(
-            f"This will reset {job_ids} jobs on {batch.server}. Are you sure?"
+            f"This will reset {len(job_ids)} jobs on {batch.server}. Are you sure?"
         ):
             for job_id in job_ids:
                 self.print_to_console(
