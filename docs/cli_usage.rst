@@ -172,9 +172,9 @@ that folder. For example:
 
 batch command overview:
 
-=======             ===========
+============        ====================================================
 Command             Description
-=======             ===========
+============        ====================================================
 info                print overview of all jobs in current folder
 status              get_status for entire batch
 reset               reset every job in this batch
@@ -184,7 +184,7 @@ add                 Add job ids to batch
 remove              Remove job ids from batch
 cancel              Cancel all jobs in this batch
 reset_error         Reset all jobs with error status in current batch
-=======             ===========
+============        ====================================================
 
 
 For convenience, it is possible to pass job ids for batch add and batch remove as ranges:
