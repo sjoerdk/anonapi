@@ -524,3 +524,6 @@ def test_cli_batch_id_range(test_parser_and_mock_requests_non_printing, tmpdir):
     parser.execute_command("batch remove 1-4".split(" "))
     assert BatchFolder(tmpdir).load().job_ids == ["5",  "6",  "7",  "8"]
 
+    parser.execute_command("batch add 1-4 4".split(" "))  # check that duplicate values do not cause trouble
+    assert BatchFolder(tmpdir).load().job_ids == ["1", "2", "3", "4", "5",  "6",  "7",  "8"]
+
