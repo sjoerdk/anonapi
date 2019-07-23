@@ -471,8 +471,7 @@ def test_cli_batch_status_errors(test_parser_and_mock_requests_non_printing):
     assert "NOT_FOUND    1" in parser.mock_console.content[3]
 
 
-def test_cli_batch_status(test_parser_and_mock_requests_non_printing):
-    """Try operations actually calling server"""
+def test_cli_batch_status2(test_parser_and_mock_requests_non_printing):
 
     parser, requests_mock = test_parser_and_mock_requests_non_printing
     batch = JobBatch(
@@ -506,3 +505,22 @@ def test_cli_batch_reset_error(test_parser_and_mock_requests_non_printing):
 
     parser.batch_reset_errors()
     assert requests_mock.requests.post.call_count == 2
+
+
+def test_cli_batch_id_range(test_parser_and_mock_requests_non_printing, tmpdir):
+    """check working with id ranges"""
+    parser, _ = test_parser_and_mock_requests_non_printing
+    parser.current_dir = lambda: str(
+        tmpdir
+    )  # make parser thinks tmpdir is its working dir
+
+    assert not BatchFolder(tmpdir).has_batch()
+    parser.execute_command("batch init".split(" "))
+    assert BatchFolder(tmpdir).has_batch()
+
+    parser.execute_command("batch add 1 2 5-8".split(" "))
+    assert BatchFolder(tmpdir).load().job_ids == ["1", "2", "5",  "6",  "7",  "8"]
+
+    parser.execute_command("batch remove 1-4".split(" "))
+    assert BatchFolder(tmpdir).load().job_ids == ["5",  "6",  "7",  "8"]
+

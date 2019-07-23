@@ -185,3 +185,23 @@ remove              Remove job ids from batch
 cancel              Cancel all jobs in this batch
 reset_error         Reset all jobs with error status in current batch
 =======             ===========
+
+
+For convenience, it is possible to pass job ids for batch add and batch remove as ranges:
+
+.. code-block:: console
+
+    $ anon batch add 5-12 # Add range
+    $ anon batch info  # ranges include both start and end number
+    >  job_ids: ['5', '6', '7', '8', '9', '10', '11', '12']
+        server:
+          name: p01
+          url: https://apiservers/p01
+
+    $ anon batch remove 8-11 # Remove range
+    $ anon batch info  # ranges include both start and end number
+    >  job_ids: ['5', '6', '7', '12']
+        server:
+          name: p01
+          url: https://apiservers/p01
+

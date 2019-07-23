@@ -5,6 +5,7 @@ more permanent information in a settings file"""
 
 import argparse
 import random
+import re
 import string
 import sys
 import pathlib
@@ -484,7 +485,7 @@ class AnonCommandLineParser:
             description="Add the given space-separated list of jobs ids to batch. Will not add already existing ids",
         )
         parser_batch_add_ids.add_argument(
-            "ids", type=str, help="space-separate list of job ids to add", nargs="*"
+            "id_strings", type=str, help="space-separate list of job ids to add", nargs="*"
         )
         parser_batch_add_ids.set_defaults(func=self.batch_add_ids)
 
@@ -494,7 +495,7 @@ class AnonCommandLineParser:
             description="Remove the given space-separated list of jobs ids from batch",
         )
         parser_batch_remove_ids.add_argument(
-            "ids", type=str, help="space-separate list of job ids to remove", nargs="*"
+            "id_strings", type=str, help="space-separate list of job ids to remove", nargs="*"
         )
         parser_batch_remove_ids.set_defaults(func=self.batch_remove_ids)
 
@@ -722,34 +723,62 @@ class AnonCommandLineParser:
         self.get_batch_folder().delete_batch()
         self.print_to_console(f"Removed batch in current dir")
 
-    def batch_add_ids(self, ids):
+    def batch_add_ids(self, id_strings):
         """Add ids to current batch. Will not add already existing
 
         Parameters
         ----------
-        ids: List[str]
-            list of job ids
+        id_strings: List[str]
+            list of job id strings
         """
+        ids = self.batch_expand_id_strings(id_strings)
         batch_folder = self.get_batch_folder()
         batch: JobBatch = batch_folder.load()
         batch.job_ids = sorted(list(set(batch.job_ids) | set(ids)))
         batch_folder.save(batch)
         self.print_to_console(f"Added {ids} to batch")
 
-    def batch_remove_ids(self, ids):
+    def batch_remove_ids(self, id_strings):
         """Remove ids from current batch
 
         Parameters
         ----------
-        ids: List[str]
-            list of job ids
+        id_strings: List[str]
+            list of job id strings
         """
+        ids = self.batch_expand_id_strings(id_strings)
         batch_folder = self.get_batch_folder()
         batch: JobBatch = batch_folder.load()
         batch.job_ids = sorted(list(set(batch.job_ids) - set(ids)))
         batch_folder.save(batch)
 
         self.print_to_console(f"Removed {ids} from batch")
+
+    @staticmethod
+    def batch_expand_id_strings(id_strings):
+        """Each id string might be a flat single id such as '1234' or a range, like '10-31'
+        Expand ranges so that there are only flat ids left
+
+        Parameters
+        ----------
+        id_strings: List[str]
+            list of id strings. Ranges include both the lower bound and upper bound
+
+        Returns
+        -------
+        List[str]
+            list of flat ids. Might contain duplicates.
+
+        """
+        ids = set()
+        for id_string in id_strings:
+            match = re.match('^(?P<start>[0-9]+)-(?P<end>[0-9]+)$', id_string)
+            if match:  # expand range and add each item
+                for x in range(int(match['start']), int(match['end'])+1):
+                    ids.add(str(x))
+            else:  # just add the current value
+                ids.add(id_string)
+        return list(ids)
 
     def batch_status(self):
         """Print status overview for all jobs in batch"""
