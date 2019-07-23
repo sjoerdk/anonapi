@@ -770,15 +770,15 @@ class AnonCommandLineParser:
             list of flat ids. Might contain duplicates.
 
         """
-        ids = set()
+        ids = []
         for id_string in id_strings:
             match = re.match('^(?P<start>[0-9]+)-(?P<end>[0-9]+)$', id_string)
             if match:  # expand range and add each item
                 for x in range(int(match['start']), int(match['end'])+1):
-                    ids.add(str(x))
+                    ids.append(str(x))
             else:  # just add the current value
-                ids.add(id_string)
-        return list(ids)
+                ids.append(id_string)
+        return ids
 
     def batch_status(self):
         """Print status overview for all jobs in batch"""
