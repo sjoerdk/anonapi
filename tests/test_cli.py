@@ -9,7 +9,7 @@ import pytest
 from pytest import fixture
 
 from anonapi.cli import (
-    AnonCommandLineParser,
+    AnonLegacyCommandLineParser,
     AnonClientTool,
     AnonCommandLineParserException,
     ClientToolException)
@@ -19,7 +19,7 @@ from anonapi.settings import DefaultAnonClientSettings
 from tests.factories import RequestsMock, RequestsMockResponseExamples
 
 
-class NonPrintingAnonCommandLineParser(AnonCommandLineParser):
+class NonPrintingAnonCommandLineParser(AnonLegacyCommandLineParser):
     """For test purposes. Just to indicate that this class has a mock_console attribute"""
 
     mock_console = None
@@ -53,7 +53,7 @@ def non_printing_test_parser():
 
     Returns
     -------
-    AnonCommandLineParser with additional field 'mock_console' that records output
+    AnonLegacyCommandLineParser with additional field 'mock_console' that records output
 
     """
     settings = DefaultAnonClientSettings()
@@ -75,7 +75,7 @@ def test_parser_and_mock_requests(mocked_requests_client):
 
     Returns
     -------
-    AnonCommandLineParser, RequestsMock:
+    AnonLegacyCommandLineParser, RequestsMock:
         A console client instance that does not call real servers, but calls a mock requests lib (RequestsMock)
         instead. the RequestMock responses can be set to arbitrary values
 
@@ -89,7 +89,7 @@ def test_parser_and_mock_requests(mocked_requests_client):
         return client
 
     client_tool.get_client = mock_get_client
-    parser = AnonCommandLineParser(
+    parser = AnonLegacyCommandLineParser(
         client_tool=client_tool, settings=DefaultAnonClientSettings()
     )
     return parser, requests_mock
@@ -108,7 +108,7 @@ def test_parser_and_mock_requests_non_printing(
 
     Returns
     -------
-    AnonCommandLineParser, RequestsMock:
+    AnonLegacyCommandLineParser, RequestsMock:
         A console client instance that does not call real servers, but calls a mock requests lib (RequestsMock)
         instead. the RequestMock responses can be set to arbitrary values
 
@@ -140,7 +140,7 @@ def extended_test_parser_and_mock_requests(test_parser_and_mock_requests):
 
     Returns
     -------
-    (AnonCommandLineParser, RequestsMock):
+    (AnonLegacyCommandLineParser, RequestsMock):
         A console client instance that does not call real servers, but calls a mock requests lib (RequestsMock)
         instead. the RequestMock responses can be set to arbitrary values
 
@@ -161,7 +161,7 @@ def extended_test_parser_and_mock_requests(test_parser_and_mock_requests):
 
 
 def test_command_line_tool_basic(
-    test_parser_and_mock_requests: Tuple[AnonCommandLineParser, RequestsMock], capsys
+    test_parser_and_mock_requests: Tuple[AnonLegacyCommandLineParser, RequestsMock], capsys
 ):
     """Test some commands"""
     parser, requests_mock = test_parser_and_mock_requests
@@ -359,7 +359,7 @@ def test_command_line_tool_user_functions(
     extended_test_parser_and_mock_requests, capsys
 ):
     parser, _ = extended_test_parser_and_mock_requests
-    parser: AnonCommandLineParser
+    parser: AnonLegacyCommandLineParser
     assert parser.settings.user_name != "test_changed"
 
     parser.execute_command("user set_username test_changed".split(" "))

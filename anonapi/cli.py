@@ -14,6 +14,8 @@ import textwrap
 
 from collections import Counter
 
+import click
+
 from anonapi.batch import BatchFolder, JobBatch
 from anonapi.client import WebAPIClient, APIClientException
 from anonapi.objects import RemoteAnonServer
@@ -34,7 +36,7 @@ class AnonClientTool:
     """Performs several actions via the Anonymization web API interface.
 
     One abstraction level above anonymization.client.WebAPIClient. Client deals with https calls, get and post,
-    this tool should not do any http operations, and instead deal with seresponse =rvers and jobs.
+    this tool should not do any http operations, and instead deal with servers and jobs.
     """
 
     def __init__(self, username, token):
@@ -222,7 +224,7 @@ class AnonClientTool:
         pass
 
 
-class AnonCommandLineParser:
+class AnonLegacyCommandLineParser:
     """Parses commands from commandline and launches actions accordingly.
 
     Tries to emulate command line structure used by git and docker: nested subcommands have their own help,
@@ -912,6 +914,41 @@ class AnonCommandLineParser:
             self.print_to_console("Error: " + str(e))
 
 
+class AnonCommandLineParser:
+    """Parses commands from commandline and launches actions accordingly.
+
+    Tries to emulate command line structure used by git and docker: nested subcommands have their own help,
+    certain data, like urls for web API servers, username, are persisted in settings file.
+
+    """
+
+    def __init__(self, client_tool: AnonClientTool, settings: AnonClientSettings):
+        """Create a command line parser
+
+        Parameters
+        ----------
+        client_tool: AnonClientTool
+            The tool that that communicates with the web API.
+        settings: AnonClientSettings
+            Settings object to use for reading and writing settings.
+
+        """
+        self.client_tool = client_tool
+        self.settings = settings
+
+
+    @staticmethod
+    @click.group()
+    def main():
+        """\b
+        anonymization web API tool
+        Controls remote anonymization servers
+        Use the commands below with -h for more info
+        """
+        pass
+
+
+
 class AnonCommandLineParserException(Exception):
     pass
 
@@ -928,9 +965,15 @@ def main():
         DefaultAnonClientSettings().save_to_file(filename=settings_file)
     settings = AnonClientSettingsFromFile(settings_file)
     tool = AnonClientTool(username=settings.user_name, token=settings.user_token)
-    parser = AnonCommandLineParser(client_tool=tool, settings=settings)
+    parser = AnonLegacyCommandLineParser(client_tool=tool, settings=settings)
     parser.execute_command(sys.argv[1:])
 
+
+settings_file = pathlib.Path.home() / "AnonWebAPIClientSettings.yml"
+settings = AnonClientSettingsFromFile(settings_file)
+tool = AnonClientTool(username=settings.user_name, token=settings.user_token)
+parser = AnonCommandLineParser(client_tool=tool, settings=settings)
+cli = parser.main
 
 if __name__ == "__main__":
     main()
