@@ -101,7 +101,7 @@ class AnonClientTool:
         ----------
         server: RemoteAnonServer
             get job info from this server
-        job_ids: List(str)
+        job_ids: List[str]
             list of jobs to get info for
 
         Returns
@@ -365,14 +365,14 @@ class AnonCommandLineParser:
             job_info = self.client_tool.get_job_info(server=server, job_id=job_id)
             click.echo(job_info)
 
-        @click.command()
-        @click.argument('job_ids', type=str)
-        def list(job_ids):
+        @click.command(name='list')
+        @click.argument('job_ids', type=str, nargs=-1)
+        def job_list(job_ids):
             """list info for multiple jobs
             """
             server = self.get_active_server()
-            job_info = self.client_tool.get_job_info_list(server=server, job_ids=job_ids)
-            click.echo(job_info)
+            job_infos = self.client_tool.get_job_info_list(server=server, job_ids=list(job_ids))
+            click.echo(job_infos.as_table_string())
 
         @click.command()
         @click.argument('job_id', type=str)
@@ -391,7 +391,7 @@ class AnonCommandLineParser:
             job_info = self.client_tool.cancel_job(server=server, job_id=job_id)
             click.echo(job_info)
 
-        for func in [info, reset, cancel, list]:
+        for func in [info, reset, cancel, job_list]:
             job.add_command(func)
         return job
 
@@ -466,7 +466,7 @@ class AnonCommandLineParser:
         server = self.settings.active_server
         if not server:
             msg = (
-                f"No active server. Which one do you want to use? Please activate one by using 'server activate <servername>. "
+                f"No active server. Which one do you want to use? Please activate one by using 'server activate <SERVER_NAME>. "
                 f"Available:{str([x.name for x in self.settings.servers])}"
             )
             raise AnonCommandLineParserException(msg)

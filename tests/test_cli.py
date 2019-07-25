@@ -17,7 +17,8 @@ def anonapi_mock_cli():
 
     """
     settings = AnonClientSettings(
-        servers=[RemoteAnonServer(name="testserver", url="https://testurl")],
+        servers=[RemoteAnonServer(name="testserver", url="https://testurl"),
+                 RemoteAnonServer(name="testserver2", url="https://testurl2")],
         user_name="testuser",
         user_token="testtoken",
     )
@@ -60,15 +61,15 @@ def test_command_line_tool_add_remove_server(anonapi_mock_cli):
     """Test commands to add, remove servers and see whether the number servers that are known is correct"""
 
     runner = CliRunner()
-    assert len(anonapi_mock_cli.settings.servers) == 1
+    assert len(anonapi_mock_cli.settings.servers) == 2
     runner.invoke(
         anonapi_mock_cli.main, ["server", "add", "a_server", "https://test.com"]
     )
 
-    assert len(anonapi_mock_cli.settings.servers) == 2
+    assert len(anonapi_mock_cli.settings.servers) == 3
     result = runner.invoke(anonapi_mock_cli.main, ["server", "remove", "testserver"])
 
-    assert len(anonapi_mock_cli.settings.servers) == 1
+    assert len(anonapi_mock_cli.settings.servers) == 2
 
     # removing a non-existent server should not crash but yield nice message
     result = runner.invoke(
@@ -119,4 +120,90 @@ def test_command_line_tool_job_info(anonapi_mock_cli, mock_requests):
     result = runner.invoke(anonapi_mock_cli.main, "job info 3".split(" "))
     assert "job 3 on testserver" in result.output
     assert "'user_name', 'z123sandbox'" in result.output
+
+
+def test_command_line_tool_activate_server(anonapi_mock_cli, mock_requests):
+    """Test activating a server"""
+
+    runner = CliRunner()
+
+    assert anonapi_mock_cli.get_active_server().name == "testserver"
+    result = runner.invoke(anonapi_mock_cli.main, "server activate testserver2".split(" "))
+    assert "Set active server to" in result.output
+    assert anonapi_mock_cli.get_active_server().name == "testserver2"
+
+    # activating a non-existant server name should just give a nice message, no crashes
+    result = runner.invoke(anonapi_mock_cli.main, "server activate yomomma".split(" "))
+    assert "invalid choice" in result.output
+
+
+def test_command_line_tool_job_functions(anonapi_mock_cli, mock_requests):
+    """Check a whole lot of commands without doing actual queries
+
+    Kind of a mop up test trying to get coverage up"""
+    runner = CliRunner()
+
+    mock_requests.set_response(text=RequestsMockResponseExamples.JOB_INFO)
+    runner.invoke(anonapi_mock_cli.main, "job info 1234".split(" "))
+    assert mock_requests.requests.get.called is True
+    assert "1234" in str(mock_requests.requests.get.call_args)
+
+    mock_requests.reset()
+    runner.invoke(anonapi_mock_cli.main, "job reset 1234".split(" "))
+    assert mock_requests.requests.post.called is True
+    assert "'files_downloaded': 0" in str(mock_requests.requests.post.call_args)
+
+    mock_requests.reset()
+    runner.invoke(anonapi_mock_cli.main, "job cancel 1234".split(" "))
+    assert mock_requests.requests.post.called is True
+    assert "cancel" in str(mock_requests.requests.post.call_args)
+
+    # can't reset a job when there is no server
+
+    anonapi_mock_cli.settings.active_server = None
+    mock_requests.reset()
+    result = runner.invoke(anonapi_mock_cli.main, "job reset 1234".split(" "))
+    assert mock_requests.requests.post.called is False
+    assert "No active server. Which one do you want to use?" in str(result.exception)
+
+
+def test_command_line_tool_job_list(anonapi_mock_cli, mock_requests):
+    runner = CliRunner()
+    mock_requests.set_response(RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST)
+    result = runner.invoke(anonapi_mock_cli.main, "job list 1 2 3 445".split(" "))
+    assert "Z495159" in result.output
+    assert "1000" in result.output
+    assert "1002" in result.output
+    assert "5000" in result.output
+
+
+@pytest.mark.parametrize(
+    "command, server_response, expected_print",
+    [
+        (
+            "server jobs".split(" "),
+            RequestsMockResponseExamples.JOBS_LIST_GET_JOBS,
+            "most recent 50 jobs on testserver:",
+        ),
+        (
+            "status".split(" "),
+            "",
+            "Available servers",
+        ),  # general status should not hit server
+    ],
+)
+def test_command_line_tool_server_functions(
+    anonapi_mock_cli,
+    mock_requests,
+    command,
+    server_response,
+    expected_print,
+):
+    """Check a whole lot of commands without doing actual queries
+
+    Kind of a mop up test trying to get coverage up"""
+    runner = CliRunner()
+    mock_requests.set_response(text=server_response)
+    result = runner.invoke(anonapi_mock_cli.main, command)
+    assert expected_print in result.output
 

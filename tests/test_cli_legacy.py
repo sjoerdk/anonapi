@@ -15,7 +15,7 @@ from anonapi.cli import (
     ClientToolException)
 from anonapi.legacy import AnonLegacyCommandLineParser
 from anonapi.batch import BatchFolder, JobBatch
-from anonapi.objects import RemoteAnonServer
+from anonapi.objects import RemoteAnonServerRemoteAnonServer(name="testserver", url="https://testurl")
 from anonapi.settings import DefaultAnonClientSettings
 from tests.factories import RequestsMock, RequestsMockResponseExamples
 
