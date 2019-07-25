@@ -9,10 +9,10 @@ import pytest
 from pytest import fixture
 
 from anonapi.cli import (
-    AnonLegacyCommandLineParser,
     AnonClientTool,
     AnonCommandLineParserException,
     ClientToolException)
+from anonapi.legacy import AnonLegacyCommandLineParser
 from anonapi.batch import BatchFolder, JobBatch
 from anonapi.objects import RemoteAnonServer
 from anonapi.settings import DefaultAnonClientSettings
