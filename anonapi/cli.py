@@ -215,6 +215,15 @@ class AnonCommandLineParser:
     Tries to emulate command line structure used by git and docker: nested subcommands have their own help,
     certain data, like urls for web API servers, username, are persisted in settings file.
 
+    Notes
+    -----
+    This class defines functions that in turn create click functions. For example get_server_commands(). This is
+    a slightly underhanded way of using click function decorators but still being able to reference self.
+    I have not found a better way though of keeping all code for this extensive CLI together while clearly referencing
+    a single collection of settings.
+    The current solution makes for a huge class. But the alternative would seem to be a huge unordered collection of
+    flat functions.
+
     """
 
     def __init__(self, client_tool: AnonClientTool, settings: AnonClientSettings):
@@ -233,7 +242,9 @@ class AnonCommandLineParser:
 
         self.main.add_command(self.get_status_command())
         self.main.add_command(self.get_server_commands())
-
+        self.main.add_command(self.get_job_commands())
+        self.main.add_command(self.get_user_commands())
+        self.main.add_command(self.get_batch_commands())
 
     @staticmethod
     @click.group()
@@ -268,6 +279,10 @@ class AnonCommandLineParser:
 
         """
 
+        def get_server_list():
+            """Specifies a list of all currently defined API server"""
+            return click.Choice([x.name for x in self.settings.servers])
+
         @click.group()
         def server():
             """manage anonymization servers"""
@@ -278,7 +293,6 @@ class AnonCommandLineParser:
         @click.argument('url', type=str)
         def add(short_name, url):
             """Add a server to the list of servers in settings """
-
             server = RemoteAnonServer(name=short_name, url=url)
             self.settings.servers.append(server)
             self.settings.save()
@@ -291,7 +305,7 @@ class AnonCommandLineParser:
             click.echo(f"Available servers (* = active):\n\n{server_list}")
 
         @click.command()
-        @click.argument('short_name', type=str)
+        @click.argument('short_name', metavar='SHORT_NAME', type=get_server_list())
         def remove(short_name):
             """Remove a servers from list in settings"""
             server = self.get_server_by_name(short_name)
@@ -319,7 +333,7 @@ class AnonCommandLineParser:
             click.echo(response)
 
         @click.command()
-        @click.argument('short_name', type=str)
+        @click.argument('short_name', metavar='SHORT_NAME', type=get_server_list())
         def activate(short_name):
             """Set given server as activate server, meaning subsequent operations will use this server.
             """
@@ -328,9 +342,86 @@ class AnonCommandLineParser:
             self.settings.save()
             click.echo(f"Set active server to {server}")
 
-        for func in [add, remove, list, jobs, activate]:
+        for func in [add, remove, list, status, jobs, activate]:
             server.add_command(func)
         return server
+
+    def get_job_commands(self):
+        """Click group and commands for the 'job' subcommand
+
+        """
+
+        @click.group()
+        def job():
+            """manage anonymization jobs"""
+            pass
+
+        @click.command()
+        @click.argument('job_id', type=str)
+        def info(job_id):
+            """print job info
+            """
+            server = self.get_active_server()
+            job_info = self.client_tool.get_job_info(server=server, job_id=job_id)
+            click.echo(job_info)
+
+        @click.command()
+        @click.argument('job_ids', type=str)
+        def list(job_ids):
+            """list info for multiple jobs
+            """
+            server = self.get_active_server()
+            job_info = self.client_tool.get_job_info_list(server=server, job_ids=job_ids)
+            click.echo(job_info)
+
+        @click.command()
+        @click.argument('job_id', type=str)
+        def reset(job_id):
+            """reset job, process again
+            """
+            server = self.get_active_server()
+            job_info = self.client_tool.reset_job(server=server, job_id=job_id)
+            click.echo(job_info)
+
+        @click.command()
+        @click.argument('job_id', type=str)
+        def cancel(job_id):
+            """set job status to inactive """
+            server = self.get_active_server()
+            job_info = self.client_tool.cancel_job(server=server, job_id=job_id)
+            click.echo(job_info)
+
+        for func in [info, reset, cancel, list]:
+            job.add_command(func)
+        return job
+
+    def get_user_commands(self):
+        """Click group and commands for the 'user' subcommand
+
+        """
+
+        @click.group()
+        def user():
+            """manage API credentials"""
+            pass
+
+        for func in []:
+            user.add_command(func)
+        return user
+
+    def get_batch_commands(self):
+        """Click group and commands for the 'batch' subcommand
+
+        """
+
+        @click.group()
+        def batch():
+            """manage anonymization job batches"""
+            pass
+
+        for func in []:
+            batch.add_command(func)
+        return batch
 
     def create_server_list(self):
         server_list = ""
