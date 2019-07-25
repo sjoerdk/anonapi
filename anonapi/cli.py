@@ -3,8 +3,6 @@
 Modelled after command line interfaces of git and docker. Takes information from command line arguments but also saves
 more permanent information in a settings file"""
 
-import pathlib
-
 import click
 
 from anonapi.client import WebAPIClient, APIClientException
@@ -16,7 +14,6 @@ from anonapi.responses import (
     JobsInfoList)
 from anonapi.settings import (
     AnonClientSettings,
-    AnonClientSettingsFromFile,
 )
 
 
@@ -384,17 +381,10 @@ class AnonCommandLineParser:
             raise AnonCommandLineParserException(msg)
         return server
 
+
 class AnonCommandLineParserException(Exception):
     pass
 
 
 class ClientToolException(Exception):
     pass
-
-
-settings_file = pathlib.Path.home() / "AnonWebAPIClientSettings.yml"
-settings = AnonClientSettingsFromFile(settings_file)
-tool = AnonClientTool(username=settings.user_name, token=settings.user_token)
-parser = AnonCommandLineParser(client_tool=tool, settings=settings)
-cli = parser.main
-

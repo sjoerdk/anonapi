@@ -40,7 +40,7 @@ setup(
     entry_points={
         'console_scripts': [
             'anon_old = anonapi.legacy:main',
-            'anon = anonapi.cli:cli'
+            'anon = anonapi.cli_entrypoint:cli'
         ]
     },
     setup_requires=setup_requirements,

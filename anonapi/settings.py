@@ -1,6 +1,7 @@
 """Settings used by anon console app
 
 """
+from typing import List
 
 import yaml
 
@@ -14,7 +15,7 @@ class AnonClientSettings:
         """
         Parameters
         ----------
-        servers: List(RemoteAnonServer)
+        servers: List[RemoteAnonServer]
             all servers
         user_name: str
             user name
