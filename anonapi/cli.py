@@ -2,19 +2,24 @@
 
 Modelled after command line interfaces of git and docker. Takes information from command line arguments but also saves
 more permanent information in a settings file"""
+import itertools
+import os
 
 import click
 
+from anonapi.batch import JobBatch, BatchFolder
+from anonapi.click_types import JobIDRangeParamType
 from anonapi.client import WebAPIClient, APIClientException
 from anonapi.objects import RemoteAnonServer
 from anonapi.responses import (
     format_job_info_list,
     parse_job_infos_response,
     APIParseResponseException,
-    JobsInfoList)
+    JobsInfoList, JobStatus)
 from anonapi.settings import (
     AnonClientSettings,
 )
+from collections import Counter
 
 
 class AnonClientTool:
@@ -307,7 +312,7 @@ class AnonCommandLineParser:
         @click.command()
         @click.argument('short_name', metavar='SHORT_NAME', type=get_server_list())
         def remove(short_name):
-            """Remove a servers from list in settings"""
+            """Remove a server from list in settings"""
             server = self.get_server_by_name(short_name)
             if self.settings.active_server == server:
                 # active server was removed, so it can no longer be active.
@@ -366,10 +371,11 @@ class AnonCommandLineParser:
             click.echo(job_info)
 
         @click.command(name='list')
-        @click.argument('job_ids', type=str, nargs=-1)
+        @click.argument('job_ids', type=JobIDRangeParamType(), nargs=-1)
         def job_list(job_ids):
             """list info for multiple jobs
             """
+            job_ids = [x for x in itertools.chain(*job_ids)]  # make into one list
             server = self.get_active_server()
             job_infos = self.client_tool.get_job_info_list(server=server, job_ids=list(job_ids))
             click.echo(job_infos.as_table_string())
@@ -419,9 +425,141 @@ class AnonCommandLineParser:
             """manage anonymization job batches"""
             pass
 
-        for func in []:
+        @click.command()
+        def init():
+            """Save an empty batch in the current folder, for current server"""
+            batch_folder = self.get_batch_folder()
+            if batch_folder.has_batch():
+                raise AnonCommandLineParserException(
+                    "Cannot init, A batch is already defined in this folder"
+                )
+            else:
+                server = self.get_active_server()
+                batch_folder.save(JobBatch(job_ids=[], server=server))
+                click.echo(f"Initialised batch for {server} in current dir")
+
+        @click.command()
+        def info():
+            click.echo(self.get_batch().to_string())
+
+        @click.command()
+        def delete():
+            """delete batch in current folder"""
+            self.get_batch_folder().delete_batch()
+            click.echo(f"Removed batch in current dir")
+
+        @click.command()
+        @click.argument('job_ids', type=JobIDRangeParamType(), nargs=-1)
+        def add(job_ids):
+            """Add ids to current batch. Will not add already existing. Space separated, ranges like 1-40
+            allowed
+            """
+            job_ids = [x for x in itertools.chain(*job_ids)]  # make into one list
+            batch_folder = self.get_batch_folder()
+            batch: JobBatch = batch_folder.load()
+            batch.job_ids = sorted(list(set(batch.job_ids) | set(job_ids)))
+            batch_folder.save(batch)
+            click.echo(f"Added {job_ids} to batch")
+
+        @click.command()
+        @click.argument('job_ids', type=JobIDRangeParamType(), nargs=-1)
+        def remove(job_ids):
+            """Remove ids from current batch. Space separated, ranges like 1-40 allowed
+            """
+            job_ids = [x for x in itertools.chain(*job_ids)]  # make into one list
+            batch_folder = self.get_batch_folder()
+            batch: JobBatch = batch_folder.load()
+            batch.job_ids = sorted(list(set(batch.job_ids) - set(job_ids)))
+            batch_folder.save(batch)
+
+            click.echo(f"Removed {job_ids} from batch")
+
+        @click.command()
+        def status():
+            """Print status overview for all jobs in batch"""
+            batch = self.get_batch()
+            ids_queried = batch.job_ids
+            infos = self.client_tool.get_job_info_list(
+                server=batch.server, job_ids=ids_queried
+            )
+
+            click.echo(f"Job info for {len(infos)} jobs on {batch.server}:")
+            click.echo(infos.as_table_string())
+
+            summary = ["Status       count   percentage", "-------------------------------"]
+            status_count = Counter([x.status for x in infos])
+            status_count["NOT_FOUND"] = len(ids_queried) - len(infos)
+            for key, value in status_count.items():
+                percentage = f"{(value / len(ids_queried) * 100):.1f} %"
+                msg = f"{key:<12} {str(value):<8} {percentage:<8}"
+                summary.append(msg)
+
+            summary.append("-------------------------------")
+            summary.append(f"Total        {str(len(ids_queried)):<8} 100%")
+
+            click.echo(f"Summary for all {len(ids_queried)} jobs:")
+            click.echo("\n".join(summary))
+
+        @click.command()
+        def reset():
+            """Reset every job in the current batch"""
+            batch: JobBatch = self.get_batch()
+
+            if click.confirm(
+                f"This will reset {len(batch.job_ids)} jobs on {batch.server}. Are you sure?"
+            ):
+                for job_id in batch.job_ids:
+                    click.echo(
+                        self.client_tool.reset_job(server=batch.server, job_id=job_id)
+                    )
+
+                click.echo("Done")
+            else:
+                click.echo("User cancelled")
+
+        @click.command()
+        def cancel():
+            """Cancel every job in the current batch"""
+            batch: JobBatch = self.get_batch()
+
+            if self.confirm(
+                f"This will cancel {len(batch.job_ids)} jobs on {batch.server}. Are you sure?"
+            ):
+                for job_id in batch.job_ids:
+                    click.echo(
+                        self.client_tool.cancel_job(server=batch.server, job_id=job_id)
+                    )
+
+                click.echo("Done")
+            else:
+                click.echo("User cancelled")
+
+        @click.command()
+        def reset_error():
+            """Reset all jobs with error status in the current batch"""
+            batch: JobBatch = self.get_batch()
+            infos = self.client_tool.get_job_info_list(
+                server=batch.server, job_ids=batch.job_ids
+            )
+            job_ids = [x.job_id for x in infos if x.status == JobStatus.ERROR]
+
+            if click.confirm(
+                f"This will reset {len(job_ids)} jobs on {batch.server}. Are you sure?"
+            ):
+                for job_id in job_ids:
+                    click.echo(
+                        self.client_tool.reset_job(server=batch.server, job_id=job_id)
+                    )
+
+                click.echo("Done")
+            else:
+                click.echo("User cancelled")
+
+        for func in [info, status, reset, init, delete, add, remove, cancel, reset_error]:
             batch.add_command(func)
         return batch
+
+    # == Shared functions ===
 
     def create_server_list(self):
         server_list = ""
@@ -471,6 +609,24 @@ class AnonCommandLineParser:
             )
             raise AnonCommandLineParserException(msg)
         return server
+
+    @staticmethod
+    def current_dir():
+        """Return full path to the folder this command line parser is called from"""
+        return os.getcwd()
+
+    def get_batch(self):
+        """Get batch defined in current folder"""
+
+        batch = BatchFolder(self.current_dir()).load()
+        if not batch:
+            raise AnonCommandLineParserException("No batch defined in current folder")
+        else:
+            return batch
+
+    def get_batch_folder(self):
+        """True if there is a batch defined in this folder"""
+        return BatchFolder(self.current_dir())
 
 
 class AnonCommandLineParserException(Exception):

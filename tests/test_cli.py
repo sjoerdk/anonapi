@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from unittest.mock import Mock
 
 import pytest
 
 from click.testing import CliRunner
 
-from anonapi.cli import AnonClientTool, AnonCommandLineParser
+from anonapi.batch import BatchFolder, JobBatch
+from anonapi.cli import AnonClientTool, AnonCommandLineParser, AnonCommandLineParserException
 from anonapi.objects import RemoteAnonServer
 from anonapi.settings import AnonClientSettings
 from tests.factories import RequestsMock, RequestsMockResponseExamples
@@ -177,6 +179,34 @@ def test_command_line_tool_job_list(anonapi_mock_cli, mock_requests):
     assert "5000" in result.output
 
 
+def test_job_id_parameter_type(anonapi_mock_cli, mock_requests):
+    """Test passing ID ranges such as 1000-1200 as job ids"""
+
+    runner = CliRunner()
+    get_job_info_mock = Mock()
+    anonapi_mock_cli.client_tool.get_job_info_list = get_job_info_mock
+
+    # test regular expansion
+    result = runner.invoke(anonapi_mock_cli.main, "job list 1 2 5-10".split(" "))
+    assert result.exit_code == 0
+    assert get_job_info_mock.call_args[1]['job_ids'] == ["1", "2", "5", "6", "7", "8", "9", "10", ]
+
+    # test nothing to expand
+    result = runner.invoke(anonapi_mock_cli.main, "job list 1".split(" "))
+    assert result.exit_code == 0
+    assert get_job_info_mock.call_args[1]['job_ids'] == ["1"]
+
+    # test overlapping ranges
+    get_job_info_mock.reset()
+    runner.invoke(anonapi_mock_cli.main, "job list 1-4 2-5".split(" "))
+    assert get_job_info_mock.call_args[1]['job_ids'] == ["1", "2", "3", "4", "2", "3", "4", "5", ]
+
+    # test range and weird string argument (not sure whether this is a good idea to allow)
+    get_job_info_mock.reset()
+    runner.invoke(anonapi_mock_cli.main, "job list 1-4 hallo".split(" "))
+    assert get_job_info_mock.call_args[1]['job_ids'] == ["1", "2", "3", "4", "hallo"]
+
+
 @pytest.mark.parametrize(
     "command, server_response, expected_print",
     [
@@ -206,4 +236,196 @@ def test_command_line_tool_server_functions(
     mock_requests.set_response(text=server_response)
     result = runner.invoke(anonapi_mock_cli.main, command)
     assert expected_print in result.output
+
+
+def test_get_server_when_none_is_active(anonapi_mock_cli):
+    """In certain cases active server can be None. handle this gracefully
+
+    """
+    anonapi_mock_cli.settings.active_server = None
+    # Calling for server here should fail because there is no active server
+    with pytest.raises(AnonCommandLineParserException):
+        anonapi_mock_cli.get_active_server()
+
+
+def test_command_line_tool_user_functions(
+    anonapi_mock_cli
+):
+    runner = CliRunner()
+    assert anonapi_mock_cli.settings.user_name != "test_changed"
+
+    runner.invoke(anonapi_mock_cli.main, "user set_username test_changed".split(" "))
+    assert anonapi_mock_cli.settings.user_name == "test_changed"
+
+    result = runner.invoke(anonapi_mock_cli.main, "user info".split(" "))
+    assert "user" in result.output
+
+    token_before = anonapi_mock_cli.settings.user_token
+    result = runner.invoke(anonapi_mock_cli.main, "user get_token".split(" "))
+    assert "Got and saved api token" in result.output
+    token_after = anonapi_mock_cli.settings.user_token
+    assert token_before != token_after  # token should have changed
+
+
+@pytest.mark.parametrize(
+    "command, expected_output",
+    [
+        ("server jobs", "Error getting jobs"),
+        ("job info 123", "Error getting job info"),
+        ("server status", "is not responding properly"),
+        ("job cancel 123", "Error cancelling job"),
+        ("job reset 123", "Error resetting job"),
+        ("server status", "is not responding properly"),
+    ],
+)
+def test_client_tool_exception_response(
+    anonapi_mock_cli, mock_requests, command, expected_output
+):
+    """The client that the command line tool is using might yield exceptions. Handle gracefully
+
+    """
+    runner = CliRunner()
+
+    # any call to server will yield error
+    mock_requests.set_response_exception(ConnectionError)
+
+    result = runner.invoke(anonapi_mock_cli.main, command.split(" "))
+    assert expected_output in result.output
+
+
+def test_cli_batch(anonapi_mock_cli, tmpdir):
+    """Try working with a batch of job ids from console"""
+    anonapi_mock_cli.current_dir = lambda: str(
+        tmpdir
+    )  # make parser thinks tmpdir is its working dir
+
+    runner = CliRunner()
+
+    result = runner.invoke(anonapi_mock_cli.main, "batch info".split(" "))
+    assert "No batch defined" in str(result.exception)
+
+    assert not BatchFolder(tmpdir).has_batch()
+    runner.invoke(anonapi_mock_cli.main, "batch init".split(" "))
+    assert BatchFolder(tmpdir).has_batch()
+
+    runner.invoke(anonapi_mock_cli.main, "batch add 1 2 3 345".split(" "))
+    assert BatchFolder(tmpdir).load().job_ids == ["1", "2", "3", "345"]
+
+    runner.invoke(anonapi_mock_cli.main,
+                  "batch add 1 2 50".split(" ")
+                  )  # duplicates should be silently ignored
+    assert BatchFolder(tmpdir).load().job_ids == ["1", "2", "3", "345", "50"]
+
+    runner.invoke(anonapi_mock_cli.main,
+                  "batch remove 50 345 1000".split(" ")
+                  )  # non-existing keys should be ignored
+    assert BatchFolder(tmpdir).load().job_ids == ["1", "2", "3"]
+
+    runner.invoke(anonapi_mock_cli.main, "batch remove 1 2 3".split(" "))
+    assert BatchFolder(tmpdir).load().job_ids == []
+
+    runner.invoke(anonapi_mock_cli.main, "batch delete".split(" "))
+    assert not BatchFolder(tmpdir).has_batch()
+
+
+def test_cli_batch_status(anonapi_mock_cli, mock_requests):
+    """Try operations actually calling server"""
+    runner = CliRunner()
+
+    batch = JobBatch(
+        job_ids=["1000", "1002", "5000"], server=anonapi_mock_cli.get_active_server()
+    )
+    anonapi_mock_cli.get_batch = lambda: batch  # set current batch to mock batch
+
+    mock_requests.set_response(
+        text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST
+    )
+    result = runner.invoke(anonapi_mock_cli.main, "batch status")
+    assert all(
+        text in result.output
+        for text in ["DONE", "UPLOAD", "1000", "1002", "5000"]
+    )
+
+
+def test_cli_batch_status_errors(anonapi_mock_cli, mock_requests):
+    """Call server, but not all jobs exist. This should appear in the status message to the user"""
+    runner = CliRunner()
+
+    batch = JobBatch(
+        job_ids=["1000", "1002", "5000", "100000"],
+        server=anonapi_mock_cli.get_active_server(),
+    )
+    anonapi_mock_cli.get_batch = lambda: batch  # set current batch to mock batch
+
+    mock_requests.set_response(
+        text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST
+    )
+
+    result = runner.invoke(anonapi_mock_cli.main, "batch status")
+    assert "NOT_FOUND    1" in result.output
+
+
+def test_cli_batch_reset(anonapi_mock_cli, mock_requests):
+
+    runner = CliRunner()
+    batch = JobBatch(
+        job_ids=["1000", "1002", "5000"], server=anonapi_mock_cli.get_active_server()
+    )
+    anonapi_mock_cli.get_batch = lambda: batch  # set current batch to mock batch
+
+    runner.invoke(anonapi_mock_cli.main, "batch reset", input="Yes")
+    assert mock_requests.requests.post.call_count == 3  # Reset request should have been sent for each job id
+
+    mock_requests.requests.reset_mock()
+    runner.invoke(anonapi_mock_cli.main, "batch reset", input="No")  # now answer no when asked are you sure
+    assert mock_requests.requests.post.call_count == 0  # No requests should have been sent
+
+
+def test_cli_batch_reset_error(anonapi_mock_cli, mock_requests):
+    """Try operations actually calling server"""
+    runner = CliRunner()
+
+    batch = JobBatch(
+        job_ids=["1000", "1002", "5000"], server=anonapi_mock_cli.get_active_server()
+    )
+    anonapi_mock_cli.get_batch = lambda: batch  # set current batch to mock batch
+
+    mock_requests.set_response(
+        text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST_WITH_ERROR
+    )
+
+    # try a reset, answer 'Yes' to question
+    result = runner.invoke(anonapi_mock_cli.main, "batch reset-error".split(" "), input='Yes')
+    assert result.exit_code == 0
+    assert 'This will reset 2 jobs on testserver' in result.output
+    assert 'Done' in result.output
+    assert mock_requests.requests.post.called
+
+    # now try the same but answer 'No'
+    mock_requests.reset()
+    result = runner.invoke(anonapi_mock_cli.main, "batch reset-error".split(" "), input='No')
+    assert result.exit_code == 0
+    assert not mock_requests.requests.post.called   # cancelling should not have sent any requests
+
+
+def test_cli_batch_id_range(anonapi_mock_cli, tmpdir):
+    """check working with id ranges"""
+    anonapi_mock_cli.current_dir = lambda: str(
+        tmpdir
+    )  # make parser thinks tmpdir is its working dir
+
+    runner = CliRunner()
+
+    assert not BatchFolder(tmpdir).has_batch()
+    runner.invoke(anonapi_mock_cli.main, "batch init".split(" "))
+    assert BatchFolder(tmpdir).has_batch()
+
+    runner.invoke(anonapi_mock_cli.main, "batch add 1 2 5-8".split(" "))
+    assert BatchFolder(tmpdir).load().job_ids == ["1", "2", "5", "6", "7", "8"]
+
+    runner.invoke(anonapi_mock_cli.main, "batch remove 1-4".split(" "))
+    assert BatchFolder(tmpdir).load().job_ids == ["5", "6", "7", "8"]
+
+    runner.invoke(anonapi_mock_cli.main, "batch add 1-4 4".split(" "))  # check that duplicate values do not cause trouble
+    assert BatchFolder(tmpdir).load().job_ids == ["1", "2", "3", "4", "5", "6", "7", "8"]
 
