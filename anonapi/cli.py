@@ -4,6 +4,8 @@ Modelled after command line interfaces of git and docker. Takes information from
 more permanent information in a settings file"""
 import itertools
 import os
+import random
+import string
 
 import click
 
@@ -411,7 +413,37 @@ class AnonCommandLineParser:
             """manage API credentials"""
             pass
 
-        for func in []:
+        @click.command()
+        def info():
+            """show current credentials"""
+            click.echo(
+                f"username is {self.settings.user_name}\nAPI token: {self.settings.user_token}"
+            )
+
+        @click.command()
+        @click.argument('user_name', type=str)
+        def set_username(user_name):
+            """Set the given username in settings
+            """
+            self.settings.user_name = user_name
+            self.settings.save()
+            click.echo(f"username is now '{user_name}'")
+
+        @click.command()
+        def get_token():
+            token = "".join(
+                random.SystemRandom().choice(
+                    string.ascii_uppercase + string.ascii_lowercase + string.digits
+                )
+                for _ in range(64)
+            )
+            self.settings.user_token = token
+            self.settings.save()
+            click.echo(
+                f"Got and saved api token for username {self.settings.user_name}"
+            )
+
+        for func in [info, set_username, get_token]:
             user.add_command(func)
         return user
 

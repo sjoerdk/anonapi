@@ -254,14 +254,14 @@ def test_command_line_tool_user_functions(
     runner = CliRunner()
     assert anonapi_mock_cli.settings.user_name != "test_changed"
 
-    runner.invoke(anonapi_mock_cli.main, "user set_username test_changed".split(" "))
+    runner.invoke(anonapi_mock_cli.main, "user set-username test_changed".split(" "))
     assert anonapi_mock_cli.settings.user_name == "test_changed"
 
     result = runner.invoke(anonapi_mock_cli.main, "user info".split(" "))
     assert "user" in result.output
 
     token_before = anonapi_mock_cli.settings.user_token
-    result = runner.invoke(anonapi_mock_cli.main, "user get_token".split(" "))
+    result = runner.invoke(anonapi_mock_cli.main, "user get-token".split(" "))
     assert "Got and saved api token" in result.output
     token_after = anonapi_mock_cli.settings.user_token
     assert token_before != token_after  # token should have changed
