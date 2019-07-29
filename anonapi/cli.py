@@ -134,8 +134,6 @@ class AnonClientTool:
                 f"Error parsing server response: from {server}:\n{str(e)}"
             )
 
-        return response
-
     def get_jobs(self, server: RemoteAnonServer):
         """Get list of info on most recent jobs in server
 
@@ -148,11 +146,6 @@ class AnonClientTool:
         -------
         str:
             string describing job, or error if job could not be found
-
-        Raises
-        ------
-        APIClientException:
-            if something goes wrong getting jobs info from server
 
         """
         job_limit = 50  # reduce number of jobs shown for less screen clutter.
@@ -305,11 +298,11 @@ class AnonCommandLineParser:
             self.settings.save()
             click.echo(f"added {server} to list")
 
-        @click.command()
-        def list():
+        @click.command('list')
+        def server_list():
             """show all servers in settings """
-            server_list = self.create_server_list()
-            click.echo(f"Available servers (* = active):\n\n{server_list}")
+            servers = self.create_server_list()
+            click.echo(f"Available servers (* = active):\n\n{servers}")
 
         @click.command()
         @click.argument('short_name', metavar='SHORT_NAME', type=get_server_list())
@@ -349,7 +342,7 @@ class AnonCommandLineParser:
             self.settings.save()
             click.echo(f"Set active server to {server}")
 
-        for func in [add, remove, list, status, jobs, activate]:
+        for func in [add, remove, server_list, status, jobs, activate]:
             server.add_command(func)
         return server
 
@@ -511,9 +504,12 @@ class AnonCommandLineParser:
             """Print status overview for all jobs in batch"""
             batch = self.get_batch()
             ids_queried = batch.job_ids
-            infos = self.client_tool.get_job_info_list(
-                server=batch.server, job_ids=ids_queried
-            )
+            try:
+                infos = self.client_tool.get_job_info_list(
+                    server=batch.server, job_ids=ids_queried
+                )
+            except ClientToolException as e:
+                click.echo(e)
 
             click.echo(f"Job info for {len(infos)} jobs on {batch.server}:")
             click.echo(infos.as_table_string())
@@ -554,7 +550,7 @@ class AnonCommandLineParser:
             """Cancel every job in the current batch"""
             batch: JobBatch = self.get_batch()
 
-            if self.confirm(
+            if click.confirm(
                 f"This will cancel {len(batch.job_ids)} jobs on {batch.server}. Are you sure?"
             ):
                 for job_id in batch.job_ids:
@@ -570,9 +566,14 @@ class AnonCommandLineParser:
         def reset_error():
             """Reset all jobs with error status in the current batch"""
             batch: JobBatch = self.get_batch()
-            infos = self.client_tool.get_job_info_list(
-                server=batch.server, job_ids=batch.job_ids
-            )
+            try:
+                infos = self.client_tool.get_job_info_list(
+                    server=batch.server, job_ids=batch.job_ids
+                )
+            except ClientToolException as e:
+                click.echo(f"Error resetting: {str(e)}")
+                return
+
             job_ids = [x.job_id for x in infos if x.status == JobStatus.ERROR]
 
             if click.confirm(

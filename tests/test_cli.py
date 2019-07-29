@@ -7,8 +7,10 @@ import pytest
 from click.testing import CliRunner
 
 from anonapi.batch import BatchFolder, JobBatch
-from anonapi.cli import AnonClientTool, AnonCommandLineParser, AnonCommandLineParserException
+from anonapi.cli import AnonClientTool, AnonCommandLineParser, AnonCommandLineParserException, ClientToolException
+from anonapi.client import APIClientException
 from anonapi.objects import RemoteAnonServer
+from anonapi.responses import APIParseResponseException
 from anonapi.settings import AnonClientSettings
 from tests.factories import RequestsMock, RequestsMockResponseExamples
 
@@ -26,6 +28,20 @@ def anonapi_mock_cli():
     )
     tool = AnonClientTool(username=settings.user_name, token=settings.user_token)
     return AnonCommandLineParser(client_tool=tool, settings=settings)
+
+
+@pytest.fixture
+def anonapi_mock_cli_with_batch(anonapi_mock_cli):
+    """Returns AnonCommandLineParser object that has a batch defined
+
+    """
+
+    batch = JobBatch(
+        job_ids=["1000", "1002", "5000", "100000"],
+        server=anonapi_mock_cli.get_active_server(),
+    )
+    anonapi_mock_cli.get_batch = lambda: batch  # set current batch to mock batch
+    return anonapi_mock_cli
 
 
 @pytest.fixture
@@ -69,16 +85,29 @@ def test_command_line_tool_add_remove_server(anonapi_mock_cli):
     )
 
     assert len(anonapi_mock_cli.settings.servers) == 3
-    result = runner.invoke(anonapi_mock_cli.main, ["server", "remove", "testserver"])
+    runner.invoke(anonapi_mock_cli.main, "server remove testserver".split(" "))
 
     assert len(anonapi_mock_cli.settings.servers) == 2
 
     # removing a non-existent server should not crash but yield nice message
     result = runner.invoke(
-        anonapi_mock_cli.main, ["server", "remove", "non_existant_server"]
+        anonapi_mock_cli.main, "server remove non_existant_server".split(" ")
     )
     assert result.exit_code == 2
     assert "invalid choice" in str(result.output)
+
+    with pytest.raises(AnonCommandLineParserException):
+        anonapi_mock_cli.get_server_by_name("unknown_server")
+
+
+def test_command_line_tool_list_servers(anonapi_mock_cli):
+
+    runner = CliRunner()
+    result = runner.invoke(
+        anonapi_mock_cli.main, "server list".split(" ")
+    )
+    assert result.exit_code == 0
+    assert all([x in result.output for x in ['Available servers', 'testserver ', 'testserver2 ']])
 
 
 def test_command_line_tool_server_status(anonapi_mock_cli, mock_requests):
@@ -122,6 +151,20 @@ def test_command_line_tool_job_info(anonapi_mock_cli, mock_requests):
     result = runner.invoke(anonapi_mock_cli.main, "job info 3".split(" "))
     assert "job 3 on testserver" in result.output
     assert "'user_name', 'z123sandbox'" in result.output
+
+
+def test_cli_job_list(anonapi_mock_cli, mock_requests):
+    """Try operations actually calling server"""
+    runner = CliRunner()
+
+    mock_requests.set_response(
+        text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST
+    )
+    result = runner.invoke(anonapi_mock_cli.main, "job list 1000 1002 50000")
+    assert all(
+        text in result.output
+        for text in ["DONE", "UPLOAD", "1000", "1002", "5000"]
+    )
 
 
 def test_command_line_tool_activate_server(anonapi_mock_cli, mock_requests):
@@ -268,18 +311,21 @@ def test_command_line_tool_user_functions(
 
 
 @pytest.mark.parametrize(
-    "command, expected_output",
+    "command, mock_requests_response, expected_output",
     [
-        ("server jobs", "Error getting jobs"),
-        ("job info 123", "Error getting job info"),
-        ("server status", "is not responding properly"),
-        ("job cancel 123", "Error cancelling job"),
-        ("job reset 123", "Error resetting job"),
-        ("server status", "is not responding properly"),
+        ("server jobs", ConnectionError, "Error getting jobs"),
+        ("job info 123", ConnectionError, "Error getting job info"),
+        ("server status", ConnectionError, "is not responding properly"),
+        ("job cancel 123", ConnectionError, "Error cancelling job"),
+        ("job reset 123", ConnectionError, "Error resetting job"),
+        ("server status", ConnectionError, "is not responding properly"),
+        ("batch status", APIClientException, "Error getting jobs"),
+        ("batch status", APIParseResponseException, "Error parsing server response"),
+        ("server jobs", APIParseResponseException, "Error parsing server response")
     ],
 )
 def test_client_tool_exception_response(
-    anonapi_mock_cli, mock_requests, command, expected_output
+    anonapi_mock_cli_with_batch, mock_requests, command, mock_requests_response, expected_output
 ):
     """The client that the command line tool is using might yield exceptions. Handle gracefully
 
@@ -287,9 +333,9 @@ def test_client_tool_exception_response(
     runner = CliRunner()
 
     # any call to server will yield error
-    mock_requests.set_response_exception(ConnectionError)
+    mock_requests.set_response_exception(mock_requests_response("Terrible error with " + command))
 
-    result = runner.invoke(anonapi_mock_cli.main, command.split(" "))
+    result = runner.invoke(anonapi_mock_cli_with_batch.main, command.split(" "))
     assert expected_output in result.output
 
 
@@ -307,6 +353,10 @@ def test_cli_batch(anonapi_mock_cli, tmpdir):
     assert not BatchFolder(tmpdir).has_batch()
     runner.invoke(anonapi_mock_cli.main, "batch init".split(" "))
     assert BatchFolder(tmpdir).has_batch()
+
+    # init again should fail as there is already a batch defined
+    result = runner.invoke(anonapi_mock_cli.main, "batch init".split(" "))
+    assert "Cannot init" in str(result.exception)
 
     runner.invoke(anonapi_mock_cli.main, "batch add 1 2 3 345".split(" "))
     assert BatchFolder(tmpdir).load().job_ids == ["1", "2", "3", "345"]
@@ -347,55 +397,57 @@ def test_cli_batch_status(anonapi_mock_cli, mock_requests):
     )
 
 
-def test_cli_batch_status_errors(anonapi_mock_cli, mock_requests):
-    """Call server, but not all jobs exist. This should appear in the status message to the user"""
+def test_cli_batch_cancel(anonapi_mock_cli_with_batch, mock_requests):
+    """Try operations actually calling server"""
     runner = CliRunner()
 
-    batch = JobBatch(
-        job_ids=["1000", "1002", "5000", "100000"],
-        server=anonapi_mock_cli.get_active_server(),
+    mock_requests.set_response(
+        text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST
     )
-    anonapi_mock_cli.get_batch = lambda: batch  # set current batch to mock batch
+    result = runner.invoke(anonapi_mock_cli_with_batch.main, "batch cancel", input="No")
+    assert 'User cancelled' in result.output
+    assert not mock_requests.requests.called
+
+    mock_requests.reset()
+    result = runner.invoke(anonapi_mock_cli_with_batch.main, "batch cancel", input="Yes")
+    assert 'Cancelled job 1000' in result.output
+    assert mock_requests.requests.post.call_count == 4
+
+
+def test_cli_batch_status_errors(anonapi_mock_cli_with_batch, mock_requests):
+    """Call server, but not all jobs exist. This should appear in the status message to the user"""
+    runner = CliRunner()
 
     mock_requests.set_response(
         text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST
     )
 
-    result = runner.invoke(anonapi_mock_cli.main, "batch status")
+    result = runner.invoke(anonapi_mock_cli_with_batch.main, "batch status")
     assert "NOT_FOUND    1" in result.output
 
 
-def test_cli_batch_reset(anonapi_mock_cli, mock_requests):
+def test_cli_batch_reset(anonapi_mock_cli_with_batch, mock_requests):
 
     runner = CliRunner()
-    batch = JobBatch(
-        job_ids=["1000", "1002", "5000"], server=anonapi_mock_cli.get_active_server()
-    )
-    anonapi_mock_cli.get_batch = lambda: batch  # set current batch to mock batch
 
-    runner.invoke(anonapi_mock_cli.main, "batch reset", input="Yes")
-    assert mock_requests.requests.post.call_count == 3  # Reset request should have been sent for each job id
+    runner.invoke(anonapi_mock_cli_with_batch.main, "batch reset", input="Yes")
+    assert mock_requests.requests.post.call_count == 4  # Reset request should have been sent for each job id
 
     mock_requests.requests.reset_mock()
-    runner.invoke(anonapi_mock_cli.main, "batch reset", input="No")  # now answer no when asked are you sure
+    runner.invoke(anonapi_mock_cli_with_batch.main, "batch reset", input="No")  # now answer no when asked are you sure
     assert mock_requests.requests.post.call_count == 0  # No requests should have been sent
 
 
-def test_cli_batch_reset_error(anonapi_mock_cli, mock_requests):
+def test_cli_batch_reset_error(anonapi_mock_cli_with_batch, mock_requests):
     """Try operations actually calling server"""
     runner = CliRunner()
-
-    batch = JobBatch(
-        job_ids=["1000", "1002", "5000"], server=anonapi_mock_cli.get_active_server()
-    )
-    anonapi_mock_cli.get_batch = lambda: batch  # set current batch to mock batch
 
     mock_requests.set_response(
         text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST_WITH_ERROR
     )
 
     # try a reset, answer 'Yes' to question
-    result = runner.invoke(anonapi_mock_cli.main, "batch reset-error".split(" "), input='Yes')
+    result = runner.invoke(anonapi_mock_cli_with_batch.main, "batch reset-error".split(" "), input='Yes')
     assert result.exit_code == 0
     assert 'This will reset 2 jobs on testserver' in result.output
     assert 'Done' in result.output
@@ -403,9 +455,15 @@ def test_cli_batch_reset_error(anonapi_mock_cli, mock_requests):
 
     # now try the same but answer 'No'
     mock_requests.reset()
-    result = runner.invoke(anonapi_mock_cli.main, "batch reset-error".split(" "), input='No')
+    result = runner.invoke(anonapi_mock_cli_with_batch.main, "batch reset-error".split(" "), input='No')
     assert result.exit_code == 0
     assert not mock_requests.requests.post.called   # cancelling should not have sent any requests
+
+    # A reset where the server returns error
+    mock_requests.reset()
+    mock_requests.set_response_exception(ClientToolException("Terrible exception"))
+    result = runner.invoke(anonapi_mock_cli_with_batch.main, "batch reset-error".split(" "))
+    assert 'Error resetting:' in result.output
 
 
 def test_cli_batch_id_range(anonapi_mock_cli, tmpdir):
