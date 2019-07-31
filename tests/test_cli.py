@@ -348,7 +348,7 @@ def test_cli_batch(anonapi_mock_cli, tmpdir):
     runner = CliRunner()
 
     result = runner.invoke(anonapi_mock_cli.main, "batch info".split(" "))
-    assert "No batch defined" in str(result.exception)
+    assert "No batch defined" in str(result.output)
 
     assert not BatchFolder(tmpdir).has_batch()
     runner.invoke(anonapi_mock_cli.main, "batch init".split(" "))

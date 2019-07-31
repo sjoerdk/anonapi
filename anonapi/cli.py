@@ -465,7 +465,13 @@ class AnonCommandLineParser:
 
         @click.command()
         def info():
-            click.echo(self.get_batch().to_string())
+            """Show batch in current directory"""
+            try:
+                click.echo(self.get_batch().to_string())
+            except NoBatchDefinedException as e:
+                click.echo(str(e) + ". You can create one with 'anon batch init'")
+            except AnonCommandLineParserException as e:
+                click.echo(e)
 
         @click.command()
         def delete():
@@ -653,7 +659,7 @@ class AnonCommandLineParser:
 
         batch = BatchFolder(self.current_dir()).load()
         if not batch:
-            raise AnonCommandLineParserException("No batch defined in current folder")
+            raise NoBatchDefinedException("No batch defined in current folder")
         else:
             return batch
 
@@ -663,6 +669,10 @@ class AnonCommandLineParser:
 
 
 class AnonCommandLineParserException(Exception):
+    pass
+
+
+class NoBatchDefinedException(AnonCommandLineParserException):
     pass
 
 

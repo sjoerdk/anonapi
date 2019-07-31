@@ -1,6 +1,25 @@
 """ Shared classes used in other tests. For generating test data """
 from unittest.mock import Mock
 from requests.models import Response
+import factory
+
+from anonapi.mapper import AnonymizationParameters, FileSelectionIdentifier
+
+
+class AnonymizationParametersFactory(factory.Factory):
+    class Meta:
+        model = AnonymizationParameters
+
+    patient_id = factory.sequence(lambda n: f'patient{n}')
+    patient_name = factory.sequence(lambda n: f'patientName{n}')
+    description = 'test description'
+
+
+class FileSelectionIdentifierFactory(factory.Factory):
+    class Meta:
+        model = FileSelectionIdentifier
+
+    identifier = factory.sequence(lambda n: f'/folder/file{n}')
 
 
 class RequestsMock:
