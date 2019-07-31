@@ -227,7 +227,7 @@ class AnonCommandLineParser:
     """
 
     def __init__(self, client_tool: AnonClientTool, settings: AnonClientSettings):
-        """Create a command line parser
+        """Create a anonapi command line parser
 
         Parameters
         ----------

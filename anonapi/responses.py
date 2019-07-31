@@ -1,4 +1,4 @@
-"""Models things that an API server can send back. Bridge between raw json and actual python objects
+""" Models things that an API server can send back. Bridge between raw json and actual python objects
 
 It would be much nicer to use an existing library that does serialization of python models on the server side and the
 client side. But we're not using django yet.
