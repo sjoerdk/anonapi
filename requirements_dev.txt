@@ -4,7 +4,7 @@ pip==19.1.1
 factory-boy==2.12
 flake8==3.6.0
 Click===7.0
-pytest==4.5.0
+pytest==5.1.0
 pytest-runner==5.1
 Sphinx==2.0.1
 sphinx-autodoc-typehints==1.6.0
