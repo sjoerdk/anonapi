@@ -14,6 +14,12 @@ def test_write(tmpdir):
     with open(Path(tmpdir) / 'mapping.csv', 'w') as f:
         mapping_list.save(f)
 
+    with open(Path(tmpdir) / 'mapping.csv', 'r') as f:
+        loaded_list = MappingList.load(f)
+
+    # loaded should have the same patientIDs as the original
+    all(y.patient_id in [x.patient_id for x in mapping.values()] for y in loaded_list.values())
+
 
 def test_anonymization_parameters():
     params = AnonymizationParameters(patient_id='pat1', patient_name='name1', description='desc')
