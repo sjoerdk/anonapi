@@ -1,17 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import shutil
 from unittest.mock import Mock
 
 import pytest
-
 from click.testing import CliRunner
+from fileselection.fileselectionfolder import FileSelectionFolder
 
 from anonapi.batch import BatchFolder, JobBatch
-from anonapi.cli import AnonClientTool, AnonCommandLineParser, AnonCommandLineParserException, ClientToolException
+from anonapi.cli import AnonClientTool, AnonCommandLineParser, AnonCommandLineParserException, ClientToolException, \
+    MappingLoadException
 from anonapi.client import APIClientException
 from anonapi.objects import RemoteAnonServer
 from anonapi.responses import APIParseResponseException
 from anonapi.settings import AnonClientSettings
+from tests import RESOURCE_PATH
 from tests.factories import RequestsMock, RequestsMockResponseExamples
 
 
@@ -52,6 +55,15 @@ def mock_requests(monkeypatch):
     requests_mock = RequestsMock()
     monkeypatch.setattr("anonapi.client.requests", requests_mock)
     return requests_mock
+
+
+@pytest.fixture
+def mock_anonapi_current_dir(anonapi_mock_cli, tmpdir):
+    """Anonapi instance with a tempdir current dir. So you can create, read files in 'current dir'"""
+    anonapi_mock_cli.current_dir = lambda: str(
+        tmpdir
+    )  # make parser thinks tmpdir is its working dir
+    return anonapi_mock_cli
 
 
 def test_command_line_tool_basic(anonapi_mock_cli):
@@ -421,7 +433,6 @@ def test_cli_batch_status_errors(anonapi_mock_cli_with_batch, mock_requests):
     mock_requests.set_response(
         text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST
     )
-
     result = runner.invoke(anonapi_mock_cli_with_batch.main, "batch status")
     assert "NOT_FOUND    1" in result.output
 
@@ -486,4 +497,83 @@ def test_cli_batch_id_range(anonapi_mock_cli, tmpdir):
 
     runner.invoke(anonapi_mock_cli.main, "batch add 1-4 4".split(" "))  # check that duplicate values do not cause trouble
     assert BatchFolder(tmpdir).load().job_ids == ["1", "2", "3", "4", "5", "6", "7", "8"]
+
+
+def test_cli_map(mock_anonapi_current_dir):
+    runner = CliRunner()
+    result = runner.invoke(mock_anonapi_current_dir.main, "map init".split(" "))
+    assert result.exit_code == 0
+
+
+def test_cli_map_info(anonapi_mock_cli):
+    """running map info should give you a nice print of contents"""
+    anonapi_mock_cli.current_dir = lambda: RESOURCE_PATH / 'test_cli'
+
+    runner = CliRunner()
+    result = runner.invoke(anonapi_mock_cli.main, "map status".split(" "))
+
+    assert result.exit_code == 0
+    assert "file16/nogiets" in result.output
+
+
+def test_cli_map_info_empty_dir(mock_anonapi_current_dir):
+    """running info on a directory not containing a mapping file should yield a nice 'no mapping' message"""
+    runner = CliRunner()
+    result = runner.invoke(mock_anonapi_current_dir.main, "map status".split(" "))
+
+    assert result.exit_code == 0
+    assert "No mapping defined" in result.output
+
+
+def test_cli_map_info_load_exception(anonapi_mock_cli, monkeypatch):
+    """running info with a corrupt mapping file should yield a nice message"""
+    # make sure a valid mapping file is found
+    anonapi_mock_cli.current_dir = lambda: str(RESOURCE_PATH / 'test_cli')
+
+    # but then raise exception when loading
+    def mock_load(x):
+        raise MappingLoadException("Test Exception")
+    monkeypatch.setattr('anonapi.cli.MappingList.load',
+                        mock_load)
+    runner = CliRunner()
+
+    result = runner.invoke(anonapi_mock_cli.main, "map status".split(" "))
+
+    assert result.exit_code == 0
+    assert "Test Exception" in result.output
+
+
+def test_cli_map_info_empty_dir(mock_anonapi_current_dir):
+    """running info on a directory not containing a mapping file should yield a nice 'no mapping' message"""
+    runner = CliRunner()
+    result = runner.invoke(mock_anonapi_current_dir.main, "map status".split(" "))
+
+    assert result.exit_code == 0
+    assert "No mapping defined" in result.output
+
+
+def test_cli_map_add_folder(mock_anonapi_current_dir, tmp_path):
+    """Add a folder with some dicom files to a mapping."""
+    # copy some content to tmp location
+    a_folder = tmp_path / 'a_folder'
+    shutil.copytree(RESOURCE_PATH / 'test_cli' / 'test_dir', a_folder)
+    selection_folder = FileSelectionFolder(path=a_folder)
+
+    # Add this folder to mapping
+    runner = CliRunner()
+    result = runner.invoke(mock_anonapi_current_dir.main, f"map add-study-folder {a_folder}".split(" "))
+
+    # oh no! no mapping yet!
+    assert result.exit_code == 1
+    assert "No mapping defined" in str(result.exception)
+
+    # make one
+    runner.invoke(mock_anonapi_current_dir.main, f"map init".split(" "))
+
+    # dicom files should not have been selected yet currently
+    assert not selection_folder.has_file_selection()
+    result = runner.invoke(mock_anonapi_current_dir.main, f"map add-study-folder {a_folder}".split(" "))
+    assert selection_folder.has_file_selection()
+
+
 
