@@ -39,7 +39,7 @@ setup(
     packages=find_packages(include=['anonapi']),
     entry_points={
         'console_scripts': [
-            'anon = anonapi.cli_entrypoint:cli'
+            'anon = anonapi.cli.entrypoint:cli'
         ]
     },
     setup_requires=setup_requirements,

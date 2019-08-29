@@ -12,7 +12,7 @@ from pathlib import Path
 import click
 
 from anonapi.batch import JobBatch, BatchFolder
-from anonapi.click_types import JobIDRangeParamType
+from anonapi.cli.click_types import JobIDRangeParamType
 from anonapi.client import WebAPIClient, APIClientException
 from anonapi.mapper import MappingList, get_example_mapping_list, MapperException, MappingListFolder, \
     open_mapping_in_editor, SourceIdentifierFactory, AnonymizationParameters
@@ -804,3 +804,16 @@ class MappingLoadException(AnonCommandLineParserException):
 
 class ClientToolException(Exception):
     pass
+
+
+def command_group_function(func):
+    """Combines decorators used for all click functions inside a ClickCommandGroup
+    Identical to
+
+    @click.command()
+    @click.pass_obj
+
+    Just to prevent duplicated code
+    """
+
+    return click.command()((click.pass_obj(func)))

@@ -8,7 +8,8 @@ from click.testing import CliRunner
 from fileselection.fileselectionfolder import FileSelectionFolder
 
 from anonapi.batch import BatchFolder, JobBatch
-from anonapi.cli import AnonClientTool, AnonCommandLineParser, AnonCommandLineParserException, ClientToolException, \
+from anonapi.cli import entrypoint, user_functions
+from anonapi.cli.parser import AnonClientTool, AnonCommandLineParser, AnonCommandLineParserException, ClientToolException, \
     MappingLoadException
 from anonapi.client import APIClientException
 from anonapi.objects import RemoteAnonServer
@@ -19,8 +20,10 @@ from tests.factories import RequestsMock, RequestsMockResponseExamples
 
 
 @pytest.fixture
-def anonapi_mock_cli():
-    """Returns AnonCommandLineParser object
+def anonapi_mock_cli(monkeypatch):
+    """Returns AnonCommandLineParser object and sets this as the default object passed to all click invocations of
+     entrypoint.cli
+
 
     """
     settings = AnonClientSettings(
@@ -30,7 +33,10 @@ def anonapi_mock_cli():
         user_token="testtoken",
     )
     tool = AnonClientTool(username=settings.user_name, token=settings.user_token)
-    return AnonCommandLineParser(client_tool=tool, settings=settings)
+    mock_parser = AnonCommandLineParser(client_tool=tool, settings=settings)
+    monkeypatch.setattr("anonapi.cli.entrypoint.get_parser", lambda: mock_parser)
+
+    return mock_parser
 
 
 @pytest.fixture
@@ -306,17 +312,18 @@ def test_get_server_when_none_is_active(anonapi_mock_cli):
 def test_command_line_tool_user_functions(
     anonapi_mock_cli
 ):
-    runner = CliRunner()
-    assert anonapi_mock_cli.settings.user_name != "test_changed"
 
-    runner.invoke(anonapi_mock_cli.main, "user set-username test_changed".split(" "))
+    runner = CliRunner()
+
+    assert anonapi_mock_cli.settings.user_name != "test_changed"
+    runner.invoke(entrypoint.cli, "user set-username test_changed")
     assert anonapi_mock_cli.settings.user_name == "test_changed"
 
-    result = runner.invoke(anonapi_mock_cli.main, "user info".split(" "))
+    result = runner.invoke(entrypoint.cli, "user info")
     assert "user" in result.output
 
     token_before = anonapi_mock_cli.settings.user_token
-    result = runner.invoke(anonapi_mock_cli.main, "user get-token".split(" "))
+    result = runner.invoke(entrypoint.cli, "user get-token")
     assert "Got and saved api token" in result.output
     token_after = anonapi_mock_cli.settings.user_token
     assert token_before != token_after  # token should have changed
@@ -533,7 +540,7 @@ def test_cli_map_info_load_exception(anonapi_mock_cli, monkeypatch):
     # but then raise exception when loading
     def mock_load(x):
         raise MappingLoadException("Test Exception")
-    monkeypatch.setattr('anonapi.cli.MappingList.load',
+    monkeypatch.setattr('anonapi.mapper.MappingList.load',
                         mock_load)
     runner = CliRunner()
 
