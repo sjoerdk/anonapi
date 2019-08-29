@@ -36,7 +36,7 @@ setup(
     include_package_data=True,
     keywords='anonapi',
     name='anonapi',
-    packages=find_packages(include=['anonapi']),
+    packages=find_packages(include=['anonapi', 'anonapi.cli']),
     entry_points={
         'console_scripts': [
             'anon = anonapi.cli.entrypoint:cli'
