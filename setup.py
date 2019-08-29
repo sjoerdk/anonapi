@@ -15,7 +15,7 @@ requirements = ['pyyaml', 'click', 'tqdm', 'fileselection']
 
 setup_requirements = ['pytest-runner', ]
 
-test_requirements = ['pytest', 'pyyaml']
+test_requirements = ['pytest', 'pyyaml', 'factory_boy']
 
 setup(
     author="Sjoerd Kerkstra",
