@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 from click.testing import CliRunner
-from fileselection.fileselectionfolder import FileSelectionFolder
+from fileselection.fileselection import FileSelectionFolder
 
 from anonapi.batch import BatchFolder, JobBatch
 from anonapi.cli import entrypoint, user_commands

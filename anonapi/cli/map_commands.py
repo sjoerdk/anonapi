@@ -7,7 +7,7 @@ import datetime
 import random
 import string
 
-from fileselection.fileselectionfolder import FileSelectionFolder, FileSelectionFile
+from fileselection.fileselection import FileSelectionFolder, FileSelectionFile
 from tqdm import tqdm
 
 from anonapi.cli.parser import command_group_function, AnonCommandLineParser, MappingLoadException
