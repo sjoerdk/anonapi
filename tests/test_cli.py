@@ -8,7 +8,7 @@ from click.testing import CliRunner
 from fileselection.fileselectionfolder import FileSelectionFolder
 
 from anonapi.batch import BatchFolder, JobBatch
-from anonapi.cli import entrypoint, user_functions
+from anonapi.cli import entrypoint, user_commands
 from anonapi.cli.parser import (
     AnonClientTool,
     AnonCommandLineParser,
@@ -115,7 +115,7 @@ def test_command_line_tool_add_remove_server(anonapi_mock_cli):
     # removing a non-existent server should not crash but yield nice message
     result = runner.invoke(entrypoint.cli, "server remove non_existant_server")
     assert result.exit_code == 2
-    assert "invalid choice" in str(result.output)
+    assert "Invalid value" in str(result.output)
 
     with pytest.raises(AnonCommandLineParserException):
         anonapi_mock_cli.get_server_by_name("unknown_server")
@@ -202,7 +202,7 @@ def test_command_line_tool_activate_server(anonapi_mock_cli, mock_requests):
 
     # activating a non-existant server name should just give a nice message, no crashes
     result = runner.invoke(entrypoint.cli, "server activate yomomma")
-    assert "invalid choice" in result.output
+    assert "Invalid value" in result.output
 
 
 def test_command_line_tool_job_functions(anonapi_mock_cli, mock_requests):
@@ -324,7 +324,7 @@ def test_get_server_when_none_is_active(anonapi_mock_cli):
         anonapi_mock_cli.get_active_server()
 
 
-def test_command_line_tool_user_functions(anonapi_mock_cli):
+def test_command_line_tool_user_commands(anonapi_mock_cli):
 
     runner = CliRunner()
 

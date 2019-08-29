@@ -1,34 +1,19 @@
-"""Command line utility for working with remote anonymization servers.
+"""Command line utility object that gets passed around by click functions to have shared settings etc."""
 
-Modelled after command line interfaces of git and docker. Takes information from command line arguments but also saves
-more permanent information in a settings file"""
-import datetime
-import itertools
 import os
-import random
-import string
-from pathlib import Path
-
 import click
 
-from anonapi.batch import JobBatch, BatchFolder
-from anonapi.cli.click_types import JobIDRangeParamType
+from anonapi.batch import BatchFolder
 from anonapi.client import WebAPIClient, APIClientException
-from anonapi.mapper import MappingList, get_example_mapping_list, MapperException, MappingListFolder, \
-    open_mapping_in_editor, SourceIdentifierFactory, AnonymizationParameters
 from anonapi.objects import RemoteAnonServer
 from anonapi.responses import (
     format_job_info_list,
     parse_job_infos_response,
     APIParseResponseException,
-    JobsInfoList, JobStatus)
-from anonapi.selection import DICOMFileFolder
+    JobsInfoList)
 from anonapi.settings import (
     AnonClientSettings,
 )
-from collections import Counter
-from fileselection.fileselectionfolder import FileSelectionFolder, FileSelectionFile
-from tqdm import tqdm
 
 
 class AnonClientTool:
@@ -247,478 +232,6 @@ class AnonCommandLineParser:
         self.client_tool = client_tool
         self.settings = settings
 
-        self.main.add_command(self.get_status_command())
-        self.main.add_command(self.get_server_commands())
-        self.main.add_command(self.get_job_commands())
-        self.main.add_command(self.get_user_commands())
-        self.main.add_command(self.get_batch_commands())
-        self.main.add_command(self.get_map_commands())
-
-    @staticmethod
-    @click.group()
-    def main():
-        """\b
-        anonymization web API tool
-        Controls remote anonymization servers
-        Use the commands below with -h for more info
-        """
-        pass
-
-    def get_status_command(self):
-        """click command for the 'status' subcommand """
-
-        @click.command(short_help='show tool status')
-        def status():
-            """Get general status of this tool, show currently active server etc."""
-            click.echo("Status is really good")
-            server_list = self.create_server_list()
-            status = (
-                f"Available servers (* = active)\n\n"
-                f"{server_list}\n"
-                f"Using username: '{self.settings.user_name}'\n"
-                f"Reading settings from \n"
-                f"{self.settings}"
-            )
-            click.echo(status)
-        return status
-
-    def get_server_commands(self):
-        """Click group and commands for the 'server' subcommand
-
-        """
-
-        def get_server_list():
-            """Specifies a list of all currently defined API server"""
-            return click.Choice([x.name for x in self.settings.servers])
-
-        @click.group()
-        def server():
-            """manage anonymization servers"""
-            pass
-
-        @click.command()
-        @click.argument('short_name', type=str)
-        @click.argument('url', type=str)
-        def add(short_name, url):
-            """Add a server to the list of servers in settings """
-            server = RemoteAnonServer(name=short_name, url=url)
-            self.settings.servers.append(server)
-            self.settings.save()
-            click.echo(f"added {server} to list")
-
-        @click.command('list')
-        def server_list():
-            """show all servers in settings """
-            servers = self.create_server_list()
-            click.echo(f"Available servers (* = active):\n\n{servers}")
-
-        @click.command()
-        @click.argument('short_name', metavar='SHORT_NAME', type=get_server_list())
-        def remove(short_name):
-            """Remove a server from list in settings"""
-            server = self.get_server_by_name(short_name)
-            if self.settings.active_server == server:
-                # active server was removed, so it can no longer be active.
-                self.settings.active_server = None
-
-            self.settings.servers.remove(server)
-            self.settings.save()
-            click.echo(f"removed {server} from list")
-
-        @click.command()
-        def status():
-            """Check whether active server is online and responding like an anonymization web API, optionaly check given
-            server instead of active
-            """
-            response = self.client_tool.get_server_status(self.get_active_server())
-            click.echo(response)
-
-        @click.command()
-        def jobs():
-            """List latest 100 jobs for active server, or given server
-            """
-            response = self.client_tool.get_jobs(self.get_active_server())
-            click.echo(response)
-
-        @click.command()
-        @click.argument('short_name', metavar='SHORT_NAME', type=get_server_list())
-        def activate(short_name):
-            """Set given server as activate server, meaning subsequent operations will use this server.
-            """
-            server = self.get_server_by_name(short_name)
-            self.settings.active_server = server
-            self.settings.save()
-            click.echo(f"Set active server to {server}")
-
-        for func in [add, remove, server_list, status, jobs, activate]:
-            server.add_command(func)
-        return server
-
-    def get_job_commands(self):
-        """Click group and commands for the 'job' subcommand
-
-        """
-
-        @click.group()
-        def job():
-            """manage anonymization jobs"""
-            pass
-
-        @click.command()
-        @click.argument('job_id', type=str)
-        def info(job_id):
-            """print job info
-            """
-            server = self.get_active_server()
-            job_info = self.client_tool.get_job_info(server=server, job_id=job_id)
-            click.echo(job_info)
-
-        @click.command(name='list')
-        @click.argument('job_ids', type=JobIDRangeParamType(), nargs=-1)
-        def job_list(job_ids):
-            """list info for multiple jobs
-            """
-            job_ids = [x for x in itertools.chain(*job_ids)]  # make into one list
-            server = self.get_active_server()
-            job_infos = self.client_tool.get_job_info_list(server=server, job_ids=list(job_ids))
-            click.echo(job_infos.as_table_string())
-
-        @click.command()
-        @click.argument('job_id', type=str)
-        def reset(job_id):
-            """reset job, process again
-            """
-            server = self.get_active_server()
-            job_info = self.client_tool.reset_job(server=server, job_id=job_id)
-            click.echo(job_info)
-
-        @click.command()
-        @click.argument('job_id', type=str)
-        def cancel(job_id):
-            """set job status to inactive """
-            server = self.get_active_server()
-            job_info = self.client_tool.cancel_job(server=server, job_id=job_id)
-            click.echo(job_info)
-
-        for func in [info, reset, cancel, job_list]:
-            job.add_command(func)
-        return job
-
-    def get_user_commands(self):
-        """Click group and commands for the 'user' subcommand
-
-        """
-
-        @click.group()
-        def user():
-            """manage API credentials"""
-            pass
-
-        @click.command()
-        def info():
-            """show current credentials"""
-            click.echo(
-                f"username is {self.settings.user_name}\nAPI token: {self.settings.user_token}"
-            )
-
-        @click.command()
-        @click.argument('user_name', type=str)
-        def set_username(user_name):
-            """Set the given username in settings
-            """
-            self.settings.user_name = user_name
-            self.settings.save()
-            click.echo(f"username is now '{user_name}'")
-
-        @click.command()
-        def get_token():
-            token = "".join(
-                random.SystemRandom().choice(
-                    string.ascii_uppercase + string.ascii_lowercase + string.digits
-                )
-                for _ in range(64)
-            )
-            self.settings.user_token = token
-            self.settings.save()
-            click.echo(
-                f"Got and saved api token for username {self.settings.user_name}"
-            )
-
-        for func in [info, set_username, get_token]:
-            user.add_command(func)
-        return user
-
-    def get_batch_commands(self):
-        """Click group and commands for the 'batch' subcommand
-
-        """
-
-        @click.group()
-        def batch():
-            """manage anonymization job batches"""
-            pass
-
-        @click.command()
-        def init():
-            """Save an empty batch in the current folder, for current server"""
-            batch_folder = self.get_batch_folder()
-            if batch_folder.has_batch():
-                raise AnonCommandLineParserException(
-                    "Cannot init, A batch is already defined in this folder"
-                )
-            else:
-                server = self.get_active_server()
-                batch_folder.save(JobBatch(job_ids=[], server=server))
-                click.echo(f"Initialised batch for {server} in current dir")
-
-        @click.command()
-        def info():
-            """Show batch in current directory"""
-            try:
-                click.echo(self.get_batch().to_string())
-            except NoBatchDefinedException as e:
-                click.echo(str(e) + ". You can create one with 'anon batch init'")
-            except AnonCommandLineParserException as e:
-                click.echo(e)
-
-        @click.command()
-        def delete():
-            """delete batch in current folder"""
-            self.get_batch_folder().delete_batch()
-            click.echo(f"Removed batch in current dir")
-
-        @click.command()
-        @click.argument('job_ids', type=JobIDRangeParamType(), nargs=-1)
-        def add(job_ids):
-            """Add ids to current batch. Will not add already existing. Space separated, ranges like 1-40
-            allowed
-            """
-            job_ids = [x for x in itertools.chain(*job_ids)]  # make into one list
-            batch_folder = self.get_batch_folder()
-            batch: JobBatch = batch_folder.load()
-            batch.job_ids = sorted(list(set(batch.job_ids) | set(job_ids)))
-            batch_folder.save(batch)
-            click.echo(f"Added {job_ids} to batch")
-
-        @click.command()
-        @click.argument('job_ids', type=JobIDRangeParamType(), nargs=-1)
-        def remove(job_ids):
-            """Remove ids from current batch. Space separated, ranges like 1-40 allowed
-            """
-            job_ids = [x for x in itertools.chain(*job_ids)]  # make into one list
-            batch_folder = self.get_batch_folder()
-            batch: JobBatch = batch_folder.load()
-            batch.job_ids = sorted(list(set(batch.job_ids) - set(job_ids)))
-            batch_folder.save(batch)
-
-            click.echo(f"Removed {job_ids} from batch")
-
-        @click.command()
-        def status():
-            """Print status overview for all jobs in batch"""
-            batch = self.get_batch()
-            ids_queried = batch.job_ids
-            try:
-                infos = self.client_tool.get_job_info_list(
-                    server=batch.server, job_ids=ids_queried
-                )
-            except ClientToolException as e:
-                click.echo(e)
-                return
-
-            click.echo(f"Job info for {len(infos)} jobs on {batch.server}:")
-            click.echo(infos.as_table_string())
-
-            summary = ["Status       count   percentage", "-------------------------------"]
-            status_count = Counter([x.status for x in infos])
-            status_count["NOT_FOUND"] = len(ids_queried) - len(infos)
-            for key, value in status_count.items():
-                percentage = f"{(value / len(ids_queried) * 100):.1f} %"
-                msg = f"{key:<12} {str(value):<8} {percentage:<8}"
-                summary.append(msg)
-
-            summary.append("-------------------------------")
-            summary.append(f"Total        {str(len(ids_queried)):<8} 100%")
-
-            click.echo(f"Summary for all {len(ids_queried)} jobs:")
-            click.echo("\n".join(summary))
-
-        @click.command()
-        def reset():
-            """Reset every job in the current batch"""
-            batch: JobBatch = self.get_batch()
-
-            if click.confirm(
-                f"This will reset {len(batch.job_ids)} jobs on {batch.server}. Are you sure?"
-            ):
-                for job_id in batch.job_ids:
-                    click.echo(
-                        self.client_tool.reset_job(server=batch.server, job_id=job_id)
-                    )
-
-                click.echo("Done")
-            else:
-                click.echo("User cancelled")
-
-        @click.command()
-        def cancel():
-            """Cancel every job in the current batch"""
-            batch: JobBatch = self.get_batch()
-
-            if click.confirm(
-                f"This will cancel {len(batch.job_ids)} jobs on {batch.server}. Are you sure?"
-            ):
-                for job_id in batch.job_ids:
-                    click.echo(
-                        self.client_tool.cancel_job(server=batch.server, job_id=job_id)
-                    )
-
-                click.echo("Done")
-            else:
-                click.echo("User cancelled")
-
-        @click.command()
-        def reset_error():
-            """Reset all jobs with error status in the current batch"""
-            batch: JobBatch = self.get_batch()
-            try:
-                infos = self.client_tool.get_job_info_list(
-                    server=batch.server, job_ids=batch.job_ids
-                )
-            except ClientToolException as e:
-                click.echo(f"Error resetting: {str(e)}")
-                return
-
-            job_ids = [x.job_id for x in infos if x.status == JobStatus.ERROR]
-
-            if click.confirm(
-                f"This will reset {len(job_ids)} jobs on {batch.server}. Are you sure?"
-            ):
-                for job_id in job_ids:
-                    click.echo(
-                        self.client_tool.reset_job(server=batch.server, job_id=job_id)
-                    )
-
-                click.echo("Done")
-            else:
-                click.echo("User cancelled")
-
-        for func in [info, status, reset, init, delete, add, remove, cancel, reset_error]:
-            batch.add_command(func)
-        return batch
-
-    def get_map_commands(self):
-        """Click group and commands for the 'map' subcommand
-
-        """
-
-        @click.group(name='map')
-        def map_group():
-            """map original data to anonymized name, id, etc."""
-            pass
-
-        @click.command()
-        def status():
-            """Show mapping in current directory"""
-            try:
-                mapping = get_current_mapping()
-                click.echo(mapping.to_table_string())
-            except MappingLoadException as e:
-                click.echo(e)
-
-        @click.command()
-        def init():
-            """Save a default mapping in the current folder"""
-            folder = get_current_mapping_folder()
-            mapping_list = get_example_mapping_list()
-            folder.save_list(mapping_list)
-            click.echo(f"Initialised empty mapping in {mapping_list.DEFAULT_FILENAME}")
-
-        @click.command()
-        def delete():
-            """delete mapping in current folder"""
-            folder = get_current_mapping_folder()
-            if not folder.has_mapping_list():
-                click.echo("No mapping defined in current folder")
-                return
-            folder.delete_list()
-            click.echo(f"Removed mapping in current dir")
-
-        @click.command()
-        @click.argument('path', type=click.Path(exists=True))
-        def add_study_folder(path):
-            """Add all dicom files in given folder to map
-            """
-            # check whether there is a mapping
-            mapping = get_current_mapping()
-
-            # Find all dicom files in this folder
-            click.echo(f"Adding '{path}' to mapping")
-            folder = DICOMFileFolder(path)
-            click.echo(f"Finding all files in {path}")
-            files = [x for x in tqdm(folder.all_files()) if x is not None]
-            click.echo(f"Found {len(files)} files. Finding out which ones are DICOM")
-            dicom_files = [x[0] for x in tqdm(folder.all_dicom_files(files)) if x[1] is not None]
-            click.echo(f"Found {len(dicom_files)} DICOM files")
-
-            # record dicom files as fileselection
-            selection_folder = FileSelectionFolder(path=path)
-            selection = FileSelectionFile(
-                data_file_path=selection_folder.get_data_file_path(),
-                description=Path(path).name,
-                selected_paths=dicom_files
-            )
-            selection_folder.save_file_selection(selection)
-
-            # add this folder to mapping
-            folder_source_id = SourceIdentifierFactory().get_source_identifier(f'folder:{path}')
-            patient_name = f"autogenerated_{''.join(random.choices(string.ascii_uppercase + string.digits, k=5))}"
-            patient_id = "auto_" + ''.join(map(str, random.choices(range(10), k=8)))
-            description = f"auto generated_{datetime.date.today().strftime('%B %d, %Y')}"
-            mapping[folder_source_id] = AnonymizationParameters(
-                                            patient_name=patient_name,
-                                            patient_id=patient_id,
-                                            description=description)
-
-            get_current_mapping_folder().save_list(mapping)
-            click.echo(f"Done. Added '{path}' to mapping")
-
-        @click.command()
-        def edit():
-            """Edit the current mapping in editor
-            """
-            open_mapping_in_editor(get_current_mapping_folder().full_path())
-
-        def get_current_mapping_folder():
-            return MappingListFolder(self.current_dir())
-
-        def get_current_mapping():
-            """Load mapping from the current directory
-
-            Returns
-            -------
-            MappingList
-                Loaded from current dir
-
-            Raises
-            ------
-            MappingLoadException
-                When no mapping could be loaded from current directory
-
-            """
-
-            try:
-                with open(get_current_mapping_folder().full_path(), 'r') as f:
-                    return MappingList.load(f)
-            except FileNotFoundError:
-                raise MappingLoadException('No mapping defined in current directory')
-            except MapperException as e:
-                raise MappingLoadException(f'Error loading mapping: {e}')
-
-        for func in [status, init, delete, add_study_folder, edit]:
-            map_group.add_command(func)
-        return map_group
-
 
     # == Shared functions ===
 
@@ -790,6 +303,37 @@ class AnonCommandLineParser:
         return BatchFolder(self.current_dir())
 
 
+@click.command(short_help='show tool status')
+@click.pass_obj
+def status(parser: AnonCommandLineParser):
+    """Get general status of this tool, show currently active server etc."""
+    click.echo("Status is really good")
+    server_list = parser.create_server_list()
+    status = (
+        f"Available servers (* = active)\n\n"
+        f"{server_list}\n"
+        f"Using username: '{parser.settings.user_name}'\n"
+        f"Reading settings from \n"
+        f"{parser.settings}"
+    )
+    click.echo(status)
+
+
+def command_group_function(**kwargs):
+    """Combines decorators used for all click functions inside a ClickCommandGroup
+    Identical to
+
+    @click.command(**kwargs)
+    @click.pass_obj
+
+    Just to prevent duplicated code
+    """
+    def decorator(func):
+        return click.command(**kwargs)((click.pass_obj(func)))
+
+    return decorator
+
+
 class AnonCommandLineParserException(Exception):
     pass
 
@@ -806,14 +350,3 @@ class ClientToolException(Exception):
     pass
 
 
-def command_group_function(func):
-    """Combines decorators used for all click functions inside a ClickCommandGroup
-    Identical to
-
-    @click.command()
-    @click.pass_obj
-
-    Just to prevent duplicated code
-    """
-
-    return click.command()((click.pass_obj(func)))

@@ -14,7 +14,7 @@ def main():
     """manage API credentials"""
 
 
-@command_group_function
+@command_group_function()
 def info(parser: AnonCommandLineParser):
     """show current credentials"""
     click.echo(
@@ -22,7 +22,7 @@ def info(parser: AnonCommandLineParser):
     )
 
 
-@command_group_function
+@command_group_function()
 @click.argument('user_name', type=str)
 def set_username(parser: AnonCommandLineParser, user_name):
     """Set the given username in settings
@@ -32,7 +32,7 @@ def set_username(parser: AnonCommandLineParser, user_name):
     click.echo(f"username is now '{user_name}'")
 
 
-@command_group_function
+@command_group_function()
 def get_token(parser: AnonCommandLineParser):
     """Obtain a security token
     """
