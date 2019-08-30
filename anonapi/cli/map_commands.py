@@ -131,7 +131,11 @@ def add_study_folder(context: MapCommandContext, path):
 def edit(context: MapCommandContext):
     """Edit the current mapping in OS default editor
     """
-    click.launch(context.get_current_mapping_folder().full_path())
+    mapping_folder = context.get_current_mapping_folder()
+    if mapping_folder.has_mapping_list():
+        click.launch(str(mapping_folder.full_path()))
+    else:
+        click.echo("No mapping file defined in current folder")
 
 
 for func in [status, init, delete, add_study_folder, edit]:
