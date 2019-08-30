@@ -2,7 +2,7 @@ language: python
 python:
 - 3.6
 before_install:
-- pip install codecov pytest-cov pyyaml factory_boy
+- pip install codecov pytest-cov pyyaml factory_boy click pydicom fileselection
 install:
 - pip install -U tox-travis
 script:
