@@ -295,20 +295,6 @@ def get_example_mapping_list():
     return MappingList(mapping=mapping)
 
 
-def open_mapping_in_editor(mapping_file):
-    print(f"Opening {mapping_file}")
-    open_file_in_default_editor(mapping_file)
-
-
-def open_file_in_default_editor(mapping_file):
-    if platform.system() == 'Linux':
-        subprocess.Popen(args=['xdg-open', mapping_file])
-    elif platform.system() == 'Windows':
-        subprocess.Popen(['start', mapping_file], shell=True)
-    else:
-        raise NotImplemented(f"Opening new terminal not supported on platform '{platform.system()}'")
-
-
 class MapperException(Exception):
     pass
 

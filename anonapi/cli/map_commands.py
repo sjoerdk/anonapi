@@ -11,7 +11,7 @@ from fileselection.fileselection import FileSelectionFolder, FileSelectionFile
 from tqdm import tqdm
 
 from anonapi.cli.parser import command_group_function, AnonCommandLineParser, MappingLoadException
-from anonapi.mapper import get_example_mapping_list, SourceIdentifierFactory, open_mapping_in_editor,\
+from anonapi.mapper import get_example_mapping_list, SourceIdentifierFactory,\
     MappingListFolder, MappingList, MapperException, AnonymizationParameters
 from anonapi.selection import DICOMFileFolder
 
@@ -129,9 +129,9 @@ def add_study_folder(context: MapCommandContext, path):
 
 @command_group_function()
 def edit(context: MapCommandContext):
-    """Edit the current mapping in editor
+    """Edit the current mapping in OS default editor
     """
-    open_mapping_in_editor(context.get_current_mapping_folder().full_path())
+    click.launch(context.get_current_mapping_folder().full_path())
 
 
 for func in [status, init, delete, add_study_folder, edit]:
