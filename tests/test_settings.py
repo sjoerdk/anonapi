@@ -37,6 +37,12 @@ def test_settings_file(test_settings_folder):
     return test_settings_folder / "settings.yml"
 
 
+@pytest.fixture
+def test_settings_file_old(test_settings_folder):
+    """Copy of a correctly formatted settings file before adding create_job_defaults param"""
+    return test_settings_folder / "settings_old.yml"
+
+
 def test_settings_load(test_settings_file):
     settings = AnonClientSettingsFromFile(test_settings_file)
 
@@ -97,3 +103,16 @@ def test_anon_client_settings_init_with_no_servers():
     # this should not crash
     _ = AnonClientSettings(servers=[], user_name="test", user_token="token")
     _ = DefaultAnonClientSettings()
+
+
+def test_settings_load_old(test_settings_file_old):
+    """A parameter was added to settings. You should still be able to load older settings files that do not
+    contain this settings. A default version of the new setting should be added silently"""
+    settings = AnonClientSettingsFromFile(test_settings_file_old)
+
+    assert settings.user_name == "kees"
+    assert settings.user_token == "token"
+    assert settings.active_server.name == "sandbox"
+    assert settings.create_job_defaults is not None
+    assert len(settings.servers) == 2
+    assert str(settings) == f"Settings at {str(test_settings_file_old)}"

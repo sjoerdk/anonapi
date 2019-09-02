@@ -7,7 +7,8 @@ import click
 
 from anonapi.cli import user_commands, parser, job_commands, batch_commands, map_commands, server_commands, \
     select_commands
-from anonapi.cli.parser import AnonClientTool, AnonCommandLineParser
+from anonapi.cli.parser import AnonCommandLineParser
+from anonapi.client import AnonClientTool
 from anonapi.settings import AnonClientSettingsFromFile, DefaultAnonClientSettings
 
 

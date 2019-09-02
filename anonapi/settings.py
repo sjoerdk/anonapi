@@ -5,13 +5,14 @@ from typing import List
 
 import yaml
 
+from anonapi.client import ProjectName
 from anonapi.objects import RemoteAnonServer
 
 
 class AnonClientSettings:
     """Settings used by anonymization web API client """
 
-    def __init__(self, servers, user_name, user_token):
+    def __init__(self, servers, user_name, user_token, create_job_defaults=None):
         """
         Parameters
         ----------
@@ -21,11 +22,17 @@ class AnonClientSettings:
             user name
         user_token: str
             API token
+        create_job_defaults: List[JobCreationParameter], optional
+            When creating jobs, use these settings by default
 
         """
         self.servers = servers
         self.user_name = user_name
         self.user_token = user_token
+        if create_job_defaults:
+            self.create_job_defaults = create_job_defaults
+        else:
+            self.create_job_defaults = []
         if servers:
             self.active_server = servers[0]
         else:
@@ -39,6 +46,7 @@ class AnonClientSettings:
             "servers": {x.name: x.url for x in self.servers},
             "user_name": self.user_name,
             "user_token": self.user_token,
+            "create_job_defaults": {x.name: x.value for x in self.create_job_defaults}
         }
         if self.active_server:
             datamap["active_server_name"] = self.active_server.name
@@ -77,6 +85,7 @@ class DefaultAnonClientSettings(AnonClientSettings):
             servers=[RemoteAnonServer("test", "https://hostname_of_api")],
             user_name="username",
             user_token="token",
+            create_job_defaults=[ProjectName(value='default_project')]
         )
 
 
@@ -94,6 +103,9 @@ class DataMap:
             msg = f"expected to find key '{key}'"
             raise AnonClientSettingsFromFileException(msg)
         return self._datamap[key]
+
+    def __iter__(self):
+        return self._datamap.__iter__()
 
 
 class AnonClientSettingsFromFile(AnonClientSettings):
@@ -121,13 +133,24 @@ class AnonClientSettingsFromFile(AnonClientSettings):
             msg = f"Could not read all settings from {self.filename}: {e}"
             raise AnonClientSettingsException(msg)
 
+        if 'create_job_defaults' in datamap:
+            create_job_defaults = datamap.get("create_job_defaults")
+            if "project_name" in create_job_defaults:
+                create_job_defaults_parsed = [ProjectName(value=create_job_defaults['project_name'])]
+            else:
+                create_job_defaults_parsed = []
+        else:  # if this is an old settings file 'create_job_defaults' will not exist. Just insert a default
+            create_job_defaults_parsed = DefaultAnonClientSettings().create_job_defaults
+
         servers_parsed = {}
         for name, url in servers.items():
             servers_parsed[name] = RemoteAnonServer(name=name, url=url)
+
         super().__init__(
             servers=list(servers_parsed.values()),
             user_name=user_name,
             user_token=user_token,
+            create_job_defaults=create_job_defaults_parsed
         )
         # set active server
         if active_server_name is None:

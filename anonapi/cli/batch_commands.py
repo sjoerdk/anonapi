@@ -7,7 +7,8 @@ import click
 from anonapi.batch import JobBatch
 from anonapi.cli.click_types import JobIDRangeParamType
 from anonapi.cli.parser import command_group_function, AnonCommandLineParser, AnonCommandLineParserException, \
-    NoBatchDefinedException, ClientToolException
+    NoBatchDefinedException
+from anonapi.client import ClientToolException
 from collections import Counter
 
 from anonapi.responses import JobStatus

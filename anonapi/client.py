@@ -4,6 +4,14 @@
 import requests
 import json
 
+from anonapi.objects import RemoteAnonServer
+from anonapi.responses import (
+    JobsInfoList,
+    parse_job_infos_response,
+    APIParseResponseException,
+    format_job_info_list,
+)
+
 
 class WebAPIClient:
     def __init__(self, hostname, username, token, validate_https=True):
@@ -246,6 +254,252 @@ class WebAPIClient:
             raise APIClientException(msg)
 
 
+class AnonClientTool:
+    """Performs several actions via the Anonymization web API interface.
+
+    One abstraction level above WebAPIClient. Client deals with https calls, get and post,
+    this tool should not do any http operations, and instead deal with servers and jobs.
+    """
+
+    def __init__(self, username, token):
+        """Create an anonymization web API client tool
+
+        Parameters
+        ----------
+        username: str
+            use this when calling API
+        token:
+            API token to use when calling API
+
+        """
+        self.username = username
+        self.token = token
+
+    def get_client(self, url):
+        """Create an API client with the information in this tool
+
+        Returns
+        -------
+        WebAPIClient
+        """
+        client = WebAPIClient(hostname=url, username=self.username, token=self.token)
+        return client
+
+    def get_server_status(self, server: RemoteAnonServer):
+        """
+
+        Returns
+        -------
+        str:
+            status of the given server
+        """
+        client = self.get_client(server.url)
+        try:
+            client.get_documentation()  # don't care about documentation return value now, just using as test
+            status = f"OK: {server} is online and responsive"
+        except APIClientException as e:
+            status = f"ERROR: {server} is not responding properly. Error:\n {str(e)}"
+
+        return status
+
+    def get_job_info(self, server: RemoteAnonServer, job_id: int):
+        """Full description of a single job
+
+        Parameters
+        ----------
+        server: :obj:`RemoteAnonServer`
+            get job info from this server
+        job_id: str
+            id of job to get info for
+
+
+        Returns
+        -------
+        str:
+            string describing job, or error if job could not be found
+
+        """
+
+        client = self.get_client(server.url)
+
+        try:
+            response = client.get("get_job", job_id=job_id)
+            info_string = f"job {job_id} on {server.name}:\n\n"
+            info_string += "\n".join([str(x) for x in list(response.items())])
+
+        except APIClientException as e:
+            info_string = f"Error getting job info from {server}:\n{str(e)}"
+        return info_string
+
+    def get_job_info_list(self, server: RemoteAnonServer, job_ids):
+        """Get a list of info on the given job ids. Info is shorter then full info
+
+        Parameters
+        ----------
+        server: RemoteAnonServer
+            get job info from this server
+        job_ids: List[str]
+            list of jobs to get info for
+
+        Returns
+        -------
+        JobsInfoList:
+            info describing each job. Info is omitted if job id could not be found
+
+        Raises
+        ------
+        ClientToolException:
+            if something goes wrong getting jobs info from server
+
+        """
+        client = self.get_client(server.url)
+        try:
+            return JobsInfoList(
+                parse_job_infos_response(client.get("get_jobs_list", job_ids=job_ids))
+            )
+        except APIClientException as e:
+            raise ClientToolException(f"Error getting jobs from {server}:\n{str(e)}")
+        except APIParseResponseException as e:
+            raise ClientToolException(
+                f"Error parsing server response: from {server}:\n{str(e)}"
+            )
+
+    def get_jobs(self, server: RemoteAnonServer):
+        """Get list of info on most recent jobs in server
+
+        Parameters
+        ----------
+        server: :obj:`RemoteAnonServer`
+            get job info from this server
+
+        Returns
+        -------
+        str:
+            string describing job, or error if job could not be found
+
+        """
+        job_limit = 50  # reduce number of jobs shown for less screen clutter.
+
+        client = self.get_client(server.url)
+        try:
+            response_raw = client.get("get_jobs")
+            response = parse_job_infos_response(response_raw)
+
+            info_string = f"most recent {job_limit} jobs on {server.name}:\n\n"
+            info_string += "\n" + format_job_info_list(response)
+            return info_string
+
+        except APIClientException as e:
+            response = f"Error getting jobs from {server}:\n{str(e)}"
+        except APIParseResponseException as e:
+            response = f"Error parsing server response: from {server}:\n{str(e)}"
+
+        return response
+
+    def cancel_job(self, server: RemoteAnonServer, job_id: int):
+        """Cancel the given job
+
+        Returns
+        -------
+        str
+            a string describing success or any API error
+        """
+        client = self.get_client(server.url)
+        try:
+            _ = client.post("cancel_job", job_id=job_id)
+            info = f"Cancelled job {job_id} on {server.name}"
+        except APIClientException as e:
+            info = f"Error cancelling job on{server}:\n{str(e)}"
+        return info
+
+    def reset_job(self, server, job_id):
+        """Reset job status, error and downloaded/processed counters
+
+        Returns
+        -------
+        str
+            a string describing success or any API error
+        """
+
+        client = self.get_client(server.url)
+        try:
+            _ = client.post(
+                "modify_job",
+                job_id=job_id,
+                status="ACTIVE",
+                files_downloaded=0,
+                files_processed=0,
+                error=" ",
+            )
+            info = f"Reset job {job_id} on {server}"
+        except APIClientException as e:
+            info = f"Error resetting job on{server.name}:\n{str(e)}"
+        return info
+
+    def create_path_job(
+        self,
+        server: RemoteAnonServer,
+        anon_name,
+        anon_id,
+        project_name,
+        source_path,
+        destination_path,
+        description,
+    ):
+        """Create a job with data coming from a network path
+
+        Parameters
+        ----------
+        server: RemoteAnonServer
+        anon_name: str
+        anon_id: str
+        project_name: str
+        source_path: path
+        destination_path: path
+        description: str
+
+        Returns
+        -------
+
+        """
+
+        client = self.get_client(server.url)
+        try:
+            info = client.post(
+                "create_job",
+                source_type="PATH",
+                source_path=source_path,
+                destination_type="PATH",
+                project_name=project_name,
+                destination_path=destination_path,
+                anonymizedpatientname=anon_name,
+                anonymizedpatientid=anon_id,
+                description=description,
+            )
+        except APIClientException as e:
+            return f"Error creating job on{server.name}:\n{str(e)}"
+        return info
+
+
+class JobCreationParameter:
+    """Parameter that can be passed when calling create_job on the api.
+
+    Notes
+    -----
+    Trying to avoid using magic strings for these values. Best solution would be to have a shared api definition between
+    client and server"""
+
+    name = "base_parameter"
+
+    def __init__(self, value):
+        self.value = value
+
+
+class ProjectName(JobCreationParameter):
+
+    name = "project_name"
+
+
 class ClientInterfaceException(Exception):
     """A general problem with client interface """
 
@@ -286,3 +540,7 @@ class APIClientAPIException(APIClientException):
 
         super(APIClientAPIException, self).__init__(msg)
         self.api_errors = api_errors
+
+
+class ClientToolException(Exception):
+    pass

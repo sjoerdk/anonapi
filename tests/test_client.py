@@ -10,7 +10,7 @@ from anonapi.client import (
     APIClientAPIException,
     APIClientAuthorizationFailedException,
     APIClientException,
-)
+    AnonClientTool)
 from tests.factories import RequestsMock, RequestsMockResponseExamples
 
 
@@ -148,3 +148,8 @@ def test_response_code_handling(mocked_requests_client: WebAPIClient):
     with pytest.raises(APIClientException) as exception:
         client.get("get_jobs")
     assert "Unexpected response" in str(exception.value)
+
+
+def test_client_tool_create():
+    client_tool = AnonClientTool(username='user', token='token')
+    #client_tool.create_job()

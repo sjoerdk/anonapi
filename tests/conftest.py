@@ -5,8 +5,8 @@ from pathlib import Path
 from _pytest.fixtures import fixture
 from fileselection.fileselection import FileSelectionFolder
 
-from anonapi.cli.parser import AnonClientTool, AnonCommandLineParser
-from anonapi.client import WebAPIClient
+from anonapi.cli.parser import AnonCommandLineParser
+from anonapi.client import WebAPIClient, AnonClientTool
 from anonapi.objects import RemoteAnonServer
 from anonapi.settings import AnonClientSettings
 from tests.factories import RequestsMock

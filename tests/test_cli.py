@@ -5,23 +5,17 @@ from unittest.mock import Mock
 
 import pytest
 from click.testing import CliRunner
-from fileselection.fileselection import FileSelectionFolder
 
 from anonapi.batch import BatchFolder, JobBatch
 from anonapi.cli import entrypoint, user_commands
 from anonapi.cli.entrypoint import get_parser
 from anonapi.cli.parser import (
-    AnonClientTool,
-    AnonCommandLineParser,
     AnonCommandLineParserException,
-    ClientToolException,
     MappingLoadException,
 )
-from anonapi.client import APIClientException
+from anonapi.client import APIClientException, ClientToolException
 from anonapi.mapper import MappingListFolder
-from anonapi.objects import RemoteAnonServer
 from anonapi.responses import APIParseResponseException
-from anonapi.settings import AnonClientSettings
 from tests import RESOURCE_PATH
 from tests.factories import RequestsMock, RequestsMockResponseExamples
 
