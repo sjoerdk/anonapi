@@ -5,8 +5,6 @@ Meant to be usable in a command line, with minimal windows editing tools. Maybe 
 """
 import csv
 import os
-import platform
-import subprocess
 from collections import UserDict
 from os import path
 from pathlib import Path

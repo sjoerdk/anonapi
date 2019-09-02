@@ -1,19 +1,15 @@
 """Click group and commands for the 'map' subcommand
 """
-from pathlib import Path
 
 import click
 import datetime
 import random
 import string
 
-from fileselection.fileselection import FileSelectionFolder, FileSelectionFile
-from tqdm import tqdm
-
 from anonapi.cli.parser import command_group_function, AnonCommandLineParser, MappingLoadException
+from anonapi.cli.select_commands import create_dicom_selection_click
 from anonapi.mapper import get_example_mapping_list, SourceIdentifierFactory,\
     MappingListFolder, MappingList, MapperException, AnonymizationParameters
-from anonapi.selection import DICOMFileFolder
 
 
 class MapCommandContext:
@@ -95,23 +91,7 @@ def add_study_folder(context: MapCommandContext, path):
     # check whether there is a mapping
     mapping = context.get_current_mapping()
 
-    # Find all dicom files in this folder
-    click.echo(f"Adding '{path}' to mapping")
-    folder = DICOMFileFolder(path)
-    click.echo(f"Finding all files in {path}")
-    files = [x for x in tqdm(folder.all_files()) if x is not None]
-    click.echo(f"Found {len(files)} files. Finding out which ones are DICOM")
-    dicom_files = [x[0] for x in tqdm(folder.all_dicom_files(files)) if x[1] is not None]
-    click.echo(f"Found {len(dicom_files)} DICOM files")
-
-    # record dicom files as fileselection
-    selection_folder = FileSelectionFolder(path=path)
-    selection = FileSelectionFile(
-        data_file_path=selection_folder.get_data_file_path(),
-        description=Path(path).name,
-        selected_paths=dicom_files
-    )
-    selection_folder.save_file_selection(selection)
+    create_dicom_selection_click(path)
 
     # add this folder to mapping
     folder_source_id = SourceIdentifierFactory().get_source_identifier(f'folder:{path}')

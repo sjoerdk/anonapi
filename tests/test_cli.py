@@ -9,6 +9,7 @@ from fileselection.fileselection import FileSelectionFolder
 
 from anonapi.batch import BatchFolder, JobBatch
 from anonapi.cli import entrypoint, user_commands
+from anonapi.cli.entrypoint import get_parser
 from anonapi.cli.parser import (
     AnonClientTool,
     AnonCommandLineParser,
@@ -17,33 +18,12 @@ from anonapi.cli.parser import (
     MappingLoadException,
 )
 from anonapi.client import APIClientException
+from anonapi.mapper import MappingListFolder
 from anonapi.objects import RemoteAnonServer
 from anonapi.responses import APIParseResponseException
 from anonapi.settings import AnonClientSettings
 from tests import RESOURCE_PATH
 from tests.factories import RequestsMock, RequestsMockResponseExamples
-
-
-@pytest.fixture
-def anonapi_mock_cli(monkeypatch):
-    """Returns AnonCommandLineParser object and sets this as the default object passed to all click invocations of
-     entrypoint.cli
-
-
-    """
-    settings = AnonClientSettings(
-        servers=[
-            RemoteAnonServer(name="testserver", url="https://testurl"),
-            RemoteAnonServer(name="testserver2", url="https://testurl2"),
-        ],
-        user_name="testuser",
-        user_token="testtoken",
-    )
-    tool = AnonClientTool(username=settings.user_name, token=settings.user_token)
-    mock_parser = AnonCommandLineParser(client_tool=tool, settings=settings)
-    monkeypatch.setattr("anonapi.cli.entrypoint.get_parser", lambda: mock_parser)
-
-    return mock_parser
 
 
 @pytest.fixture
@@ -549,9 +529,9 @@ def test_cli_map(mock_anonapi_current_dir):
     assert result.exit_code == 0
 
 
-def test_cli_map_info(anonapi_mock_cli):
+def test_cli_map_info(anon_mock_cli_with_mapping):
     """running map info should give you a nice print of contents"""
-    anonapi_mock_cli.current_dir = lambda: RESOURCE_PATH / "test_cli"
+    anon_mock_cli_with_mapping.current_dir = lambda: RESOURCE_PATH / "test_cli"
 
     runner = CliRunner()
     result = runner.invoke(entrypoint.cli, "map status")
@@ -596,16 +576,16 @@ def test_cli_map_info_empty_dir(mock_anonapi_current_dir):
     assert "No mapping defined" in result.output
 
 
-def test_cli_map_add_folder(mock_anonapi_current_dir, tmp_path):
+def test_cli_map_add_folder(mock_anonapi_current_dir, folder_with_some_dicom_files):
     """Add a folder with some dicom files to a mapping."""
     # copy some content to tmp location
-    a_folder = tmp_path / "a_folder"
-    shutil.copytree(RESOURCE_PATH / "test_cli" / "test_dir", a_folder)
-    selection_folder = FileSelectionFolder(path=a_folder)
+    selection_folder = folder_with_some_dicom_files
 
     # Add this folder to mapping
     runner = CliRunner()
-    result = runner.invoke(entrypoint.cli, f"map add-study-folder {a_folder}")
+    result = runner.invoke(
+        entrypoint.cli, f"map add-study-folder {selection_folder.path}"
+    )
 
     # oh no! no mapping yet!
     assert result.exit_code == 1
@@ -616,5 +596,52 @@ def test_cli_map_add_folder(mock_anonapi_current_dir, tmp_path):
 
     # dicom files should not have been selected yet currently
     assert not selection_folder.has_file_selection()
-    result = runner.invoke(entrypoint.cli, f"map add-study-folder {a_folder}")
+    result = runner.invoke(
+        entrypoint.cli, f"map add-study-folder {selection_folder.path}"
+    )
     assert selection_folder.has_file_selection()
+
+
+def test_cli_map_delete(anon_mock_cli_with_mapping):
+    """running map info should give you a nice print of contents"""
+    mapping_folder = MappingListFolder(anon_mock_cli_with_mapping.current_dir())
+    assert mapping_folder.has_mapping_list()
+
+    runner = CliRunner()
+    result = runner.invoke(entrypoint.cli, "map delete")
+
+    assert result.exit_code == 0
+    assert not mapping_folder.has_mapping_list()
+
+    # deleting  again will yield nice message
+    result = runner.invoke(entrypoint.cli, "map delete")
+    assert result.exit_code == 0
+    assert "No mapping defined" in result.output
+
+
+def test_cli_map_edit(anon_mock_cli_with_mapping, monkeypatch):
+    mock_launch = Mock()
+    monkeypatch.setattr('anonapi.cli.select_commands.click.launch', mock_launch)
+
+    runner = CliRunner()
+    result = runner.invoke(entrypoint.cli, "map edit")
+
+    assert result.exit_code == 0
+    assert mock_launch.called
+
+    # now try edit without any mapping being present
+    mock_launch.reset_mock()
+    runner.invoke(entrypoint.cli, "map delete")
+    result = runner.invoke(entrypoint.cli, "map edit")
+
+    assert result.exit_code == 0
+    assert "No mapping file defined" in result.output
+    assert not mock_launch.called
+
+
+def test_cli_entrypoint(monkeypatch, tmpdir):
+    """Call main entrypoint with empty homedir. This should create a default settings file"""
+    monkeypatch.setattr('anonapi.cli.entrypoint.pathlib.Path.home', lambda: tmpdir)
+    parser = get_parser()
+    assert parser.settings.user_name == 'username'
+
