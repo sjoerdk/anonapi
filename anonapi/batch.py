@@ -133,10 +133,10 @@ class BatchFolder:
 
         Returns
         -------
-        JobBatch:
+        JobBatch
             If there is a batch defined in this folder
 
-        None:
+        None
             If not
         """
         if not self.has_batch():

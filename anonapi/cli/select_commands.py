@@ -90,7 +90,7 @@ def delete(context: SelectCommandContext):
 
 @command_group_function()
 def create(context: SelectCommandContext):
-    """initialise a selection for the current directory, add all DICOM files"""
+    """Recursively find all DICOM files in this dirfor the current directory, add all DICOM files"""
 
     selection_folder = context.get_current_selection_folder()
     if selection_folder.has_file_selection():

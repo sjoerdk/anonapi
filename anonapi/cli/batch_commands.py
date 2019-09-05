@@ -83,7 +83,12 @@ def remove(parser: AnonCommandLineParser, job_ids):
 @command_group_function()
 def status(parser: AnonCommandLineParser, ):
     """Print status overview for all jobs in batch"""
-    batch = parser.get_batch()
+    try:
+        batch = parser.get_batch()
+    except NoBatchDefinedException as e:
+        click.echo(e)
+        return
+
     ids_queried = batch.job_ids
     try:
         infos = parser.client_tool.get_job_info_list(

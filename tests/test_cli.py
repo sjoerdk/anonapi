@@ -403,6 +403,9 @@ def test_cli_batch(anonapi_mock_cli, tmpdir):
 def test_cli_batch_status(anonapi_mock_cli, mock_requests):
     """Try operations actually calling server"""
     runner = CliRunner()
+    # run batch status without a batch
+    result = runner.invoke(entrypoint.cli, "batch status")
+    assert result.exit_code == 0
 
     batch = JobBatch(
         job_ids=["1000", "1002", "5000"], server=anonapi_mock_cli.get_active_server()

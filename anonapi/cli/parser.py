@@ -89,7 +89,16 @@ class AnonCommandLineParser:
         return os.getcwd()
 
     def get_batch(self):
-        """Get batch defined in current folder"""
+        """Get batch defined in current folder
+
+        Raises
+        ------
+        NoBatchDefinedException
+
+        Returns
+        -------
+        BatchFolder
+        """
 
         batch = BatchFolder(self.current_dir()).load()
         if not batch:
