@@ -11,10 +11,9 @@ from anonapi.cli import entrypoint, user_commands
 from anonapi.cli.entrypoint import get_parser
 from anonapi.cli.parser import (
     AnonCommandLineParserException,
-    MappingLoadException,
 )
 from anonapi.client import APIClientException, ClientToolException
-from anonapi.mapper import MappingListFolder
+from anonapi.mapper import MappingListFolder, MappingLoadError
 from anonapi.responses import APIParseResponseException
 from tests import RESOURCE_PATH
 from tests.factories import RequestsMock, RequestsMockResponseExamples
@@ -49,7 +48,7 @@ def mock_anonapi_current_dir(anonapi_mock_cli, tmpdir):
     """Anonapi instance with a tempdir current dir. So you can create, read files in 'current dir'"""
     anonapi_mock_cli.current_dir = lambda: str(
         tmpdir
-    )  # make parser thinks tmpdir is its working dir
+    )  # make mock_context thinks tmpdir is its working dir
     return anonapi_mock_cli
 
 
@@ -115,7 +114,7 @@ def test_command_line_tool_server_status(anonapi_mock_cli, mock_requests):
 
     # basic check. Call a server that responds with an expected anonapi json response
     # API_CALL_NOT_DEFINED is a response that is used to check the liveness of a server currently.
-    mock_requests.set_response(RequestsMockResponseExamples.API_CALL_NOT_DEFINED)
+    mock_requests.set_response_text(RequestsMockResponseExamples.API_CALL_NOT_DEFINED)
     result = runner.invoke(entrypoint.cli, ["server", "status"])
 
     assert "OK" in result.output
@@ -131,7 +130,7 @@ def test_command_line_tool_server_status(anonapi_mock_cli, mock_requests):
 
     # now test a server that exists but responds weirdly:
     mock_requests.reset()
-    mock_requests.set_response("Hello, welcome to an unrelated server")
+    mock_requests.set_response_text("Hello, welcome to an unrelated server")
     result = runner.invoke(entrypoint.cli, ["server", "status"])
 
     assert "is not responding properly" in result.output
@@ -145,7 +144,7 @@ def test_command_line_tool_job_info(anonapi_mock_cli, mock_requests):
     result = runner.invoke(entrypoint.cli, "server activate testserver")
     assert "Set active server to" in result.output
 
-    mock_requests.set_response(RequestsMockResponseExamples.JOB_INFO)
+    mock_requests.set_response_text(RequestsMockResponseExamples.JOB_INFO)
     result = runner.invoke(entrypoint.cli, "job info 3")
     assert "job 3 on testserver" in result.output
     assert "'user_name', 'z123sandbox'" in result.output
@@ -155,13 +154,24 @@ def test_cli_job_list(anonapi_mock_cli, mock_requests):
     """Try operations actually calling server"""
     runner = CliRunner()
 
-    mock_requests.set_response(
+    mock_requests.set_response_text(
         text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST
     )
     result = runner.invoke(entrypoint.cli, "job list 1000 1002 50000")
     assert all(
         text in result.output for text in ["DONE", "UPLOAD", "1000", "1002", "5000"]
     )
+
+
+def test_cli_job_list_errors(anonapi_mock_cli, mock_requests):
+    """Giving no parameters should yield helpful error string. Not python stacktrace"""
+    runner = CliRunner()
+    mock_requests.set_response_text(
+        text=RequestsMockResponseExamples.REQUIRED_PARAMETER_NOT_SUPPLIED,
+        status_code=400
+    )
+    result = runner.invoke(entrypoint.cli, "job list")
+    result.exit_code == 0
 
 
 def test_command_line_tool_activate_server(anonapi_mock_cli, mock_requests):
@@ -185,7 +195,7 @@ def test_command_line_tool_job_functions(anonapi_mock_cli, mock_requests):
     Kind of a mop up test trying to get coverage up"""
     runner = CliRunner()
 
-    mock_requests.set_response(text=RequestsMockResponseExamples.JOB_INFO)
+    mock_requests.set_response_text(text=RequestsMockResponseExamples.JOB_INFO)
     runner.invoke(entrypoint.cli, "job info 1234")
     assert mock_requests.requests.get.called is True
     assert "1234" in str(mock_requests.requests.get.call_args)
@@ -211,7 +221,7 @@ def test_command_line_tool_job_functions(anonapi_mock_cli, mock_requests):
 
 def test_command_line_tool_job_list(anonapi_mock_cli, mock_requests):
     runner = CliRunner()
-    mock_requests.set_response(RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST)
+    mock_requests.set_response_text(RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST)
     result = runner.invoke(entrypoint.cli, "job list 1 2 3 445")
     assert "Z495159" in result.output
     assert "1000" in result.output
@@ -283,7 +293,7 @@ def test_command_line_tool_server_functions(
 
     Kind of a mop up test trying to get coverage up"""
     runner = CliRunner()
-    mock_requests.set_response(text=server_response)
+    mock_requests.set_response_text(text=server_response)
     result = runner.invoke(entrypoint.cli, command)
     assert expected_print in result.output
 
@@ -355,7 +365,7 @@ def test_cli_batch(anonapi_mock_cli, tmpdir):
     """Try working with a batch of job ids from console"""
     anonapi_mock_cli.current_dir = lambda: str(
         tmpdir
-    )  # make parser thinks tmpdir is its working dir
+    )  # make mock_context thinks tmpdir is its working dir
 
     runner = CliRunner()
 
@@ -399,7 +409,7 @@ def test_cli_batch_status(anonapi_mock_cli, mock_requests):
     )
     anonapi_mock_cli.get_batch = lambda: batch  # set current batch to mock batch
 
-    mock_requests.set_response(
+    mock_requests.set_response_text(
         text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST
     )
     result = runner.invoke(entrypoint.cli, "batch status")
@@ -412,7 +422,7 @@ def test_cli_batch_cancel(anonapi_mock_cli_with_batch, mock_requests):
     """Try operations actually calling server"""
     runner = CliRunner()
 
-    mock_requests.set_response(
+    mock_requests.set_response_text(
         text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST
     )
     result = runner.invoke(entrypoint.cli, "batch cancel", input="No")
@@ -429,7 +439,7 @@ def test_cli_batch_status_errors(anonapi_mock_cli_with_batch, mock_requests):
     """Call server, but not all jobs exist. This should appear in the status message to the user"""
     runner = CliRunner()
 
-    mock_requests.set_response(
+    mock_requests.set_response_text(
         text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST
     )
     result = runner.invoke(entrypoint.cli, "batch status")
@@ -458,7 +468,7 @@ def test_cli_batch_reset_error(anonapi_mock_cli_with_batch, mock_requests):
     """Try operations actually calling server"""
     runner = CliRunner()
 
-    mock_requests.set_response(
+    mock_requests.set_response_text(
         text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST_WITH_ERROR
     )
 
@@ -488,7 +498,7 @@ def test_cli_batch_id_range(anonapi_mock_cli, tmpdir):
     """check working with id ranges"""
     anonapi_mock_cli.current_dir = lambda: str(
         tmpdir
-    )  # make parser thinks tmpdir is its working dir
+    )  # make mock_context thinks tmpdir is its working dir
 
     runner = CliRunner()
 
@@ -550,7 +560,7 @@ def test_cli_map_info_load_exception(anonapi_mock_cli, monkeypatch):
 
     # but then raise exception when loading
     def mock_load(x):
-        raise MappingLoadException("Test Exception")
+        raise MappingLoadError("Test Exception")
 
     monkeypatch.setattr("anonapi.mapper.MappingList.load", mock_load)
     runner = CliRunner()
@@ -570,7 +580,7 @@ def test_cli_map_info_empty_dir(mock_anonapi_current_dir):
     assert "No mapping defined" in result.output
 
 
-def test_cli_map_add_folder(mock_anonapi_current_dir, folder_with_some_dicom_files):
+def test_cli_map_add_folder(anonapi_mock_cli, folder_with_some_dicom_files):
     """Add a folder with some dicom files to a mapping."""
     # copy some content to tmp location
     selection_folder = folder_with_some_dicom_files
@@ -578,12 +588,12 @@ def test_cli_map_add_folder(mock_anonapi_current_dir, folder_with_some_dicom_fil
     # Add this folder to mapping
     runner = CliRunner()
     result = runner.invoke(
-        entrypoint.cli, f"map add-study-folder {selection_folder.path}"
+        entrypoint.cli, f"map add-study-folder {selection_folder.path}",
+        catch_exceptions=False
     )
 
     # oh no! no mapping yet!
-    assert result.exit_code == 1
-    assert "No mapping defined" in str(result.exception)
+    assert "No mapping defined" in result.output
 
     # make one
     runner.invoke(entrypoint.cli, f"map init")

@@ -6,6 +6,8 @@ import click
 
 from anonapi.cli.click_types import JobIDRangeParamType
 from anonapi.cli.parser import command_group_function, AnonCommandLineParser
+from anonapi.client import ClientToolException
+from anonapi.responses import JobsInfoList
 
 
 @click.group(name='job')
@@ -29,10 +31,16 @@ def info(parser: AnonCommandLineParser, job_id):
 def job_list(parser: AnonCommandLineParser, job_ids):
     """list info for multiple jobs
     """
+    if len(job_ids) == 0:  # handle empty nargs input gracefully
+        click.echo('No job ids given')
+        return
     job_ids = [x for x in itertools.chain(*job_ids)]  # make into one list
     server = parser.get_active_server()
-    job_infos = parser.client_tool.get_job_info_list(server=server, job_ids=list(job_ids))
-    click.echo(job_infos.as_table_string())
+    try:
+        job_infos = parser.client_tool.get_job_info_list(server=server, job_ids=list(job_ids))
+        click.echo(job_infos.as_table_string())
+    except ClientToolException as e:
+        click.echo(e)
 
 
 @command_group_function()

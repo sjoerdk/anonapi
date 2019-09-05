@@ -18,7 +18,7 @@ class AnonCommandLineParser:
     """
 
     def __init__(self, client_tool: AnonClientTool, settings: AnonClientSettings):
-        """Create a anonapi command line parser
+        """Create a anonapi command line mock_context
 
         Parameters
         ----------
@@ -85,7 +85,7 @@ class AnonCommandLineParser:
 
     @staticmethod
     def current_dir():
-        """Return full path to the folder this command line parser is called from"""
+        """Return full path to the folder this command line mock_context is called from"""
         return os.getcwd()
 
     def get_batch(self):
@@ -139,9 +139,3 @@ class AnonCommandLineParserException(Exception):
 
 class NoBatchDefinedException(AnonCommandLineParserException):
     pass
-
-
-class MappingLoadException(AnonCommandLineParserException):
-    pass
-
-

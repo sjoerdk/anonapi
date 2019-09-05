@@ -180,7 +180,7 @@ class WebAPIClient:
     def interpret_response(self, response):
         """Check HTTP response and throw helpful python exception if needed.
 
-        Will not raise errors for 200 - OK and 404 - Not found.
+        Will raise errors for any response code other than 200(OK) and 404(Not found)
 
         Parameters
         ----------
@@ -458,46 +458,34 @@ class AnonClientTool:
         destination_path: path
         description: str
 
+        Raises
+        ------
+        APIClientException
+            When anything goes wrong creating job
+
         Returns
         -------
+        dict
+            response from server with info on created job
+
 
         """
 
         client = self.get_client(server.url)
-        try:
-            info = client.post(
-                "create_job",
-                source_type="PATH",
-                source_path=source_path,
-                destination_type="PATH",
-                project_name=project_name,
-                destination_path=destination_path,
-                anonymizedpatientname=anon_name,
-                anonymizedpatientid=anon_id,
-                description=description,
-            )
-        except APIClientException as e:
-            return f"Error creating job on{server.name}:\n{str(e)}"
+
+        info = client.post(
+            "create_job",
+            source_type="PATH",
+            source_path=source_path,
+            destination_type="PATH",
+            project_name=project_name,
+            destination_path=destination_path,
+            anonymizedpatientname=anon_name,
+            anonymizedpatientid=anon_id,
+            description=description,
+        )
+
         return info
-
-
-class JobCreationParameter:
-    """Parameter that can be passed when calling create_job on the api.
-
-    Notes
-    -----
-    Trying to avoid using magic strings for these values. Best solution would be to have a shared api definition between
-    client and server"""
-
-    name = "base_parameter"
-
-    def __init__(self, value):
-        self.value = value
-
-
-class ProjectName(JobCreationParameter):
-
-    name = "project_name"
 
 
 class ClientInterfaceException(Exception):

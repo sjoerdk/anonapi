@@ -9,6 +9,10 @@ from collections import UserDict
 from os import path
 from pathlib import Path
 
+from fileselection.fileselection import FileSelectionFolder
+
+from anonapi.cli.parser import AnonCommandLineParserException
+
 
 class SourceIdentifier:
     """A string representing a place where data is coming from
@@ -273,6 +277,29 @@ class MappingListFolder:
 
     def delete_list(self):
         os.remove(self.full_path())
+
+    def get_mapping(self):
+        """Load default mapping from this folder
+
+        Returns
+        -------
+        MappingList
+            Loaded from current dir
+
+        Raises
+        ------
+        MappingLoadError
+            When no mapping could be loaded from current directory
+
+        """
+
+        try:
+            with open(self.full_path(), 'r') as f:
+                return MappingList.load(f)
+        except FileNotFoundError:
+            raise MappingLoadError('No mapping defined in current directory')
+        except MapperException as e:
+            raise MappingLoadError(f'Error loading mapping: {e}')
 
 
 def get_example_mapping_list():

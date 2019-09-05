@@ -39,7 +39,7 @@ def test_settings_file(test_settings_folder):
 
 @pytest.fixture
 def test_settings_file_old(test_settings_folder):
-    """Copy of a correctly formatted settings file before adding create_job_defaults param"""
+    """Copy of a correctly formatted settings file before adding job_default_parameters param"""
     return test_settings_folder / "settings_old.yml"
 
 
@@ -113,6 +113,6 @@ def test_settings_load_old(test_settings_file_old):
     assert settings.user_name == "kees"
     assert settings.user_token == "token"
     assert settings.active_server.name == "sandbox"
-    assert settings.create_job_defaults is not None
+    assert settings.job_default_parameters is not None
     assert len(settings.servers) == 2
     assert str(settings) == f"Settings at {str(test_settings_file_old)}"

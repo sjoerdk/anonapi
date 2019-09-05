@@ -1,0 +1,120 @@
+from pathlib import Path
+
+import pytest
+
+from anonapi.batch import BatchFolder
+from anonapi.cli.create_commands import main
+from anonapi.settings import JobDefaultParameters
+from tests.conftest import AnonCommandLineParserRunner
+from tests.factories import RequestsMockResponseExamples
+
+
+@pytest.fixture()
+def mock_main_runner(anonapi_mock_cli):
+    """a click.testing.CliRunner that always passes a mocked context to any call, making sure any operations
+    on current dir are done in a temp folder"""
+    runner = AnonCommandLineParserRunner(mock_context=anonapi_mock_cli)
+    return runner
+
+
+@pytest.fixture()
+def mock_main_runner_with_mapping(mock_main_runner, a_folder_with_mapping):
+    """Mock runner where a mapping is defined in current dir"""
+    mock_main_runner.set_mock_current_dir(a_folder_with_mapping)
+    return mock_main_runner
+
+
+@pytest.fixture()
+def mock_from_mapping_runner(mock_main_runner_with_mapping):
+    """Mock runner that has everything to make a call to from-mapping work:
+    * Mapping defined in current dir
+    * Default job parameters are non-empty"""
+
+    parameters = mock_main_runner_with_mapping.get_parser().settings.job_default_parameters
+    parameters.project_name = "test_project"
+    parameters.destination_path = Path("//test/output/path")
+
+    return mock_main_runner_with_mapping
+
+
+def test_create_from_mapping_no_mapping(mock_main_runner):
+    """Running from-mapping in a folder without mapping should not work"""
+    result = mock_main_runner.invoke(main, "from-mapping")
+    assert result.exit_code == 0
+    assert "No mapping" in result.output
+
+
+def test_create_from_mapping(mock_from_mapping_runner, mock_requests):
+    """Try from-mapping, creating jobs based on a mapping"""
+
+    # Run and answer are you sure 'N'
+    result = mock_from_mapping_runner.invoke(main, "from-mapping", input="N")
+    assert result.exit_code == 0
+    assert "Cancelled" in result.output
+    assert mock_requests.requests.post.call_count == 0
+
+    # Now answer Y
+    mock_requests.set_response(RequestsMockResponseExamples.JOB_CREATED_RESPONSE)
+    result = mock_from_mapping_runner.invoke(main, "from-mapping", input="Y", catch_exceptions=False)
+    assert result.exit_code == 0
+    assert mock_requests.requests.post.call_count == 20
+    batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir())
+    assert batch_folder.has_batch()
+    assert batch_folder.load().job_ids == [1234]  # only 1 id as mock requests returns the same job id each call
+
+
+def test_create_from_mapping_server_error(mock_from_mapping_runner, mock_requests):
+    """Try from-mapping, when job creation will yield an error from server"""
+
+    mock_requests.set_responses([RequestsMockResponseExamples.ERROR_USER_NOT_CONNECTED_TO_PROJECT])
+    result = mock_from_mapping_runner.invoke(main, "from-mapping", input="Y", catch_exceptions=False)
+    assert result.exit_code == 0
+    assert mock_requests.requests.post.call_count == 1
+    batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir())
+    assert not batch_folder.has_batch()  # No batch should be there as all creation failed!
+
+
+def test_create_from_mapping_server_error_halfway(mock_from_mapping_runner, mock_requests):
+    """What if an error occurs halfway through? """
+
+    mock_requests.set_responses([RequestsMockResponseExamples.JOB_CREATED_RESPONSE,
+                                 RequestsMockResponseExamples.JOB_CREATED_RESPONSE,
+                                 RequestsMockResponseExamples.ERROR_USER_NOT_CONNECTED_TO_PROJECT])
+    result = mock_from_mapping_runner.invoke(main, "from-mapping", input="Y")
+    assert result.exit_code == 0
+    assert mock_requests.requests.post.call_count == 3
+    batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir())
+    assert batch_folder.has_batch()
+    assert batch_folder.load().job_ids == [1234]
+
+
+def test_create_set_default_parameters(mock_main_runner_with_mapping, mock_requests):
+    # Try to run from-mapping
+    result = mock_main_runner_with_mapping.invoke(main, "from-mapping", input="Y")
+
+    # This should not work because essential settings are missing
+    assert result.exit_code == 0
+    assert "Could not find default project name" in result.output
+    assert mock_requests.requests.post.call_count == 0
+
+    # set them
+    result = mock_main_runner_with_mapping.invoke(main, "set-defaults", input="some_project\n//network/test/path\n")
+    assert result.exit_code == 0
+
+    # Now this command should succeed
+    mock_requests.set_response(RequestsMockResponseExamples.JOB_CREATED_RESPONSE)
+    result = mock_main_runner_with_mapping.invoke(main, "from-mapping", input="Y")
+    assert result.exit_code == 0
+    assert mock_requests.requests.post.call_count == 20
+
+
+def test_show_set_default_parameters(mock_main_runner):
+    # Try to run from-mapping
+    parameters: JobDefaultParameters = mock_main_runner.get_parser().settings.job_default_parameters
+    parameters.project_name = "test_project"
+    parameters.destination_path = "test_destination"
+
+    result = mock_main_runner.invoke(main, "show-defaults")
+    assert result.exit_code == 0
+    assert all(x in result.output for x in ['test_project', 'test_destination'])
+
