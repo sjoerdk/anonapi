@@ -62,7 +62,7 @@ def init(context: MapCommandContext):
     folder = context.get_current_mapping_folder()
     mapping_list = get_example_mapping_list()
     folder.save_list(mapping_list)
-    click.echo(f"Initialised empty mapping in {mapping_list.DEFAULT_FILENAME}")
+    click.echo(f"Initialised example mapping in {mapping_list.DEFAULT_FILENAME}")
 
 
 @command_group_function()
