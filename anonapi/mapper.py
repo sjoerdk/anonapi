@@ -28,18 +28,40 @@ class SourceIdentifier:
         return f"{self.key}:{self.identifier}"
 
 
-class FileSelectionIdentifier(SourceIdentifier):
-    """A file selection in a specific folder
+class PathIdentifier(SourceIdentifier):
+    """Refers to a path
+    """
+    key = 'path'
+
+    def __init__(self, identifier):
+        """
+
+        Parameters
+        ----------
+        identifier: pathlike
+        """
+        super().__init__(Path(identifier))
+
+
+class FileSelectionFolderIdentifier(PathIdentifier):
+    """A file selection in a specific folder. Selection file name is default. Folder can be relative or absolute
     """
 
     key = "folder"
+
+
+class FileSelectionIdentifier(PathIdentifier):
+    """A file selection in a specific file
+    """
+
+    key = "fileselection"
 
 
 class SourceIdentifierFactory:
     """Creates SourceIdentifier objects based on key string
     """
 
-    types = [SourceIdentifier, FileSelectionIdentifier]
+    types = [SourceIdentifier, FileSelectionFolderIdentifier]
 
     def get_source_identifier(self, key):
         """Cast given key string back to identifier object
@@ -304,12 +326,12 @@ class MappingListFolder:
 
 def get_example_mapping_list():
     mapping = {
-        FileSelectionIdentifier(
+        FileSelectionFolderIdentifier(
             identifier=path.sep.join(["example", "folder1"])
         ): AnonymizationParameters(
             patient_name="Patient1", patient_id="12345", description="An optional description for patient 1"
         ),
-        FileSelectionIdentifier(
+        FileSelectionFolderIdentifier(
             identifier=path.sep.join(["example", "folder2"])
         ): AnonymizationParameters(
             patient_name="Patient2",

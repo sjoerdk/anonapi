@@ -4,6 +4,7 @@ import pytest
 
 from anonapi.batch import BatchFolder
 from anonapi.cli.create_commands import main
+from anonapi.mapper import MappingListFolder
 from anonapi.settings import JobDefaultParameters
 from tests.conftest import AnonCommandLineParserRunner
 from tests.factories import RequestsMockResponseExamples
@@ -80,7 +81,7 @@ def test_create_from_mapping_server_error_halfway(mock_from_mapping_runner, mock
     mock_requests.set_responses([RequestsMockResponseExamples.JOB_CREATED_RESPONSE,
                                  RequestsMockResponseExamples.JOB_CREATED_RESPONSE,
                                  RequestsMockResponseExamples.ERROR_USER_NOT_CONNECTED_TO_PROJECT])
-    result = mock_from_mapping_runner.invoke(main, "from-mapping", input="Y")
+    result = mock_from_mapping_runner.invoke(main, "from-mapping", input="Y", catch_exceptions=False)
     assert result.exit_code == 0
     assert mock_requests.requests.post.call_count == 3
     batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir())
@@ -117,4 +118,38 @@ def test_show_set_default_parameters(mock_main_runner):
     result = mock_main_runner.invoke(main, "show-defaults")
     assert result.exit_code == 0
     assert all(x in result.output for x in ['test_project', 'test_destination'])
+
+
+def test_create_from_mapping_relative_path(mock_from_mapping_runner, mock_requests):
+    """Source identifiers in mappings are usually given as relative paths. However, jobs should be created with
+    absolute, unambiguous paths. Check that this conversion works
+
+    """
+    mock_requests.set_response(RequestsMockResponseExamples.JOB_CREATED_RESPONSE)
+    result = mock_from_mapping_runner.invoke(main, "from-mapping", input="Y", catch_exceptions=False)
+    assert result.exit_code == 0
+    assert mock_requests.requests.post.call_count == 20
+
+    current_dir = str(mock_from_mapping_runner.mock_context.current_dir())
+    batch_folder = BatchFolder(current_dir)
+    mapping_folder = MappingListFolder(current_dir)
+    paths_in_mapping = map(str, list(mapping_folder.load_list().keys()))
+    # in mapping there should be no mention of the current dir
+    assert not any([current_dir in x for x in paths_in_mapping])
+    # But in the created jobs the current dir should have been added
+    assert current_dir in str(mock_requests.requests.post.call_args)
+
+
+def test_create_from_mapping_dry_run(mock_from_mapping_runner, mock_requests):
+    """Source identifiers in mappings are usually given as relative paths. However, jobs should be created with
+    absolute, unambiguous paths. Check that this conversion works
+
+    """
+    mock_requests.set_response(RequestsMockResponseExamples.JOB_CREATED_RESPONSE)
+    result = mock_from_mapping_runner.invoke(main, "from-mapping --dry-run", input="Y", catch_exceptions=False)
+    assert result.exit_code == 0
+    assert "Dry run" in result.output
+    assert "patient4" in result.output
+    assert mock_requests.requests.post.call_count == 0
+
 

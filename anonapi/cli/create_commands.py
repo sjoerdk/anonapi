@@ -1,7 +1,10 @@
 """Click group and commands for the 'create' subcommand
 """
+import json
+
 import click
 from click.exceptions import Abort
+from fileselection.fileselection import FileSelectionFolder
 
 from anonapi.batch import BatchFolder, JobBatch
 from anonapi.cli.parser import command_group_function, AnonCommandLineParser
@@ -9,9 +12,9 @@ from anonapi.client import APIClientException
 from anonapi.mapper import (
     MappingListFolder,
     MappingLoadError,
-    FileSelectionIdentifier,
+    FileSelectionFolderIdentifier,
     AnonymizationParameters,
-)
+    PathIdentifier, FileSelectionIdentifier)
 from anonapi.settings import JobDefaultParameters, AnonClientSettingsException
 
 
@@ -32,6 +35,13 @@ class MappingElement:
         """
         self.source = source
         self.parameters = parameters
+
+    def as_dict(self):
+        return {**{'source': str(self.source)}, **self.parameters.as_dict()}
+
+    def get_description(self):
+        """Human readable description of this element"""
+        return json.dumps(self.as_dict(), indent=2)
 
 
 class CreateCommandsContext:
@@ -66,7 +76,7 @@ class CreateCommandsContext:
             self.parser.settings.job_default_parameters
         )
 
-        if type(element.source) == FileSelectionIdentifier:
+        if issubclass(type(element.source), PathIdentifier):
             try:
                 parameters = assert_job_parameters(element.parameters)
                 response = self.parser.client_tool.create_path_job(
@@ -75,7 +85,7 @@ class CreateCommandsContext:
                     anon_name=parameters.patient_name,
                     project_name=project_name,
                     source_path=str(element.source),
-                    destination_path=destination_path,
+                    destination_path=str(destination_path),
                     description=parameters.description,
                 )
             except (APIClientException, AnonClientSettingsException) as e:
@@ -85,7 +95,7 @@ class CreateCommandsContext:
 
         else:
             raise JobCreationException(
-                f"Cannot create job for source type {type(self.source_identifier)}"
+                f"Cannot create job for source type {type(element.source)}"
             )
 
         return response["job_id"]
@@ -118,9 +128,55 @@ def main(ctx):
     ctx.obj = CreateCommandsContext(parser=parser)
 
 
+def make_absolute(elements, root_path):
+    """Make sure path elements that are relative are made absolute by prepending root_path.
+
+    Parameters
+    ----------
+    elements: List[MappingElement]
+    root_path: Path
+
+    Returns
+    -------
+    List[MappingElement]
+    """
+
+    path_elements = [x for x in elements if issubclass(type(x.source), PathIdentifier)]
+    for x in path_elements:
+        x.source.identifier = root_path / x.source.identifier
+
+    return elements
+
+
+def convert_to_fileselection(elements):
+    """Convert path element to make them less ambiguous.
+
+    Convert FileSelectionFolderIdentifier (refers to a whole folder, assumes actual file name is default) to
+    a FileSelectionIdentifier that refers explicitly to a single file. This makes it less vague what the source for
+    files actually is
+
+    Parameters
+    ----------
+    elements: List[MappingElement]
+
+    Returns
+    -------
+    List[MappingElement]
+    """
+
+    for element in [x for x in elements if type(x.source) == FileSelectionFolderIdentifier]:
+        folder = FileSelectionFolder(path=element.source.identifier)
+        element.source = FileSelectionIdentifier(identifier=folder.get_data_file_path())
+
+    return elements
+
+
 @command_group_function()
-def from_mapping(context: CreateCommandsContext):
+@click.option('--dry-run/--no-dry-run', default=False, help="Do not post to server, just print")
+def from_mapping(context: CreateCommandsContext, dry_run):
     """Create jobs from mapping in current folder"""
+    if dry_run:
+        click.echo("** Dry run, nothing will be sent to server **")
     parser = context.parser
     try:
         mapping = MappingListFolder(parser.current_dir()).get_mapping()
@@ -145,14 +201,19 @@ def from_mapping(context: CreateCommandsContext):
         return
 
     created_job_ids = []
-    for element in [MappingElement(x, y) for x, y in mapping.items()]:
-        try:
-            job_id = context.create_job_for_element(element)
-            click.echo(f"Created job with id {job_id}")
-            created_job_ids.append(job_id)
-        except JobCreationException as e:
-            click.echo(e)
-            break  # error will probably keep occurring. Stop loop
+    elements = [MappingElement(x, y) for x, y in mapping.items()]
+    elements = convert_to_fileselection(make_absolute(elements, parser.current_dir()))
+    for element in elements:
+        if dry_run:
+            click.echo(element.get_description())
+        else:
+            try:
+                job_id = context.create_job_for_element(element)
+                click.echo(f"Created job with id {job_id}")
+                created_job_ids.append(job_id)
+            except JobCreationException as e:
+                click.echo(e)
+                break  # error will probably keep occurring. Stop loop
 
     click.echo(f"created {len(created_job_ids)} jobs: {created_job_ids}")
 
