@@ -31,7 +31,9 @@ def mock_from_mapping_runner(mock_main_runner_with_mapping):
     * Mapping defined in current dir
     * Default job parameters are non-empty"""
 
-    parameters = mock_main_runner_with_mapping.get_parser().settings.job_default_parameters
+    parameters = (
+        mock_main_runner_with_mapping.get_parser().settings.job_default_parameters
+    )
     parameters.project_name = "test_project"
     parameters.destination_path = Path("//test/output/path")
 
@@ -56,32 +58,50 @@ def test_create_from_mapping(mock_from_mapping_runner, mock_requests):
 
     # Now answer Y
     mock_requests.set_response(RequestsMockResponseExamples.JOB_CREATED_RESPONSE)
-    result = mock_from_mapping_runner.invoke(main, "from-mapping", input="Y", catch_exceptions=False)
+    result = mock_from_mapping_runner.invoke(
+        main, "from-mapping", input="Y", catch_exceptions=False
+    )
     assert result.exit_code == 0
     assert mock_requests.requests.post.call_count == 20
     batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir())
     assert batch_folder.has_batch()
-    assert batch_folder.load().job_ids == [1234]  # only 1 id as mock requests returns the same job id each call
+    assert batch_folder.load().job_ids == [
+        1234
+    ]  # only 1 id as mock requests returns the same job id each call
 
 
 def test_create_from_mapping_server_error(mock_from_mapping_runner, mock_requests):
     """Try from-mapping, when job creation will yield an error from server"""
 
-    mock_requests.set_responses([RequestsMockResponseExamples.ERROR_USER_NOT_CONNECTED_TO_PROJECT])
-    result = mock_from_mapping_runner.invoke(main, "from-mapping", input="Y", catch_exceptions=False)
+    mock_requests.set_responses(
+        [RequestsMockResponseExamples.ERROR_USER_NOT_CONNECTED_TO_PROJECT]
+    )
+    result = mock_from_mapping_runner.invoke(
+        main, "from-mapping", input="Y", catch_exceptions=False
+    )
     assert result.exit_code == 0
     assert mock_requests.requests.post.call_count == 1
     batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir())
-    assert not batch_folder.has_batch()  # No batch should be there as all creation failed!
+    assert (
+        not batch_folder.has_batch()
+    )  # No batch should be there as all creation failed!
 
 
-def test_create_from_mapping_server_error_halfway(mock_from_mapping_runner, mock_requests):
+def test_create_from_mapping_server_error_halfway(
+    mock_from_mapping_runner, mock_requests
+):
     """What if an error occurs halfway through? """
 
-    mock_requests.set_responses([RequestsMockResponseExamples.JOB_CREATED_RESPONSE,
-                                 RequestsMockResponseExamples.JOB_CREATED_RESPONSE,
-                                 RequestsMockResponseExamples.ERROR_USER_NOT_CONNECTED_TO_PROJECT])
-    result = mock_from_mapping_runner.invoke(main, "from-mapping", input="Y", catch_exceptions=False)
+    mock_requests.set_responses(
+        [
+            RequestsMockResponseExamples.JOB_CREATED_RESPONSE,
+            RequestsMockResponseExamples.JOB_CREATED_RESPONSE,
+            RequestsMockResponseExamples.ERROR_USER_NOT_CONNECTED_TO_PROJECT,
+        ]
+    )
+    result = mock_from_mapping_runner.invoke(
+        main, "from-mapping", input="Y", catch_exceptions=False
+    )
     assert result.exit_code == 0
     assert mock_requests.requests.post.call_count == 3
     batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir())
@@ -99,7 +119,9 @@ def test_create_set_default_parameters(mock_main_runner_with_mapping, mock_reque
     assert mock_requests.requests.post.call_count == 0
 
     # set them
-    result = mock_main_runner_with_mapping.invoke(main, "set-defaults", input="some_project\n//network/test/path\n")
+    result = mock_main_runner_with_mapping.invoke(
+        main, "set-defaults", input="some_project\n//network/test/path\n"
+    )
     assert result.exit_code == 0
 
     # Now this command should succeed
@@ -117,7 +139,7 @@ def test_show_set_default_parameters(mock_main_runner):
 
     result = mock_main_runner.invoke(main, "show-defaults")
     assert result.exit_code == 0
-    assert all(x in result.output for x in ['test_project', 'test_destination'])
+    assert all(x in result.output for x in ["test_project", "test_destination"])
 
 
 def test_create_from_mapping_relative_path(mock_from_mapping_runner, mock_requests):
@@ -126,7 +148,9 @@ def test_create_from_mapping_relative_path(mock_from_mapping_runner, mock_reques
 
     """
     mock_requests.set_response(RequestsMockResponseExamples.JOB_CREATED_RESPONSE)
-    result = mock_from_mapping_runner.invoke(main, "from-mapping", input="Y", catch_exceptions=False)
+    result = mock_from_mapping_runner.invoke(
+        main, "from-mapping", input="Y", catch_exceptions=False
+    )
     assert result.exit_code == 0
     assert mock_requests.requests.post.call_count == 20
 
@@ -141,15 +165,13 @@ def test_create_from_mapping_relative_path(mock_from_mapping_runner, mock_reques
 
 
 def test_create_from_mapping_dry_run(mock_from_mapping_runner, mock_requests):
-    """Source identifiers in mappings are usually given as relative paths. However, jobs should be created with
-    absolute, unambiguous paths. Check that this conversion works
-
+    """Test dry run mode. Should not hit anything important
     """
     mock_requests.set_response(RequestsMockResponseExamples.JOB_CREATED_RESPONSE)
-    result = mock_from_mapping_runner.invoke(main, "from-mapping --dry-run", input="Y", catch_exceptions=False)
+    result = mock_from_mapping_runner.invoke(
+        main, "from-mapping --dry-run", input="Y", catch_exceptions=False
+    )
     assert result.exit_code == 0
     assert "Dry run" in result.output
     assert "patient4" in result.output
     assert mock_requests.requests.post.call_count == 0
-
-

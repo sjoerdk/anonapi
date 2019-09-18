@@ -45,7 +45,7 @@ class AnonClientSettings:
             "servers": {x.name: x.url for x in self.servers},
             "user_name": self.user_name,
             "user_token": self.user_token,
-            "job_default_parameters": self.job_default_parameters.to_dict()
+            "job_default_parameters": self.job_default_parameters.to_dict(),
         }
         if self.active_server:
             datamap["active_server_name"] = self.active_server.name
@@ -84,8 +84,10 @@ class DefaultAnonClientSettings(AnonClientSettings):
             servers=[RemoteAnonServer("testserver", "https://hostname_of_api")],
             user_name="username",
             user_token="token",
-            job_default_parameters=JobDefaultParameters(project_name='',     # these need to be set by user later
-                                                        destination_path='')
+            job_default_parameters=JobDefaultParameters(
+                project_name="",  # these need to be set by user later
+                destination_path="",
+            ),
         )
 
 
@@ -133,10 +135,14 @@ class AnonClientSettingsFromFile(AnonClientSettings):
             msg = f"Could not read all settings from {self.filename}: {e}"
             raise AnonClientSettingsException(msg)
 
-        if 'job_default_parameters' in datamap:
-            create_job_defaults_parsed = JobDefaultParameters.from_dict(datamap.get("job_default_parameters"))
+        if "job_default_parameters" in datamap:
+            create_job_defaults_parsed = JobDefaultParameters.from_dict(
+                datamap.get("job_default_parameters")
+            )
         else:  # if this is an old settings file 'job_default_parameters' will not exist. Just insert a default
-            create_job_defaults_parsed = DefaultAnonClientSettings().job_default_parameters
+            create_job_defaults_parsed = (
+                DefaultAnonClientSettings().job_default_parameters
+            )
 
         servers_parsed = {}
         for name, url in servers.items():
@@ -146,7 +152,7 @@ class AnonClientSettingsFromFile(AnonClientSettings):
             servers=list(servers_parsed.values()),
             user_name=user_name,
             user_token=user_token,
-            job_default_parameters=create_job_defaults_parsed
+            job_default_parameters=create_job_defaults_parsed,
         )
         # set active server
         if active_server_name is None:
@@ -181,8 +187,10 @@ class JobDefaultParameters:
         self.destination_path = destination_path
 
     def to_dict(self):
-        return {"project_name": self.project_name,
-                'destination_path': self.destination_path}
+        return {
+            "project_name": self.project_name,
+            "destination_path": self.destination_path,
+        }
 
     @classmethod
     def from_dict(cls, dict_in):
@@ -201,8 +209,10 @@ class JobDefaultParameters:
         -------
         JobDefaultParameters
         """
-        return cls(project_name=dict_in["project_name"],
-                   destination_path=dict_in['destination_path'])
+        return cls(
+            project_name=dict_in["project_name"],
+            destination_path=dict_in["destination_path"],
+        )
 
 
 class AnonClientSettingsException(Exception):

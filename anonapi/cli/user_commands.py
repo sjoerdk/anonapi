@@ -9,7 +9,7 @@ import click
 from anonapi.cli.parser import AnonCommandLineParser, command_group_function
 
 
-@click.group(name='user')
+@click.group(name="user")
 def main():
     """manage API credentials"""
 
@@ -23,7 +23,7 @@ def info(parser: AnonCommandLineParser):
 
 
 @command_group_function()
-@click.argument('user_name', type=str)
+@click.argument("user_name", type=str)
 def set_username(parser: AnonCommandLineParser, user_name):
     """Set the given username in settings
     """
@@ -44,11 +44,8 @@ def get_token(parser: AnonCommandLineParser):
     )
     parser.settings.user_token = token
     parser.settings.save()
-    click.echo(
-        f"Got and saved api token for username {parser.settings.user_name}"
-    )
+    click.echo(f"Got and saved api token for username {parser.settings.user_name}")
 
 
 for func in [info, set_username, get_token]:
     main.add_command(func)
-

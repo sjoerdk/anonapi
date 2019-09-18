@@ -87,7 +87,7 @@ def test_select_create(mock_main_runner, folder_with_some_dicom_files):
 
 def test_select_edit(mock_main_runner, initialised_selection_folder, monkeypatch):
     mock_launch = Mock()
-    monkeypatch.setattr('anonapi.cli.select_commands.click.launch', mock_launch)
+    monkeypatch.setattr("anonapi.cli.select_commands.click.launch", mock_launch)
 
     result = mock_main_runner.invoke(main, "edit")
     assert result.exit_code == 0
@@ -100,5 +100,3 @@ def test_select_edit(mock_main_runner, initialised_selection_folder, monkeypatch
     result = mock_main_runner.invoke(main, "edit")
     assert CLIMessages.NO_SELECTION_DEFINED in result.output
     assert not mock_launch.called
-
-

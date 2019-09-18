@@ -6,22 +6,26 @@ import click
 
 from anonapi.batch import JobBatch
 from anonapi.cli.click_types import JobIDRangeParamType
-from anonapi.cli.parser import command_group_function, AnonCommandLineParser, AnonCommandLineParserException, \
-    NoBatchDefinedException
+from anonapi.cli.parser import (
+    command_group_function,
+    AnonCommandLineParser,
+    AnonCommandLineParserException,
+    NoBatchDefinedException,
+)
 from anonapi.client import ClientToolException
 from collections import Counter
 
 from anonapi.responses import JobStatus
 
 
-@click.group(name='batch')
+@click.group(name="batch")
 def main():
     """manage anonymization job batches"""
     pass
 
 
 @command_group_function()
-def init(parser: AnonCommandLineParser, ):
+def init(parser: AnonCommandLineParser,):
     """Save an empty batch in the current folder, for current server"""
     batch_folder = parser.get_batch_folder()
     if batch_folder.has_batch():
@@ -35,7 +39,7 @@ def init(parser: AnonCommandLineParser, ):
 
 
 @command_group_function()
-def info(parser: AnonCommandLineParser, ):
+def info(parser: AnonCommandLineParser,):
     """Show batch in current directory"""
     try:
         click.echo(parser.get_batch().to_string())
@@ -46,14 +50,14 @@ def info(parser: AnonCommandLineParser, ):
 
 
 @command_group_function()
-def delete(parser: AnonCommandLineParser, ):
+def delete(parser: AnonCommandLineParser,):
     """delete batch in current folder"""
     parser.get_batch_folder().delete_batch()
     click.echo(f"Removed batch in current dir")
 
 
 @command_group_function()
-@click.argument('job_ids', type=JobIDRangeParamType(), nargs=-1)
+@click.argument("job_ids", type=JobIDRangeParamType(), nargs=-1)
 def add(parser: AnonCommandLineParser, job_ids):
     """Add ids to current batch. Will not add already existing. Space separated, ranges like 1-40
     allowed
@@ -67,7 +71,7 @@ def add(parser: AnonCommandLineParser, job_ids):
 
 
 @command_group_function()
-@click.argument('job_ids', type=JobIDRangeParamType(), nargs=-1)
+@click.argument("job_ids", type=JobIDRangeParamType(), nargs=-1)
 def remove(parser: AnonCommandLineParser, job_ids):
     """Remove ids from current batch. Space separated, ranges like 1-40 allowed
     """
@@ -81,7 +85,7 @@ def remove(parser: AnonCommandLineParser, job_ids):
 
 
 @command_group_function()
-def status(parser: AnonCommandLineParser, ):
+def status(parser: AnonCommandLineParser,):
     """Print status overview for all jobs in batch"""
     try:
         batch = parser.get_batch()
@@ -117,7 +121,7 @@ def status(parser: AnonCommandLineParser, ):
 
 
 @command_group_function()
-def reset(parser: AnonCommandLineParser, ):
+def reset(parser: AnonCommandLineParser,):
     """Reset every job in the current batch"""
     batch: JobBatch = parser.get_batch()
 
@@ -125,9 +129,7 @@ def reset(parser: AnonCommandLineParser, ):
         f"This will reset {len(batch.job_ids)} jobs on {batch.server}. Are you sure?"
     ):
         for job_id in batch.job_ids:
-            click.echo(
-                parser.client_tool.reset_job(server=batch.server, job_id=job_id)
-            )
+            click.echo(parser.client_tool.reset_job(server=batch.server, job_id=job_id))
 
         click.echo("Done")
     else:
@@ -135,7 +137,7 @@ def reset(parser: AnonCommandLineParser, ):
 
 
 @command_group_function()
-def cancel(parser: AnonCommandLineParser, ):
+def cancel(parser: AnonCommandLineParser,):
     """Cancel every job in the current batch"""
     batch: JobBatch = parser.get_batch()
 
@@ -153,7 +155,7 @@ def cancel(parser: AnonCommandLineParser, ):
 
 
 @command_group_function()
-def reset_error(parser: AnonCommandLineParser, ):
+def reset_error(parser: AnonCommandLineParser,):
     """Reset all jobs with error status in the current batch"""
     batch: JobBatch = parser.get_batch()
     try:
@@ -170,9 +172,7 @@ def reset_error(parser: AnonCommandLineParser, ):
         f"This will reset {len(job_ids)} jobs on {batch.server}. Are you sure?"
     ):
         for job_id in job_ids:
-            click.echo(
-                parser.client_tool.reset_job(server=batch.server, job_id=job_id)
-            )
+            click.echo(parser.client_tool.reset_job(server=batch.server, job_id=job_id))
 
         click.echo("Done")
     else:
@@ -181,4 +181,3 @@ def reset_error(parser: AnonCommandLineParser, ):
 
 for func in [info, status, reset, init, delete, add, remove, cancel, reset_error]:
     main.add_command(func)
-

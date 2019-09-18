@@ -10,7 +10,8 @@ from anonapi.client import (
     APIClientAPIException,
     APIClientAuthorizationFailedException,
     APIClientException,
-    AnonClientTool)
+    AnonClientTool,
+)
 from tests.factories import RequestsMock, RequestsMockResponseExamples
 
 
@@ -29,7 +30,9 @@ def test_get_jobs(mocked_requests_client: WebAPIClient):
     client, requests_mock = mocked_requests_client
 
     # job list with two jobs.
-    requests_mock.set_response_text(text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS)
+    requests_mock.set_response_text(
+        text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS
+    )
     response = client.get("get_jobs")
     assert len(response) == 2
 
@@ -144,12 +147,14 @@ def test_response_code_handling(mocked_requests_client: WebAPIClient):
     assert "Your credentials do not seem to work" in str(exception.value)
 
     # Superweird unexpected response from server should still raise correct exception
-    requests_mock.set_response_text(text="Abandon all hope, ye who receive", status_code=666)
+    requests_mock.set_response_text(
+        text="Abandon all hope, ye who receive", status_code=666
+    )
     with pytest.raises(APIClientException) as exception:
         client.get("get_jobs")
     assert "Unexpected response" in str(exception.value)
 
 
 def test_client_tool_create():
-    client_tool = AnonClientTool(username='user', token='token')
-    #client_tool.create_job()
+    client_tool = AnonClientTool(username="user", token="token")
+    # client_tool.create_job()

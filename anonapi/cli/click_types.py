@@ -13,7 +13,8 @@ class JobIDRangeParamType(ParamType):
     Will expand any range into a tuple min until max. Min and max inclusive
 
     """
-    name = 'job_id'
+
+    name = "job_id"
 
     def convert(self, value, param, ctx):
         """If it looks like 'int-int' try to turn into range. Otherwise just leave as is and put in list
@@ -28,16 +29,18 @@ class JobIDRangeParamType(ParamType):
             return value
 
         if type(value) is list:
-            return value  # Make sure function is idempotent. Feeding output into convert() again will not change output
+            return (
+                value
+            )  # Make sure function is idempotent. Feeding output into convert() again will not change output
 
-        match = re.match('^(?P<start>[0-9]+)-(?P<end>[0-9]+)$', value)
+        match = re.match("^(?P<start>[0-9]+)-(?P<end>[0-9]+)$", value)
         if match:  # expand range and add each item
-            return [str(x) for x in range(int(match['start']), int(match['end']) + 1)]
+            return [str(x) for x in range(int(match["start"]), int(match["end"]) + 1)]
         else:
             return [value]
 
     def __repr__(self):
-        return 'JOB_ID_RANGE'
+        return "JOB_ID_RANGE"
 
 
 class AnonServerKeyParamType(ParamType):
@@ -50,8 +53,10 @@ class AnonServerKeyParamType(ParamType):
 
         allowed = [x.name for x in parser.settings.servers]
         if value not in allowed:
-            self.fail(f"'{value}' is not a registered anonymization server. Options: {allowed}")
+            self.fail(
+                f"'{value}' is not a registered anonymization server. Options: {allowed}"
+            )
         return value
 
     def __repr__(self):
-        return 'ANON_SERVER_KEY'
+        return "ANON_SERVER_KEY"

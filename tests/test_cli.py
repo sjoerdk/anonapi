@@ -9,9 +9,7 @@ from click.testing import CliRunner
 from anonapi.batch import BatchFolder, JobBatch
 from anonapi.cli import entrypoint, user_commands
 from anonapi.cli.entrypoint import get_parser
-from anonapi.cli.parser import (
-    AnonCommandLineParserException,
-)
+from anonapi.cli.parser import AnonCommandLineParserException
 from anonapi.client import APIClientException, ClientToolException
 from anonapi.mapper import MappingListFolder, MappingLoadError
 from anonapi.responses import APIParseResponseException
@@ -168,7 +166,7 @@ def test_cli_job_list_errors(anonapi_mock_cli, mock_requests):
     runner = CliRunner()
     mock_requests.set_response_text(
         text=RequestsMockResponseExamples.REQUIRED_PARAMETER_NOT_SUPPLIED,
-        status_code=400
+        status_code=400,
     )
     result = runner.invoke(entrypoint.cli, "job list")
     result.exit_code == 0
@@ -221,7 +219,9 @@ def test_command_line_tool_job_functions(anonapi_mock_cli, mock_requests):
 
 def test_command_line_tool_job_list(anonapi_mock_cli, mock_requests):
     runner = CliRunner()
-    mock_requests.set_response_text(RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST)
+    mock_requests.set_response_text(
+        RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST
+    )
     result = runner.invoke(entrypoint.cli, "job list 1 2 3 445")
     assert "Z495159" in result.output
     assert "1000" in result.output
@@ -591,8 +591,9 @@ def test_cli_map_add_folder(anonapi_mock_cli, folder_with_some_dicom_files):
     # Add this folder to mapping
     runner = CliRunner()
     result = runner.invoke(
-        entrypoint.cli, f"map add-study-folder {selection_folder.path}",
-        catch_exceptions=False
+        entrypoint.cli,
+        f"map add-study-folder {selection_folder.path}",
+        catch_exceptions=False,
     )
 
     # oh no! no mapping yet!
@@ -628,7 +629,7 @@ def test_cli_map_delete(anon_mock_cli_with_mapping):
 
 def test_cli_map_edit(anon_mock_cli_with_mapping, monkeypatch):
     mock_launch = Mock()
-    monkeypatch.setattr('anonapi.cli.select_commands.click.launch', mock_launch)
+    monkeypatch.setattr("anonapi.cli.select_commands.click.launch", mock_launch)
 
     runner = CliRunner()
     result = runner.invoke(entrypoint.cli, "map edit")
@@ -648,7 +649,6 @@ def test_cli_map_edit(anon_mock_cli_with_mapping, monkeypatch):
 
 def test_cli_entrypoint(monkeypatch, tmpdir):
     """Call main entrypoint with empty homedir. This should create a default settings file"""
-    monkeypatch.setattr('anonapi.cli.entrypoint.pathlib.Path.home', lambda: tmpdir)
+    monkeypatch.setattr("anonapi.cli.entrypoint.pathlib.Path.home", lambda: tmpdir)
     parser = get_parser()
-    assert parser.settings.user_name == 'username'
-
+    assert parser.settings.user_name == "username"

@@ -14,7 +14,9 @@ from anonapi.mapper import (
     MappingLoadError,
     FileSelectionFolderIdentifier,
     AnonymizationParameters,
-    PathIdentifier, FileSelectionIdentifier)
+    PathIdentifier,
+    FileSelectionIdentifier,
+)
 from anonapi.settings import JobDefaultParameters, AnonClientSettingsException
 
 
@@ -37,7 +39,7 @@ class MappingElement:
         self.parameters = parameters
 
     def as_dict(self):
-        return {**{'source': str(self.source)}, **self.parameters.as_dict()}
+        return {**{"source": str(self.source)}, **self.parameters.as_dict()}
 
     def get_description(self):
         """Human readable description of this element"""
@@ -164,7 +166,9 @@ def convert_to_fileselection(elements):
     List[MappingElement]
     """
 
-    for element in [x for x in elements if type(x.source) == FileSelectionFolderIdentifier]:
+    for element in [
+        x for x in elements if type(x.source) == FileSelectionFolderIdentifier
+    ]:
         folder = FileSelectionFolder(path=element.source.identifier)
         element.source = FileSelectionIdentifier(identifier=folder.get_data_file_path())
 
@@ -172,7 +176,9 @@ def convert_to_fileselection(elements):
 
 
 @command_group_function()
-@click.option('--dry-run/--no-dry-run', default=False, help="Do not post to server, just print")
+@click.option(
+    "--dry-run/--no-dry-run", default=False, help="Do not post to server, just print"
+)
 def from_mapping(context: CreateCommandsContext, dry_run):
     """Create jobs from mapping in current folder"""
     if dry_run:
@@ -227,19 +233,21 @@ def from_mapping(context: CreateCommandsContext, dry_run):
 def set_defaults(context: CreateCommandsContext):
     """Set project name used when creating jobs"""
     job_default_parameters: JobDefaultParameters = context.parser.settings.job_default_parameters
-    click.echo("Please set default parameters current value shown in [brackets]. Pressing enter without input will keep"
-               "current value")
+    click.echo(
+        "Please set default parameters current value shown in [brackets]. Pressing enter without input will keep"
+        "current value"
+    )
     try:
         project_name = click.prompt(
             f"Please enter default IDIS project name:",
             show_default=True,
-            default=job_default_parameters.project_name
+            default=job_default_parameters.project_name,
         )
 
         destination_path = click.prompt(
             f"Please enter default job destination directory:",
             show_default=True,
-            default=job_default_parameters.destination_path
+            default=job_default_parameters.destination_path,
         )
     except Abort:
         click.echo("Cancelled")
@@ -256,7 +264,9 @@ def show_defaults(context: CreateCommandsContext):
 
     job_default_parameters: JobDefaultParameters = context.parser.settings.job_default_parameters
     click.echo(f"default IDIS project name: {job_default_parameters.project_name}")
-    click.echo(f"default job destination directory: {job_default_parameters.destination_path}")
+    click.echo(
+        f"default job destination directory: {job_default_parameters.destination_path}"
+    )
 
 
 for func in [from_mapping, set_defaults, show_defaults]:

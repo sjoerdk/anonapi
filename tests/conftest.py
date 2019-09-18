@@ -62,7 +62,10 @@ def anonapi_mock_cli(monkeypatch, tmpdir):
 
 @fixture
 def a_folder_with_mapping(tmpdir):
-    shutil.copyfile(RESOURCE_PATH / "test_cli" / "anon_mapping.csv", Path(tmpdir) / "anon_mapping.csv")
+    shutil.copyfile(
+        RESOURCE_PATH / "test_cli" / "anon_mapping.csv",
+        Path(tmpdir) / "anon_mapping.csv",
+    )
     return tmpdir
 
 

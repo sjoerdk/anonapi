@@ -155,4 +155,3 @@ def test_mapping_folder_read_write(tmpdir, a_mapping):
 
     mapping_folder.delete_list()
     assert not mapping_folder.has_mapping_list()
-

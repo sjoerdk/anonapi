@@ -7,15 +7,15 @@ from anonapi.cli.parser import AnonCommandLineParser, command_group_function
 from anonapi.objects import RemoteAnonServer
 
 
-@click.group(name='server')
+@click.group(name="server")
 def main():
     """manage anonymization servers"""
     pass
 
 
 @command_group_function()
-@click.argument('short_name', type=str)
-@click.argument('url', type=str)
+@click.argument("short_name", type=str)
+@click.argument("url", type=str)
 def add(parser: AnonCommandLineParser, short_name, url):
     """Add a server to the list of servers in settings """
     server = RemoteAnonServer(name=short_name, url=url)
@@ -24,7 +24,7 @@ def add(parser: AnonCommandLineParser, short_name, url):
     click.echo(f"added {server} to list")
 
 
-@command_group_function(name='list')
+@command_group_function(name="list")
 def server_list(parser: AnonCommandLineParser):
     """show all servers in settings """
     servers = parser.create_server_list()
@@ -32,7 +32,7 @@ def server_list(parser: AnonCommandLineParser):
 
 
 @command_group_function()
-@click.argument('short_name', metavar='SHORT_NAME', type=AnonServerKeyParamType())
+@click.argument("short_name", metavar="SHORT_NAME", type=AnonServerKeyParamType())
 def remove(parser: AnonCommandLineParser, short_name):
     """Remove a server from list in settings"""
     server = parser.get_server_by_name(short_name)
@@ -63,7 +63,7 @@ def jobs(parser: AnonCommandLineParser):
 
 
 @command_group_function()
-@click.argument('short_name', metavar='SHORT_NAME', type=AnonServerKeyParamType())
+@click.argument("short_name", metavar="SHORT_NAME", type=AnonServerKeyParamType())
 def activate(parser: AnonCommandLineParser, short_name):
     """Set given server as activate server, meaning subsequent operations will use this server.
     """

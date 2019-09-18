@@ -31,7 +31,6 @@ class AnonCommandLineParser:
         self.client_tool = client_tool
         self.settings = settings
 
-
     # == Shared functions ===
 
     def create_server_list(self):
@@ -111,7 +110,7 @@ class AnonCommandLineParser:
         return BatchFolder(self.current_dir())
 
 
-@click.command(short_help='show tool status')
+@click.command(short_help="show tool status")
 @click.pass_obj
 def status(parser: AnonCommandLineParser):
     """Get general status of this tool, show currently active server etc."""
@@ -136,6 +135,7 @@ def command_group_function(**kwargs):
 
     Just to prevent duplicated code
     """
+
     def decorator(func):
         return click.command(**kwargs)((click.pass_obj(func)))
 

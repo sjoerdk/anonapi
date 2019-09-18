@@ -12,16 +12,16 @@ class AnonymizationParametersFactory(factory.Factory):
     class Meta:
         model = AnonymizationParameters
 
-    patient_id = factory.sequence(lambda n: f'patient{n}')
-    patient_name = factory.sequence(lambda n: f'patientName{n}')
-    description = 'test description'
+    patient_id = factory.sequence(lambda n: f"patient{n}")
+    patient_name = factory.sequence(lambda n: f"patientName{n}")
+    description = "test description"
 
 
 class FileSelectionIdentifierFactory(factory.Factory):
     class Meta:
         model = FileSelectionFolderIdentifier
 
-    identifier = factory.sequence(lambda n: f'/folder/file{n}')
+    identifier = factory.sequence(lambda n: f"/folder/file{n}")
 
 
 class RequestMockResponse:
@@ -76,7 +76,7 @@ class RequestsMock:
         response._content = bytes(text, response.encoding)
         return response
 
-    def set_response(self, response:RequestMockResponse):
+    def set_response(self, response: RequestMockResponse):
         """Just for convenience"""
         self.set_responses([response])
 
@@ -90,10 +90,14 @@ class RequestsMock:
             List of responses. Will be returned
         """
 
-        objects = [self.create_response_object(response.response_code, response.text) for response in responses]
+        objects = [
+            self.create_response_object(response.response_code, response.text)
+            for response in responses
+        ]
 
         def rotate_over_objects(*args, **kwargs):
             pass
+
         self.requests.get.side_effect = cycle(objects)
         self.requests.post.side_effect = cycle(objects)
 
@@ -170,24 +174,29 @@ class RequestsMockResponseExamples:
         r' "source_path": "f", "source_protocol": 3178, "source_subject": 3178}'
     )
 
-    JOB_CREATED_RESPONSE = RequestMockResponse(r'{"job_id": 1234, "date": "2019-09-04T14:12:43", "user_name": "z123sandbox", '
-                            r'"status": "ACTIVE", "error": null, "description": "A test path job", '
-                            r'"project_name": "Wetenschap-Algemeen", "priority": 0, "files_downloaded": null, '
-                            r'"files_processed": null, "destination_id": 44806, "destination_name": null,'
-                            r' "destination_path": "\\\\umcsanfsclp01\\radng_imaging\\temptest_output",'
-                            r' "destination_network": null, "destination_status": "BASE", "destination_type": "PATH",'
-                            r' "source_id": 44806, "source_instance_id": null, "source_status": "NEW",'
-                            r' "source_type": "PATH", "source_anonymizedpatientid": "01",'
-                            r' "source_anonymizedpatientname": "TEST_NAME_01", "source_name": null,'
-                            r' "source_path": "\\\\umcsanfsclp01\\radng_imaging\\temp\\test", '
-                            r'"source_protocol": 3178, "source_subject": 3178}', 200
-                            )
+    JOB_CREATED_RESPONSE = RequestMockResponse(
+        r'{"job_id": 1234, "date": "2019-09-04T14:12:43", "user_name": "z123sandbox", '
+        r'"status": "ACTIVE", "error": null, "description": "A test path job", '
+        r'"project_name": "Wetenschap-Algemeen", "priority": 0, "files_downloaded": null, '
+        r'"files_processed": null, "destination_id": 44806, "destination_name": null,'
+        r' "destination_path": "\\\\umcsanfsclp01\\radng_imaging\\temptest_output",'
+        r' "destination_network": null, "destination_status": "BASE", "destination_type": "PATH",'
+        r' "source_id": 44806, "source_instance_id": null, "source_status": "NEW",'
+        r' "source_type": "PATH", "source_anonymizedpatientid": "01",'
+        r' "source_anonymizedpatientname": "TEST_NAME_01", "source_name": null,'
+        r' "source_path": "\\\\umcsanfsclp01\\radng_imaging\\temp\\test", '
+        r'"source_protocol": 3178, "source_subject": 3178}',
+        200,
+    )
 
     JOB_DOES_NOT_EXIST = r'{"errors": {"job_id": "Job with id 447783 does not exist"}}'
 
-    ERROR_USER_NOT_CONNECTED_TO_PROJECT = RequestMockResponse(r'{"errors": {"AnonymizeInputException": "given user_'
-                                                              r'name `test_changed` is not connected to given project'
-                                                              r'_name testproject"}}', 400)
+    ERROR_USER_NOT_CONNECTED_TO_PROJECT = RequestMockResponse(
+        r'{"errors": {"AnonymizeInputException": "given user_'
+        r"name `test_changed` is not connected to given project"
+        r'_name testproject"}}',
+        400,
+    )
 
     REQUIRED_PARAMETER_NOT_SUPPLIED = (
         r'{"errors": {"job_id": "Required parameter job_id not supplied"}}'

@@ -31,7 +31,8 @@ class SourceIdentifier:
 class PathIdentifier(SourceIdentifier):
     """Refers to a path
     """
-    key = 'path'
+
+    key = "path"
 
     def __init__(self, identifier):
         """
@@ -284,7 +285,7 @@ class MappingListFolder:
         return self.full_path().exists()
 
     def save_list(self, mapping_list: MappingList):
-        with open(self.full_path(), 'w') as f:
+        with open(self.full_path(), "w") as f:
             mapping_list.save(f)
 
     def load_list(self):
@@ -294,7 +295,7 @@ class MappingListFolder:
         -------
 
         """
-        with open(self.full_path(), 'r') as f:
+        with open(self.full_path(), "r") as f:
             return MappingList.load(f)
 
     def delete_list(self):
@@ -316,12 +317,12 @@ class MappingListFolder:
         """
 
         try:
-            with open(self.full_path(), 'r') as f:
+            with open(self.full_path(), "r") as f:
                 return MappingList.load(f)
         except FileNotFoundError:
-            raise MappingLoadError('No mapping defined in current directory')
+            raise MappingLoadError("No mapping defined in current directory")
         except MapperException as e:
-            raise MappingLoadError(f'Error loading mapping: {e}')
+            raise MappingLoadError(f"Error loading mapping: {e}")
 
 
 def get_example_mapping_list():
@@ -329,7 +330,9 @@ def get_example_mapping_list():
         FileSelectionFolderIdentifier(
             identifier=path.sep.join(["example", "folder1"])
         ): AnonymizationParameters(
-            patient_name="Patient1", patient_id="12345", description="An optional description for patient 1"
+            patient_name="Patient1",
+            patient_id="12345",
+            description="An optional description for patient 1",
         ),
         FileSelectionFolderIdentifier(
             identifier=path.sep.join(["example", "folder2"])
@@ -340,6 +343,31 @@ def get_example_mapping_list():
         ),
     }
     return MappingList(mapping=mapping)
+
+
+class ExampleMappingList(MappingList):
+    """A mapping list with some example content. Gives an overview of possible identifiers
+
+    """
+
+    def __init__(self):
+        mapping = {
+            FileSelectionFolderIdentifier(
+                identifier=path.sep.join(["example", "folder1"])
+            ): AnonymizationParameters(
+                patient_name="Patient1",
+                patient_id="12345",
+                description="An optional description for patient 1",
+            ),
+            FileSelectionFolderIdentifier(
+                identifier=path.sep.join(["example", "folder2"])
+            ): AnonymizationParameters(
+                patient_name="Patient2",
+                patient_id="23456",
+                description="An optional description for patient 2",
+            ),
+        }
+        super().__init__(mapping=mapping)
 
 
 class MapperException(Exception):

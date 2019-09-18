@@ -14,7 +14,3 @@ def test_selection_tool():
     assert len(folder.all_dicom_files(files)) == 6
     assert len(files) == 6
     assert len(dicom_files) == 3
-
-
-
-

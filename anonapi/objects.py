@@ -27,8 +27,7 @@ class RemoteAnonServer:
         Dict
 
         """
-        return {'name': self.name,
-                'url': self.url}
+        return {"name": self.name, "url": self.url}
 
     @classmethod
     def from_dict(cls, dict_in):
@@ -39,7 +38,7 @@ class RemoteAnonServer:
         RemoteAnonServer
 
         """
-        return cls(name=dict_in['name'], url=dict_in['url'])
+        return cls(name=dict_in["name"], url=dict_in["url"])
 
     def __str__(self):
         return f"{self.name}: {self.url}"

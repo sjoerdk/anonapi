@@ -10,6 +10,7 @@ from pydicom.errors import InvalidDicomError
 class DICOMFileFolder:
     """A folder that might contains at least some dicom files.
     """
+
     def __init__(self, path):
         self.path = path
 
@@ -51,7 +52,6 @@ class DICOMFileFolder:
 
 
 class DICOMFileList:
-
     def __init__(self, paths):
         """Container of potential DICOM files. Can be used as iterator for trying to open files as DICOM
 
@@ -83,4 +83,3 @@ class DICOMFileList:
                 yield path, ds
             except InvalidDicomError:
                 yield path, None
-

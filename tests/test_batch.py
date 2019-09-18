@@ -42,16 +42,16 @@ def test_batch_folder(tmpdir, a_job_batch):
 
     # should be loadable again
     loaded = BatchFolder(path=Path(tmpdir)).load()
-    assert loaded.job_ids == ['1', '2', '3']
-    assert str(loaded.server) == 'temp: https://tempserver'
+    assert loaded.job_ids == ["1", "2", "3"]
+    assert str(loaded.server) == "temp: https://tempserver"
 
     # add some ids and check saving
-    loaded.job_ids = loaded.job_ids + ['4', '5']
+    loaded.job_ids = loaded.job_ids + ["4", "5"]
     batch_folder.save(loaded)
 
     loaded = BatchFolder(path=Path(tmpdir)).load()
-    assert loaded.job_ids == ['1', '2', '3', '4', '5']
-    assert str(loaded.server) == 'temp: https://tempserver'
+    assert loaded.job_ids == ["1", "2", "3", "4", "5"]
+    assert str(loaded.server) == "temp: https://tempserver"
 
     batch_folder.delete_batch()
     assert not batch_folder.has_batch()
