@@ -5,7 +5,7 @@ from pathlib import Path
 
 import click
 
-from anonapi.cli.parser import command_group_function, AnonCommandLineParser
+from anonapi.cli.parser import command_group_function, AnonCommandLineParser, echo_error
 from anonapi.selection import DICOMFileFolder
 from fileselection.fileselection import FileSelectionFolder, FileSelectionFile
 from tqdm import tqdm
@@ -74,7 +74,7 @@ def status(context: SelectCommandContext):
         selection = context.get_current_selection()
         click.echo(describe_selection(selection))
     except FileNotFoundError as e:
-        click.echo(CLIMessages.NO_SELECTION_DEFINED)
+        echo_error(CLIMessages.NO_SELECTION_DEFINED)
 
 
 @command_group_function()
@@ -86,7 +86,7 @@ def delete(context: SelectCommandContext):
         os.remove(selection_folder.get_data_file_path())
         click.echo("Removed file selection in current folder")
     else:
-        click.echo(CLIMessages.NO_SELECTION_DEFINED)
+        echo_error(CLIMessages.NO_SELECTION_DEFINED)
 
 
 @command_group_function()
@@ -95,7 +95,7 @@ def create(context: SelectCommandContext):
 
     selection_folder = context.get_current_selection_folder()
     if selection_folder.has_file_selection():
-        click.echo("There is already a selection in this folder")
+        echo_error("There is already a selection in this folder")
     else:
         click.echo("Creating selection in current folder. Adding all DICOM files")
         create_dicom_selection_click(context.current_path)
@@ -107,7 +107,7 @@ def edit(context: SelectCommandContext):
 
     selection_folder = context.get_current_selection_folder()
     if not selection_folder.has_file_selection():
-        click.echo(CLIMessages.NO_SELECTION_DEFINED)
+        echo_error(CLIMessages.NO_SELECTION_DEFINED)
     else:
         click.launch(str(selection_folder.get_data_file_path()))
 

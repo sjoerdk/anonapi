@@ -62,7 +62,7 @@ def test_create_from_mapping(mock_from_mapping_runner, mock_requests):
         main, "from-mapping", input="Y", catch_exceptions=False
     )
     assert result.exit_code == 0
-    assert mock_requests.requests.post.call_count == 20
+    assert mock_requests.requests.post.call_count == 2
     batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir())
     assert batch_folder.has_batch()
     assert batch_folder.load().job_ids == [
@@ -175,3 +175,30 @@ def test_create_from_mapping_dry_run(mock_from_mapping_runner, mock_requests):
     assert "Dry run" in result.output
     assert "patient4" in result.output
     assert mock_requests.requests.post.call_count == 0
+
+
+def test_create_from_mapping_folder_and_pacs(mock_from_mapping_runner, a_folder_with_mapping_diverse, mock_requests):
+    """PACS identifiers should generate slightly different jobs then Folder identifiers."""
+
+    mock_from_mapping_runner.set_mock_current_dir(a_folder_with_mapping_diverse)
+
+    # Run and answer are you sure 'N'
+    result = mock_from_mapping_runner.invoke(main, "from-mapping", input="N")
+    assert result.exit_code == 0
+    assert "Cancelled" in result.output
+    assert mock_requests.requests.post.call_count == 0
+
+    # Now answer Y
+    mock_requests.set_response(RequestsMockResponseExamples.JOB_CREATED_RESPONSE)
+    result = mock_from_mapping_runner.invoke(
+        main, "from-mapping", input="Y", catch_exceptions=False
+    )
+    assert result.exit_code == 0
+    assert "Error:" not in result.output
+    assert mock_requests.requests.post.call_count == 2
+
+    batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir())
+    assert batch_folder.has_batch()
+    assert batch_folder.load().job_ids == [
+        1234
+    ]  # only 1 id as mock requests returns the same job id each call

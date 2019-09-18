@@ -110,6 +110,20 @@ class AnonCommandLineParser:
         return BatchFolder(self.current_dir())
 
 
+def echo_error(msg):
+    """Show this error message to user, but do not halt program flow
+
+    Made this to have a consistent way to show error messages to user
+
+    Parameters
+    ----------
+    msg: str
+        Show this message
+
+    """
+    click.echo(f"Error: {msg}")
+
+
 @click.command(short_help="show tool status")
 @click.pass_obj
 def status(parser: AnonCommandLineParser):

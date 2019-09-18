@@ -11,7 +11,7 @@ from anonapi.cli.parser import (
     AnonCommandLineParser,
     AnonCommandLineParserException,
     NoBatchDefinedException,
-)
+    echo_error)
 from anonapi.client import ClientToolException
 from collections import Counter
 
@@ -44,9 +44,9 @@ def info(parser: AnonCommandLineParser,):
     try:
         click.echo(parser.get_batch().to_string())
     except NoBatchDefinedException as e:
-        click.echo(str(e) + ". You can create one with 'anon batch init'")
+        echo_error(str(e) + ". You can create one with 'anon batch init'")
     except AnonCommandLineParserException as e:
-        click.echo(e)
+        echo_error(e)
 
 
 @command_group_function()
@@ -90,7 +90,7 @@ def status(parser: AnonCommandLineParser,):
     try:
         batch = parser.get_batch()
     except NoBatchDefinedException as e:
-        click.echo(e)
+        echo_error(e)
         return
 
     ids_queried = batch.job_ids
@@ -99,7 +99,7 @@ def status(parser: AnonCommandLineParser,):
             server=batch.server, job_ids=ids_queried
         )
     except ClientToolException as e:
-        click.echo(e)
+        echo_error(e)
         return
 
     click.echo(f"Job info for {len(infos)} jobs on {batch.server}:")
@@ -163,7 +163,7 @@ def reset_error(parser: AnonCommandLineParser,):
             server=batch.server, job_ids=batch.job_ids
         )
     except ClientToolException as e:
-        click.echo(f"Error resetting: {str(e)}")
+        echo_error(f"Error resetting: {str(e)}")
         return
 
     job_ids = [x.job_id for x in infos if x.status == JobStatus.ERROR]

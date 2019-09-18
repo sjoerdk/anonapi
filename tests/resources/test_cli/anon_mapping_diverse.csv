@@ -1,0 +1,6 @@
+source,patient_id,patient_name,description
+folder:folder/file0,patient0,patientName0,test description
+folder:folder/file1,patient1,patientName1,another test description
+study_instance_uid:123.3345.34534.6,patient3,patientName3,a test for StudyInstanceUID
+accession_number:1234578.7654321,patient4,patientName4,testing AccessionNumber
+

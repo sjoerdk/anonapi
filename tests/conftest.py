@@ -8,6 +8,7 @@ from fileselection.fileselection import FileSelectionFolder
 
 from anonapi.cli.parser import AnonCommandLineParser
 from anonapi.client import WebAPIClient, AnonClientTool
+from anonapi.mapper import MappingListFolder, ExampleMappingList
 from anonapi.objects import RemoteAnonServer
 from anonapi.settings import DefaultAnonClientSettings
 from tests.factories import RequestsMock
@@ -64,6 +65,16 @@ def anonapi_mock_cli(monkeypatch, tmpdir):
 def a_folder_with_mapping(tmpdir):
     shutil.copyfile(
         RESOURCE_PATH / "test_cli" / "anon_mapping.csv",
+        Path(tmpdir) / "anon_mapping.csv",
+    )
+    return tmpdir
+
+
+@fixture
+def a_folder_with_mapping_diverse(tmpdir):
+    """In addition to a_folder_with_mapping, contains also pacskey identifiers. (Added these later)"""
+    shutil.copyfile(
+        RESOURCE_PATH / "test_cli" / "anon_mapping_diverse.csv",
         Path(tmpdir) / "anon_mapping.csv",
     )
     return tmpdir

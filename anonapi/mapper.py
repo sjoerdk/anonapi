@@ -58,11 +58,38 @@ class FileSelectionIdentifier(PathIdentifier):
     key = "fileselection"
 
 
+class PACSResourceIdentifier(SourceIdentifier):
+    """A key to for some object in a PACS system
+
+    """
+
+    key = "pacs_key"
+
+
+class SUIDSelectionIdentifier(PACSResourceIdentifier):
+    """a DICOM StudyInstanceUID
+    """
+
+    key = "study_instance_uid"
+
+
+class AccessionNumberIdentifier(PACSResourceIdentifier):
+    """A DICOM AccessionNumber
+    """
+
+    key = "accession_number"
+
+
 class SourceIdentifierFactory:
     """Creates SourceIdentifier objects based on key string
     """
 
-    types = [SourceIdentifier, FileSelectionFolderIdentifier]
+    types = [
+        SourceIdentifier,
+        FileSelectionFolderIdentifier,
+        SUIDSelectionIdentifier,
+        AccessionNumberIdentifier,
+    ]
 
     def get_source_identifier(self, key):
         """Cast given key string back to identifier object

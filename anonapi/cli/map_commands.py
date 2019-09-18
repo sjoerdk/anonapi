@@ -6,7 +6,7 @@ import datetime
 import random
 import string
 
-from anonapi.cli.parser import command_group_function, AnonCommandLineParser
+from anonapi.cli.parser import command_group_function, AnonCommandLineParser, echo_error
 from anonapi.cli.select_commands import create_dicom_selection_click
 from anonapi.mapper import (
     SourceIdentifierFactory,
@@ -58,7 +58,7 @@ def status(context: MapCommandContext):
         mapping = context.get_current_mapping()
         click.echo(mapping.to_table_string())
     except MappingLoadError as e:
-        click.echo(e)
+        echo_error(e)
 
 
 @command_group_function()
@@ -75,7 +75,7 @@ def delete(context: MapCommandContext):
     """delete mapping in current folder"""
     folder = context.get_current_mapping_folder()
     if not folder.has_mapping_list():
-        click.echo("No mapping defined in current folder")
+        echo_error("No mapping defined in current folder")
         return
     folder.delete_list()
     click.echo(f"Removed mapping in current dir")
@@ -90,7 +90,7 @@ def add_study_folder(context: MapCommandContext, path):
     try:
         mapping = context.get_current_mapping()
     except MappingLoadError as e:
-        click.echo(e)
+        echo_error(e)
         return
 
     # create a selection from all dicom files in given path
