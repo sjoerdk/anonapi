@@ -487,6 +487,58 @@ class AnonClientTool:
 
         return info
 
+    def create_pacs_job(
+        self,
+        server: RemoteAnonServer,
+        anon_name,
+        anon_id,
+        source_instance_id,
+        project_name,
+        destination_path,
+        description,
+    ):
+        """Create a job with data from a PACS system
+
+        Parameters
+        ----------
+        server: RemoteAnonServer
+        anon_name: str
+        anon_id: str
+        project_name: str
+        source_instance_id: str
+        destination_path: path
+        description: str
+
+        Raises
+        ------
+        APIClientException
+            When anything goes wrong creating job
+
+        Returns
+        -------
+        dict
+            response from server with info on created job
+
+
+        """
+
+        client = self.get_client(server.url)
+
+        info = client.post(
+            "create_job",
+            source_type="WADO",
+            source_name="IDC_WADO",
+            source_instance_id=source_instance_id,
+            destination_type="PATH",
+            project_name=project_name,
+            destination_path=destination_path,
+            anonymizedpatientname=anon_name,
+            anonymizedpatientid=anon_id,
+            description=description,
+        )
+
+        return info
+
 
 class ClientInterfaceException(Exception):
     """A general problem with client interface """

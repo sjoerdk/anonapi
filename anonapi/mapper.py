@@ -17,9 +17,15 @@ from anonapi.cli.parser import AnonCommandLineParserException
 class SourceIdentifier:
     """A string representing a place where data is coming from
 
+    Attributes
+    ----------
+    key: str
+        Class level attribute to identify this class of identifiers
+    identifier: str
+        Instance level attribute giving the actual value for this identifier. For example a specific path or UID
     """
 
-    key = "base"
+    key = "base"  # key with which this class is identified
 
     def __init__(self, identifier):
         self.identifier = identifier
@@ -63,10 +69,10 @@ class PACSResourceIdentifier(SourceIdentifier):
 
     """
 
-    key = "pacs_key"
+    key = "pacs_resource"
 
 
-class SUIDSelectionIdentifier(PACSResourceIdentifier):
+class StudyInstanceUIDIdentifier(PACSResourceIdentifier):
     """a DICOM StudyInstanceUID
     """
 
@@ -87,7 +93,7 @@ class SourceIdentifierFactory:
     types = [
         SourceIdentifier,
         FileSelectionFolderIdentifier,
-        SUIDSelectionIdentifier,
+        StudyInstanceUIDIdentifier,
         AccessionNumberIdentifier,
     ]
 
@@ -383,15 +389,22 @@ class ExampleMappingList(MappingList):
                 identifier=path.sep.join(["example", "folder1"])
             ): AnonymizationParameters(
                 patient_name="Patient1",
-                patient_id="12345",
-                description="An optional description for patient 1",
+                patient_id="001",
+                description="A study for which the data is coming from a folder",
             ),
-            FileSelectionFolderIdentifier(
-                identifier=path.sep.join(["example", "folder2"])
+            StudyInstanceUIDIdentifier(
+                "123.12121212.12345678"
             ): AnonymizationParameters(
                 patient_name="Patient2",
-                patient_id="23456",
-                description="An optional description for patient 2",
+                patient_id="002",
+                description="A study which should be retrieved from PACS, identified by StudyInstanceUID",
+            ),
+            AccessionNumberIdentifier(
+                "12345678.1234567"
+            ): AnonymizationParameters(
+                patient_name="Patient3",
+                patient_id="003",
+                description="A study which should be retrieved from PACS, identified by AccessionNumber",
             ),
         }
         super().__init__(mapping=mapping)

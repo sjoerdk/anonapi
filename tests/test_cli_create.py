@@ -194,7 +194,7 @@ def test_create_from_mapping_folder_and_pacs(mock_from_mapping_runner,
     )
     assert result.exit_code == 0
     assert "Error:" not in result.output
-    assert mock_requests.requests.post.call_count == 2
+    assert mock_requests.requests.post.call_count == 4
 
     batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir())
     assert batch_folder.has_batch()

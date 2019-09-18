@@ -16,7 +16,7 @@ from anonapi.mapper import (
     AnonymizationParameters,
     PathIdentifier,
     FileSelectionIdentifier,
-)
+    PACSResourceIdentifier)
 from anonapi.settings import JobDefaultParameters, AnonClientSettingsException
 
 
@@ -94,7 +94,22 @@ class CreateCommandsContext:
                 raise JobCreationException(
                     f"Error creating job for source {element.source}: {e}"
                 )
-
+        elif issubclass(type(element.source), PACSResourceIdentifier):
+            try:
+                parameters = assert_job_parameters(element.parameters)
+                response = self.parser.client_tool.create_pacs_job(
+                    anon_id=parameters.patient_id,
+                    server=self.parser.get_active_server(),
+                    anon_name=parameters.patient_name,
+                    project_name=project_name,
+                    source_instance_id=str(element.source),
+                    destination_path=str(destination_path),
+                    description=parameters.description,
+                )
+            except (APIClientException, AnonClientSettingsException) as e:
+                raise JobCreationException(
+                    f"Error creating job for source {element.source}: {e}"
+                )
         else:
             raise JobCreationException(
                 f"Cannot create job for source type {type(element.source)}"
