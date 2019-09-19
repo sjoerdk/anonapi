@@ -521,7 +521,6 @@ class AnonClientTool:
 
 
         """
-
         client = self.get_client(server.url)
 
         info = client.post(

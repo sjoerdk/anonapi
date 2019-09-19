@@ -16,7 +16,7 @@ from anonapi.mapper import (
     AnonymizationParameters,
     PathIdentifier,
     FileSelectionIdentifier,
-    PACSResourceIdentifier)
+    PACSResourceIdentifier, StudyInstanceUIDIdentifier, SourceIdentifier)
 from anonapi.settings import JobDefaultParameters, AnonClientSettingsException
 
 
@@ -102,7 +102,7 @@ class CreateCommandsContext:
                     server=self.parser.get_active_server(),
                     anon_name=parameters.patient_name,
                     project_name=project_name,
-                    source_instance_id=str(element.source),
+                    source_instance_id=self.get_source_instance_id_value(element.source),
                     destination_path=str(destination_path),
                     description=parameters.description,
                 )
@@ -116,6 +116,32 @@ class CreateCommandsContext:
             )
 
         return response["job_id"]
+
+    @staticmethod
+    def get_source_instance_id_value(identifier: SourceIdentifier):
+        """Give the value for source_instance_id that IDIS understands
+
+        For historical reasons, StudyInstanceUIDs are given without prepended key. This should change. For now
+        just do this conversion.
+        Example:
+        StudyInstanceUID should be passed as "123.4.5.15.5.56",
+        but AccessionNumber should be passed as "accession_number:1234567.3434636"
+
+
+        Parameters
+        ----------
+        identifier: SourceIdentifier
+            The identifier for which to get the id string
+
+        Returns
+        -------
+        str
+            Value to pass as source_instance_id to IDIS api server
+        """
+        if type(identifier) == StudyInstanceUIDIdentifier:
+            return str(identifier.identifier)
+        else:
+            return str(identifier)  # will prepend the identifier type
 
     def add_to_batch(self, created_job_ids):
         """Add job ids as batch in current dir. If batch does not exist, create"""
@@ -304,8 +330,9 @@ def assert_job_parameters(parameters: AnonymizationParameters):
     parameters: AnonymizationParameters
         parameters object where all fields are filled
     """
+
     if not parameters.patient_name:
-        parameters.patient_name = parameters.field_names
+        parameters.patient_name = parameters.patient_id
 
     if parameters.description is None:
         parameters.patient_name = ""

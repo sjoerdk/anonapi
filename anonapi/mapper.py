@@ -141,13 +141,15 @@ class AnonymizationParameters:
     PATIENT_ID_NAME = "patient_id"
     PATIENT_NAME = "patient_name"
     DESCRIPTION_NAME = "description"
+    PIMS_KEY = 'pims_key'
 
-    field_names = [PATIENT_ID_NAME, PATIENT_NAME, DESCRIPTION_NAME]
+    field_names = [PATIENT_ID_NAME, PATIENT_NAME, DESCRIPTION_NAME, PIMS_KEY]
 
-    def __init__(self, patient_id, patient_name=None, description=None):
+    def __init__(self, patient_id=None, patient_name=None, description=None, pims_key=None):
         self.patient_id = patient_id
         self.patient_name = patient_name
         self.description = description
+        self.pims_key = pims_key
 
     def as_dict(self, parameters_to_include=None):
         """
@@ -172,6 +174,7 @@ class AnonymizationParameters:
             self.PATIENT_ID_NAME: self.patient_id,
             self.PATIENT_NAME: self.patient_name,
             self.DESCRIPTION_NAME: self.description,
+            self.PIMS_KEY: self.pims_key,
         }
         if parameters_to_include:
             return {
@@ -258,12 +261,9 @@ class MappingList(UserDict):
                 raise MappingLoadError(
                     f"Could not find column with header 'source'. This is required."
                 )
-            # It might be that not all parameters have been written. Set these to None
-            parameters = {
-                "patient_id": row.get(AnonymizationParameters.PATIENT_ID_NAME, None),
-                "patient_name": row.get(AnonymizationParameters.PATIENT_NAME, None),
-                "description": row.get(AnonymizationParameters.DESCRIPTION_NAME, None),
-            }
+            # Read in parameters. If they are missing from input set them to None
+            parameters = {x: row.get(x, None) for x in AnonymizationParameters.field_names}
+
             mapping[source] = AnonymizationParameters(**parameters)
         return cls(mapping)
 
