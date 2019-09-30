@@ -11,7 +11,8 @@ from anonapi.cli.parser import (
     AnonCommandLineParser,
     AnonCommandLineParserException,
     NoBatchDefinedException,
-    echo_error)
+    echo_error,
+)
 from anonapi.client import ClientToolException
 from collections import Counter
 

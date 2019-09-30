@@ -116,7 +116,9 @@ def test_create_from_mapping_server_error_halfway(
     assert batch_folder.load().job_ids == [1234]
 
 
-def test_create_set_default_parameters(mock_main_runner_with_mapping, mock_requests_for_job_creation):
+def test_create_set_default_parameters(
+    mock_main_runner_with_mapping, mock_requests_for_job_creation
+):
     # Try to run from-mapping
     result = mock_main_runner_with_mapping.invoke(main, "from-mapping", input="Y")
 
@@ -148,7 +150,9 @@ def test_show_set_default_parameters(mock_main_runner):
     assert all(x in result.output for x in ["test_project", "test_destination"])
 
 
-def test_create_from_mapping_relative_path(mock_from_mapping_runner, mock_requests_for_job_creation):
+def test_create_from_mapping_relative_path(
+    mock_from_mapping_runner, mock_requests_for_job_creation
+):
     """Source identifiers in mappings are usually given as relative paths. However, jobs should be created with
     absolute, unambiguous paths. Check that this conversion works
 
@@ -169,7 +173,9 @@ def test_create_from_mapping_relative_path(mock_from_mapping_runner, mock_reques
     assert current_dir in str(mock_requests_for_job_creation.requests.post.call_args)
 
 
-def test_create_from_mapping_dry_run(mock_from_mapping_runner, mock_requests_for_job_creation):
+def test_create_from_mapping_dry_run(
+    mock_from_mapping_runner, mock_requests_for_job_creation
+):
     """Test dry run mode. Should not hit anything important
     """
 
@@ -182,9 +188,11 @@ def test_create_from_mapping_dry_run(mock_from_mapping_runner, mock_requests_for
     assert mock_requests_for_job_creation.requests.post.call_count == 0
 
 
-def test_create_from_mapping_folder_and_pacs(mock_from_mapping_runner,
-                                             a_folder_with_mapping_diverse,
-                                             mock_requests_for_job_creation):
+def test_create_from_mapping_folder_and_pacs(
+    mock_from_mapping_runner,
+    a_folder_with_mapping_diverse,
+    mock_requests_for_job_creation,
+):
     """PACS identifiers should generate slightly different jobs then Folder identifiers."""
     mock_requests = mock_requests_for_job_creation
     mock_from_mapping_runner.set_mock_current_dir(a_folder_with_mapping_diverse)

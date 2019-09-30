@@ -102,7 +102,7 @@ class RequestsMock:
         self.requests.post.side_effect = cycle(objects)
 
     def set_response_exception(self, exception):
-        """Any call to get() or post() will yield the given exception
+        """Any call to get() or post() will yield the given exception instance
         """
         self.requests.get.side_effect = exception
         self.requests.post.side_effect = exception

@@ -141,11 +141,13 @@ class AnonymizationParameters:
     PATIENT_ID_NAME = "patient_id"
     PATIENT_NAME = "patient_name"
     DESCRIPTION_NAME = "description"
-    PIMS_KEY = 'pims_key'
+    PIMS_KEY = "pims_key"
 
     field_names = [PATIENT_ID_NAME, PATIENT_NAME, DESCRIPTION_NAME, PIMS_KEY]
 
-    def __init__(self, patient_id=None, patient_name=None, description=None, pims_key=None):
+    def __init__(
+        self, patient_id=None, patient_name=None, description=None, pims_key=None
+    ):
         self.patient_id = patient_id
         self.patient_name = patient_name
         self.description = description
@@ -262,7 +264,9 @@ class MappingList(UserDict):
                     f"Could not find column with header 'source'. This is required."
                 )
             # Read in parameters. If they are missing from input set them to None
-            parameters = {x: row.get(x, None) for x in AnonymizationParameters.field_names}
+            parameters = {
+                x: row.get(x, None) for x in AnonymizationParameters.field_names
+            }
 
             mapping[source] = AnonymizationParameters(**parameters)
         return cls(mapping)
@@ -399,9 +403,7 @@ class ExampleMappingList(MappingList):
                 patient_id="002",
                 description="A study which should be retrieved from PACS, identified by StudyInstanceUID",
             ),
-            AccessionNumberIdentifier(
-                "12345678.1234567"
-            ): AnonymizationParameters(
+            AccessionNumberIdentifier("12345678.1234567"): AnonymizationParameters(
                 patient_name="Patient3",
                 patient_id="003",
                 description="A study which should be retrieved from PACS, identified by AccessionNumber",

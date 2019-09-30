@@ -87,7 +87,7 @@ class WebAPIClient:
                 verify=validate,
                 headers={"Authorization": f"Token {self.token}"},
             )
-        except ConnectionError as e:
+        except requests.exceptions.ConnectionError as e:
             raise APIClientException(e)
 
         self.interpret_response(response)
@@ -130,7 +130,7 @@ class WebAPIClient:
                 verify=self.validate_https,
                 headers={"Authorization": f"Token {self.token}"},
             )
-        except ConnectionError as e:
+        except requests.exceptions.ConnectionError as e:
             raise APIClientException(e)
 
         self.interpret_response(response)

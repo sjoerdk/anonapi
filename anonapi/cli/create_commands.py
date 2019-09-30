@@ -16,7 +16,10 @@ from anonapi.mapper import (
     AnonymizationParameters,
     PathIdentifier,
     FileSelectionIdentifier,
-    PACSResourceIdentifier, StudyInstanceUIDIdentifier, SourceIdentifier)
+    PACSResourceIdentifier,
+    StudyInstanceUIDIdentifier,
+    SourceIdentifier,
+)
 from anonapi.settings import JobDefaultParameters, AnonClientSettingsException
 
 
@@ -102,7 +105,9 @@ class CreateCommandsContext:
                     server=self.parser.get_active_server(),
                     anon_name=parameters.patient_name,
                     project_name=project_name,
-                    source_instance_id=self.get_source_instance_id_value(element.source),
+                    source_instance_id=self.get_source_instance_id_value(
+                        element.source
+                    ),
                     destination_path=str(destination_path),
                     description=parameters.description,
                 )
@@ -260,7 +265,9 @@ def from_mapping(context: CreateCommandsContext, dry_run):
                 created_job_ids.append(job_id)
             except JobCreationException as e:
                 echo_error(e)
-                click.echo("Error will probably keep occurring. Stopping further job creation.")
+                click.echo(
+                    "Error will probably keep occurring. Stopping further job creation."
+                )
                 break
 
     click.echo(f"created {len(created_job_ids)} jobs: {created_job_ids}")

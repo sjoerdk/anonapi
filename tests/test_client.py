@@ -4,6 +4,7 @@
 """Tests for the `anonapi.client` module."""
 
 import pytest
+import requests
 
 from anonapi.client import (
     WebAPIClient,
@@ -89,7 +90,7 @@ def test_server_not_found(mocked_requests_client: WebAPIClient):
     client, requests_mock = mocked_requests_client
     requests_mock: RequestsMock
 
-    requests_mock.set_response_exception(ConnectionError)
+    requests_mock.set_response_exception(requests.exceptions.ConnectionError)
     with pytest.raises(APIClientException):
         _ = client.get("anything")
 

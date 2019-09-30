@@ -4,6 +4,7 @@ import shutil
 from unittest.mock import Mock
 
 import pytest
+import requests
 from click.testing import CliRunner
 
 from anonapi.batch import BatchFolder, JobBatch
@@ -37,6 +38,8 @@ def mock_requests(monkeypatch):
 
     """
     requests_mock = RequestsMock()
+    # maintain vanilla requests errors because these need to be importable even when mocking
+    requests_mock.exceptions = requests.exceptions
     monkeypatch.setattr("anonapi.client.requests", requests_mock)
     return requests_mock
 
@@ -120,7 +123,7 @@ def test_command_line_tool_server_status(anonapi_mock_cli, mock_requests):
 
     # now test a non-responsive server:
     mock_requests.reset()
-    mock_requests.set_response_exception(ConnectionError)
+    mock_requests.set_response_exception(requests.exceptions.ConnectionError)
     result = runner.invoke(entrypoint.cli, ["server", "status"])
 
     assert "ERROR" in result.output
@@ -133,6 +136,16 @@ def test_command_line_tool_server_status(anonapi_mock_cli, mock_requests):
 
     assert "is not responding properly" in result.output
     assert mock_requests.requests.get.call_count == 1
+
+
+def test_server_error_responses(anonapi_mock_cli, mock_requests):
+    """Make sure request errors are correctly caught"""
+    runner = CliRunner()
+    mock_requests.set_response_exception(
+        requests.exceptions.ConnectionError("Maximum retries exceeded")
+    )
+    response = runner.invoke(entrypoint.cli, "server status", catch_exceptions=False)
+    assert response.exit_code == 0
 
 
 def test_command_line_tool_job_info(anonapi_mock_cli, mock_requests):
@@ -329,12 +342,20 @@ def test_command_line_tool_user_commands(anonapi_mock_cli):
 @pytest.mark.parametrize(
     "command, mock_requests_response, expected_output",
     [
-        ("server jobs", ConnectionError, "Error getting jobs"),
-        ("job info 123", ConnectionError, "Error getting job info"),
-        ("server status", ConnectionError, "is not responding properly"),
-        ("job cancel 123", ConnectionError, "Error cancelling job"),
-        ("job reset 123", ConnectionError, "Error resetting job"),
-        ("server status", ConnectionError, "is not responding properly"),
+        ("server jobs", requests.exceptions.ConnectionError, "Error getting jobs"),
+        ("job info 123", requests.exceptions.ConnectionError, "Error getting job info"),
+        (
+            "server status",
+            requests.exceptions.ConnectionError,
+            "is not responding properly",
+        ),
+        ("job cancel 123", requests.exceptions.ConnectionError, "Error cancelling job"),
+        ("job reset 123", requests.exceptions.ConnectionError, "Error resetting job"),
+        (
+            "server status",
+            requests.exceptions.ConnectionError,
+            "is not responding properly",
+        ),
         ("batch status", APIClientException, "Error getting jobs"),
         ("batch status", APIParseResponseException, "Error parsing server response"),
         ("server jobs", APIParseResponseException, "Error parsing server response"),
