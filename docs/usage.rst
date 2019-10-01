@@ -1,10 +1,12 @@
+.. _usage:
+
 =====
 Usage
 =====
 
 Starting a command prompt
 =========================
-After :doc:`installation` :doc:`configuration` you can use the CLI from a command prompt by typing
+After :doc:`installation` and :doc:`configuration` you can use the CLI from a command prompt by typing
 
 .. code-block:: console
 

@@ -1,3 +1,5 @@
+.. _command_reference:
+
 Command reference
 =================
 

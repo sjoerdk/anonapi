@@ -6,6 +6,7 @@ Welcome to AnonAPI's documentation!
    :caption: Contents:
 
    readme
+   quickstart
    installation
    configuration
    usage
