@@ -349,7 +349,7 @@ def test_command_line_tool_user_commands(anonapi_mock_cli):
             requests.exceptions.ConnectionError,
             "is not responding properly",
         ),
-        ("job cancel 123", requests.exceptions.ConnectionError, "Error cancelling job"),
+        ("job cancel 123", requests.exceptions.RequestException, "Error cancelling job"),
         ("job reset 123", requests.exceptions.ConnectionError, "Error resetting job"),
         (
             "server status",
