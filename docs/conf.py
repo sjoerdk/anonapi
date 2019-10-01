@@ -54,7 +54,7 @@ master_doc = "index"
 
 # General information about the project.
 project = u"AnonAPI"
-copyright = u"2018, Sjoerd Kerkstra"
+copyright = u"2019, Sjoerd Kerkstra"
 author = u"Sjoerd Kerkstra"
 
 # The version info for the project you're documenting, acts as replacement

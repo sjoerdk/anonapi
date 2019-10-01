@@ -7,12 +7,14 @@ Welcome to AnonAPI's documentation!
 
    readme
    installation
-   cli_usage
+   configuration
+   usage
+   command_reference
+   troubleshooting
    python_usage
    modules
    contributing
    authors
-   history
 
 Indices and tables
 ==================
