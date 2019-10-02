@@ -11,7 +11,7 @@ Display information on the command line tool itself. Which API servers it knows 
 
 .. code-block:: console
 
-    $ anon status -h   # list all commands
+    $ anon status   # list all commands
 
 .. _server_commands:
 
@@ -21,7 +21,7 @@ Work with Anonymization server API servers. Add, remove servers, set active serv
 
 .. code-block:: console
 
-    $ anon server -h   # list all commands
+    $ anon server   # list all commands
 
 job
 ---
@@ -29,7 +29,7 @@ Work with single jobs. Get extended info, reset, restart a job
 
 .. code-block:: console
 
-    $ anon job -h   # list all commands
+    $ anon job   # list all commands
 
 
 user
@@ -38,7 +38,7 @@ Information and editing of credentials that are used to communicate with the API
 
 .. code-block:: console
 
-    $ anon user -h   # list all commands
+    $ anon user   # list all commands
 
 
 .. _batch:

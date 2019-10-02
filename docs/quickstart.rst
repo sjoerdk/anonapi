@@ -18,9 +18,3 @@ Quick start
 
 
 More commands can be found in :ref:`usage` and in the :ref:`command_reference`
-
-
-
-
-
-
