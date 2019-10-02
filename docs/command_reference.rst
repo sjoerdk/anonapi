@@ -3,11 +3,11 @@
 Command reference
 =================
 
-Overview of all CLI functions. For more information, use 'anon <function> -h' in the CLI itself
+Overview of all CLI functions. For more information, type 'anon <function>' and press enter in the CLI itself
 
 status
 ------
-Display information on the command line tool itself. Which API servers it knows about, current active server.
+Display information on the command line tool itself. Which API servers it knows about, current active server
 
 .. code-block:: console
 
@@ -17,7 +17,7 @@ Display information on the command line tool itself. Which API servers it knows 
 
 server
 ------
-Work with Anonymization server API servers. Add, remove servers, set active server.
+Work with Anonymization server API servers. Add, remove servers, set active server
 
 .. code-block:: console
 
@@ -34,7 +34,7 @@ Work with single jobs. Get extended info, reset, restart a job
 
 user
 ----
-Information and editing of credentials that are used to communicate with the API.
+Information and editing of credentials that are used to communicate with the API
 
 .. code-block:: console
 
