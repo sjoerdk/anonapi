@@ -57,7 +57,3 @@ More information on job batches: :ref:`batch`
     $ anon batch add 20-35      # add fifteen job ids: 20 through to 35
     $ anon batch status         # print info for all jobs in batch
     $ anon batch                # see other commands including reset and cancel all
-
-
-
-
