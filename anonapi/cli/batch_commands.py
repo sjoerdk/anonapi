@@ -26,7 +26,7 @@ def main():
 
 
 @command_group_function()
-def init(parser: AnonCommandLineParser,):
+def init(parser: AnonCommandLineParser):
     """Save an empty batch in the current folder, for current server"""
     batch_folder = parser.get_batch_folder()
     if batch_folder.has_batch():
@@ -40,7 +40,7 @@ def init(parser: AnonCommandLineParser,):
 
 
 @command_group_function()
-def info(parser: AnonCommandLineParser,):
+def info(parser: AnonCommandLineParser):
     """Show batch in current directory"""
     try:
         click.echo(parser.get_batch().to_string())
@@ -51,7 +51,7 @@ def info(parser: AnonCommandLineParser,):
 
 
 @command_group_function()
-def delete(parser: AnonCommandLineParser,):
+def delete(parser: AnonCommandLineParser):
     """delete batch in current folder"""
     parser.get_batch_folder().delete_batch()
     click.echo(f"Removed batch in current dir")
@@ -86,7 +86,7 @@ def remove(parser: AnonCommandLineParser, job_ids):
 
 
 @command_group_function()
-def status(parser: AnonCommandLineParser,):
+def status(parser: AnonCommandLineParser):
     """Print status overview for all jobs in batch"""
     try:
         batch = parser.get_batch()
@@ -122,7 +122,7 @@ def status(parser: AnonCommandLineParser,):
 
 
 @command_group_function()
-def reset(parser: AnonCommandLineParser,):
+def reset(parser: AnonCommandLineParser):
     """Reset every job in the current batch"""
     batch: JobBatch = parser.get_batch()
 
@@ -138,7 +138,7 @@ def reset(parser: AnonCommandLineParser,):
 
 
 @command_group_function()
-def cancel(parser: AnonCommandLineParser,):
+def cancel(parser: AnonCommandLineParser):
     """Cancel every job in the current batch"""
     batch: JobBatch = parser.get_batch()
 
@@ -156,7 +156,7 @@ def cancel(parser: AnonCommandLineParser,):
 
 
 @command_group_function()
-def reset_error(parser: AnonCommandLineParser,):
+def reset_error(parser: AnonCommandLineParser):
     """Reset all jobs with error status in the current batch"""
     batch: JobBatch = parser.get_batch()
     try:
