@@ -6,7 +6,7 @@ from pathlib import Path
 import click
 
 from anonapi.cli.parser import command_group_function, AnonCommandLineParser, echo_error
-from anonapi.selection import DICOMFileFolder
+from anonapi.selection import DICOMFileFolder, DICOMFileList
 from fileselection.fileselection import FileSelectionFolder, FileSelectionFile
 from tqdm import tqdm
 
@@ -17,7 +17,7 @@ class CLIMessages:
 
 class SelectCommandContext:
     def __init__(self, current_path):
-        self.current_path = current_path
+        self.current_path = Path(current_path)
 
     def get_current_selection_folder(self):
         return FileSelectionFolder(self.current_path)
@@ -91,7 +91,8 @@ def delete(context: SelectCommandContext):
 
 @command_group_function()
 def create(context: SelectCommandContext):
-    """Recursively find all DICOM files in this dirfor the current directory, add all DICOM files"""
+    """Recursively find all DICOM files in this dirfor the current directory,
+    add all DICOM files"""
 
     selection_folder = context.get_current_selection_folder()
     if selection_folder.has_file_selection():
@@ -99,6 +100,43 @@ def create(context: SelectCommandContext):
     else:
         click.echo("Creating selection in current folder. Adding all DICOM files")
         create_dicom_selection_click(context.current_path)
+
+
+@command_group_function()
+@click.argument("pattern", type=str)
+@click.option("--recurse/--no-recurse", default=True, help="Recurse into directories")
+@click.option(
+    "--check-dicom/--no-check-dicom",
+    default=False,
+    help="Allows only DICOM files. Opens all files",
+)
+def add(context: SelectCommandContext, pattern, recurse, check_dicom):
+    """Add all files matching given pattern to the selection in the current folder
+    """
+    selection_folder = context.get_current_selection_folder()
+    if selection_folder.has_file_selection():
+        echo_error("There is already a selection in this folder")
+        return
+
+    if recurse:
+        click.echo(f"Finding all files matching '{pattern}' recursively")
+        glob_pattern = f"**/{pattern}"
+    else:
+        click.echo(f"Finding all files matching '{pattern}'")
+        glob_pattern = f"{pattern}"
+
+    all_paths = [
+        x for x in tqdm(context.current_path.glob(glob_pattern)) if x.is_file()
+    ]
+
+    if check_dicom:
+        click.echo("Checking that each file is Dicom")
+        to_add = [x[0] for x in tqdm(DICOMFileList(all_paths)) if x[1] is not None]
+    else:
+        to_add = all_paths
+
+    click.echo(f"added {len(to_add)}")
+
 
 
 @command_group_function()
@@ -112,6 +150,8 @@ def edit(context: SelectCommandContext):
         click.launch(str(selection_folder.get_data_file_path()))
 
 
+
+# TODO: replace this function
 def create_dicom_selection_click(path):
     """Find all DICOM files path (recursive) and save them a FileSelectionFile.
 
@@ -141,5 +181,5 @@ def create_dicom_selection_click(path):
     selection_folder.save_file_selection(selection)
 
 
-for func in [status, delete, create, edit]:
+for func in [status, delete, create, edit, add]:
     main.add_command(func)

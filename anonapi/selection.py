@@ -2,6 +2,7 @@
 Useful for example for selecting only DICOM files in a folder.
 """
 from pathlib import Path
+from time import sleep
 
 import pydicom
 from pydicom.errors import InvalidDicomError
@@ -36,7 +37,8 @@ class DICOMFileFolder:
 
     @staticmethod
     def all_dicom_files(paths):
-        """Create an iterator so loading files as dicom can be monitored and a progress bar can be shown
+        """Create an iterator so loading files as dicom can be monitored and a
+        progress bar can be shown
 
         Parameters
         ----------
@@ -53,7 +55,8 @@ class DICOMFileFolder:
 
 class DICOMFileList:
     def __init__(self, paths):
-        """Container of potential DICOM files. Can be used as iterator for trying to open files as DICOM
+        """Container of potential DICOM files. Can be used as iterator for trying
+        to open files as DICOM
 
         Parameters
         ----------

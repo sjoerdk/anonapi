@@ -42,7 +42,8 @@ def mock_selection_context(mock_selection_folder):
 
 @pytest.fixture()
 def mock_cli_parser(mock_selection_folder):
-    """Context required only by select_commands.main. Will yield a temp folder as current_dir()"""
+    """Context required only by select_commands.main. Will yield a temp folder as
+    current_dir()"""
     parser = AnonCommandLineParser(client_tool=Mock(), settings=Mock())
     parser.current_dir = lambda: mock_selection_folder.path
     return parser
@@ -50,8 +51,8 @@ def mock_cli_parser(mock_selection_folder):
 
 @pytest.fixture()
 def mock_main_runner(mock_cli_parser):
-    """a click.testing.CliRunner that always passes a mocked context to any call, making sure any operations
-    on current dir are done in a temp folder"""
+    """a click.testing.CliRunner that always passes a mocked context to any call,
+    making sure any operations on current dir are done in a temp folder"""
     runner = AnonCommandLineParserRunner(mock_context=mock_cli_parser)
     return runner
 
@@ -74,6 +75,7 @@ def test_select_delete(mock_main_runner, initialised_selection_folder):
     assert "There is no selection defined" in result.output
 
 
+# TODO: remove create method when add and remove are there
 def test_select_create(mock_main_runner, folder_with_some_dicom_files):
     selection_folder = folder_with_some_dicom_files
     mock_main_runner.set_mock_current_dir(selection_folder.path)
@@ -83,6 +85,16 @@ def test_select_create(mock_main_runner, folder_with_some_dicom_files):
     assert result.exit_code == 0
     assert selection_folder.has_file_selection()
     assert "Found 3 DICOM files" in result.output
+
+
+def test_select_add(mock_main_runner, folder_with_some_dicom_files):
+    selection_folder = folder_with_some_dicom_files
+    mock_main_runner.set_mock_current_dir(selection_folder.path)
+
+    assert not selection_folder.has_file_selection()
+    result = mock_main_runner.invoke(main, args=["add", "*"], catch_exceptions=False)
+    assert result.exit_code == 0
+    # TODO continue
 
 
 def test_select_edit(mock_main_runner, initialised_selection_folder, monkeypatch):
