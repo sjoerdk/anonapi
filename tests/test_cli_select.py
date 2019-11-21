@@ -75,18 +75,6 @@ def test_select_delete(mock_main_runner, initialised_selection_folder):
     assert "There is no selection defined" in result.output
 
 
-# TODO: remove create method when add and remove are there
-def test_select_create(mock_main_runner, folder_with_some_dicom_files):
-    selection_folder = folder_with_some_dicom_files
-    mock_main_runner.set_mock_current_dir(selection_folder.path)
-
-    assert not selection_folder.has_file_selection()
-    result = mock_main_runner.invoke(main, "create")
-    assert result.exit_code == 0
-    assert selection_folder.has_file_selection()
-    assert "Found 3 DICOM files" in result.output
-
-
 def test_select_add(mock_main_runner, folder_with_some_dicom_files):
     selection_folder = folder_with_some_dicom_files
     mock_main_runner.set_mock_current_dir(selection_folder.path)
@@ -94,7 +82,28 @@ def test_select_add(mock_main_runner, folder_with_some_dicom_files):
     assert not selection_folder.has_file_selection()
     result = mock_main_runner.invoke(main, args=["add", "*"], catch_exceptions=False)
     assert result.exit_code == 0
-    # TODO continue
+
+
+def test_select_add_append(mock_main_runner, folder_with_some_dicom_files):
+    """Running add twice should add only new paths"""
+    selection_folder = folder_with_some_dicom_files
+    mock_main_runner.set_mock_current_dir(selection_folder.path)
+
+    # start with emtpy selection and add a file
+    assert not selection_folder.has_file_selection()
+    result = mock_main_runner.invoke(main, args=["add", "*.txt"],
+                                     catch_exceptions=False)
+    assert len(selection_folder.load_file_selection().selected_paths) == 1
+
+    # now add the same file again
+    result = mock_main_runner.invoke(main, args=["add", "*.txt"],
+                                     catch_exceptions=False)
+    # this should not have added any new file because it was already there
+    assert len(selection_folder.load_file_selection().selected_paths) == 1
+    # now add more
+    result = mock_main_runner.invoke(main, args=["add", "1"],
+                                     catch_exceptions=False)
+    assert len(selection_folder.load_file_selection().selected_paths) == 3
 
 
 def test_select_edit(mock_main_runner, initialised_selection_folder, monkeypatch):

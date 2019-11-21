@@ -88,7 +88,8 @@ def anon_mock_cli_with_mapping(anonapi_mock_cli, a_folder_with_mapping):
 
 @fixture
 def folder_with_some_dicom_files(tmpdir):
-    """A folder with some structure, some dicom files and some non-dicom files. No FileSelectionFile saved yet"""
+    """A folder with some structure, some dicom files and some non-dicom files.
+    No FileSelectionFile saved yet"""
     a_folder = tmpdir / "a_folder"
     shutil.copytree(RESOURCE_PATH / "test_cli" / "test_dir", a_folder)
     return FileSelectionFolder(path=a_folder)
