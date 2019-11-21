@@ -349,7 +349,11 @@ def test_command_line_tool_user_commands(anonapi_mock_cli):
             requests.exceptions.ConnectionError,
             "is not responding properly",
         ),
-        ("job cancel 123", requests.exceptions.RequestException, "Error cancelling job"),
+        (
+            "job cancel 123",
+            requests.exceptions.RequestException,
+            "Error cancelling job",
+        ),
         ("job reset 123", requests.exceptions.ConnectionError, "Error resetting job"),
         (
             "server status",
@@ -460,7 +464,8 @@ def test_cli_batch_cancel(anonapi_mock_cli_with_batch, mock_requests):
 
 
 def test_cli_batch_status_errors(anonapi_mock_cli_with_batch, mock_requests):
-    """Call server, but not all jobs exist. This should appear in the status message to the user"""
+    """Call server, but not all jobs exist. This should appear in the status
+    message to the user"""
     runner = CliRunner()
 
     mock_requests.set_response_text(
@@ -569,7 +574,8 @@ def test_cli_map_info(anon_mock_cli_with_mapping):
 
 
 def test_cli_map_info_empty_dir(mock_anonapi_current_dir):
-    """running info on a directory not containing a mapping file should yield a nice 'no mapping' message"""
+    """running info on a directory not containing a mapping file should yield a
+    nice 'no mapping' message"""
     runner = CliRunner()
     result = runner.invoke(entrypoint.cli, "map status")
 
@@ -669,7 +675,8 @@ def test_cli_map_edit(anon_mock_cli_with_mapping, monkeypatch):
 
 
 def test_cli_entrypoint(monkeypatch, tmpdir):
-    """Call main entrypoint with empty homedir. This should create a default settings file"""
+    """Call main entrypoint with empty homedir. This should create a default
+     settings file"""
     monkeypatch.setattr("anonapi.cli.entrypoint.pathlib.Path.home", lambda: tmpdir)
     parser = get_parser()
     assert parser.settings.user_name == "username"

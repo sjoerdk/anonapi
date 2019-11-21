@@ -97,7 +97,10 @@ def delete(context: SelectCommandContext):
     default=False,
     help="Allows only DICOM files. Opens all files",
 )
-def add(context: SelectCommandContext, pattern, recurse, check_dicom):
+@click.option('--exclude-pattern', '-e', multiple=True,
+              help="Exclude any filepath matching this. * is wildcard.")
+def add(context: SelectCommandContext, pattern, recurse, check_dicom,
+        exclude_pattern):
     """Add all files matching given pattern to the selection in the current folder
     """
     click.echo(f"Finding files...")
@@ -106,7 +109,7 @@ def add(context: SelectCommandContext, pattern, recurse, check_dicom):
         tqdm(
             current_folder.iterate(
                 pattern=pattern, recurse=recurse,
-                exclude_patterns=['fileselection.txt']
+                exclude_patterns=['fileselection.txt'] + list(exclude_pattern)
             )
         )
     )

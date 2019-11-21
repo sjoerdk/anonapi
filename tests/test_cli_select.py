@@ -106,6 +106,25 @@ def test_select_add_append(mock_main_runner, folder_with_some_dicom_files):
     assert len(selection_folder.load_file_selection().selected_paths) == 3
 
 
+def test_select_add_exclude(mock_main_runner, folder_with_some_dicom_files):
+    """Running add twice should add only new paths"""
+    selection_folder = folder_with_some_dicom_files
+    mock_main_runner.set_mock_current_dir(selection_folder.path)
+
+    # start with emtpy selection and add a file
+    assert not selection_folder.has_file_selection()
+    mock_main_runner.invoke(main, args=["add", "1"],
+                            catch_exceptions=False)
+    assert len(selection_folder.load_file_selection().selected_paths) == 2
+
+    mock_main_runner.invoke(main, args=["delete"], catch_exceptions=False)
+    assert not selection_folder.has_file_selection()
+
+    mock_main_runner.invoke(main, args="add * --exclude-pattern 2.0* --exclude-pattern *1".split(" "),
+                            catch_exceptions=False)
+    assert len(selection_folder.load_file_selection().selected_paths) == 2
+
+
 def test_select_edit(mock_main_runner, initialised_selection_folder, monkeypatch):
     mock_launch = Mock()
     monkeypatch.setattr("anonapi.cli.select_commands.click.launch", mock_launch)
