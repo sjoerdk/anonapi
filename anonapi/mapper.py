@@ -1,6 +1,8 @@
-"""Makes it possible to map source files to anonymized id, name etc. Pre-processing step for creating IDIS jobs
+"""Makes it possible to map source files to anonymized id, name etc.
+Pre-processing step for creating IDIS jobs
 
-Meant to be usable in a command line, with minimal windows editing tools. Maybe Excel, maybe notepad
+Meant to be usable in a command line, with minimal windows editing tools. Maybe
+Excel, maybe notepad
 
 """
 import csv
@@ -22,7 +24,8 @@ class SourceIdentifier:
     key: str
         Class level attribute to identify this class of identifiers
     identifier: str
-        Instance level attribute giving the actual value for this identifier. For example a specific path or UID
+        Instance level attribute giving the actual value for this identifier.
+        For example a specific path or UID
     """
 
     key = "base"  # key with which this class is identified
@@ -51,7 +54,8 @@ class PathIdentifier(SourceIdentifier):
 
 
 class FileSelectionFolderIdentifier(PathIdentifier):
-    """A file selection in a specific folder. Selection file name is default. Folder can be relative or absolute
+    """A file selection in a specific folder. Selection file name is default.
+    Folder can be relative or absolute
     """
 
     key = "folder"
@@ -119,7 +123,8 @@ class SourceIdentifierFactory:
             type_key, identifier = key.split(":")
         except ValueError as e:
             msg = (
-                f"'{key}' is not a valid source. There should be a single colon ':' sign somewhere. "
+                f"'{key}' is not a valid source. There should be a single colon"
+                f" ':' sign somewhere. "
                 f"Original error: {e}"
             )
             raise UnknownSourceIdentifier(msg)
@@ -134,7 +139,8 @@ class SourceIdentifierFactory:
 
 
 class AnonymizationParameters:
-    """Settings that can be set when creating a job and that are likely to change within a single mapping
+    """Settings that can be set when creating a job and that are likely to
+    change within a single mapping
 
     """
 
@@ -159,7 +165,8 @@ class AnonymizationParameters:
         Parameters
         ----------
         parameters_to_include: List[str], optional
-            List of strings from AnonymizationParameters.field_names. Defaults to all parameters
+            List of strings from AnonymizationParameters.field_names. Defaults
+            to all parameters
 
         Returns
         -------
@@ -169,7 +176,8 @@ class AnonymizationParameters:
             for param in parameters_to_include:
                 if param not in AnonymizationParameters.field_names:
                     raise ValueError(
-                        f"Unknown parameter '{param}'. Allowed: {AnonymizationParameters.field_names}"
+                        f"Unknown parameter '{param}'. "
+                        f"Allowed: {AnonymizationParameters.field_names}"
                     )
 
         all_values = {
@@ -214,7 +222,8 @@ class MappingList(UserDict):
         f: stream
             Write to this
         parameters_to_write: List[str], optional
-            List of strings from AnonymizationParameters.field_names. Defaults to all parameters
+            List of strings from AnonymizationParameters.field_names.
+            Defaults to all parameters
 
         """
 
@@ -383,7 +392,8 @@ def get_example_mapping_list():
 
 
 class ExampleMappingList(MappingList):
-    """A mapping list with some example content. Gives an overview of possible identifiers
+    """A mapping list with some example content. Gives an overview of possible
+     identifiers
 
     """
 
@@ -401,12 +411,14 @@ class ExampleMappingList(MappingList):
             ): AnonymizationParameters(
                 patient_name="Patient2",
                 patient_id="002",
-                description="A study which should be retrieved from PACS, identified by StudyInstanceUID",
+                description="A study which should be retrieved from PACS, "
+                            "identified by StudyInstanceUID",
             ),
             AccessionNumberIdentifier("12345678.1234567"): AnonymizationParameters(
                 patient_name="Patient3",
                 patient_id="003",
-                description="A study which should be retrieved from PACS, identified by AccessionNumber",
+                description="A study which should be retrieved from PACS, "
+                            "identified by AccessionNumber",
             ),
         }
         super().__init__(mapping=mapping)

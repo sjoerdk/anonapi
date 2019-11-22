@@ -29,9 +29,7 @@ class JobIDRangeParamType(ParamType):
             return value
 
         if type(value) is list:
-            return (
-                value
-            )  # Make sure function is idempotent. Feeding output into convert() again will not change output
+            return value  # Make sure function is idempotent. Feeding output into convert() again will not change output
 
         match = re.match("^(?P<start>[0-9]+)-(?P<end>[0-9]+)$", value)
         if match:  # expand range and add each item

@@ -17,8 +17,9 @@ class FileFolder:
     def __init__(self, path):
         self.path = Path(path)
 
-    def iterate(self, pattern="*", recurse=True, exclude_patterns=None,
-                ignore_dotfiles=True):
+    def iterate(
+        self, pattern="*", recurse=True, exclude_patterns=None, ignore_dotfiles=True
+    ):
         """Iterator that yields subpaths. Makes it easy to use progress bar
 
         Parameters
@@ -50,11 +51,11 @@ class FileFolder:
 
         all_paths_iter = self.path.glob(glob_pattern)
         for x in all_paths_iter:
-            #sleep(0.2)
+            # sleep(0.2)
             exclude = any(
                 [fnmatch(x.relative_to(self.path), y) for y in exclude_patterns]
             )
-            ignore = x.name.startswith('.') and ignore_dotfiles
+            ignore = x.name.startswith(".") and ignore_dotfiles
             if x.is_file() and not exclude and not ignore:
                 yield x
             else:
@@ -76,7 +77,7 @@ def open_as_dicom(path):
     None
         If path cannot be opened
     """
-    #sleep(0.2)
+    # sleep(0.2)
     try:
         return pydicom.dcmread(str(path))
     except InvalidDicomError:

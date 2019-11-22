@@ -35,9 +35,7 @@ class WebAPIClient:
         self.username = username
         self.token = token
         self.validate_https = bool(validate_https)
-        self.requestslib = (
-            requests
-        )  # mostly for clean testing. Allows to switch out the actual http-calling code
+        self.requestslib = requests  # mostly for clean testing. Allows to switch out the actual http-calling code
 
     def __str__(self):
         return f"WebAPIClient for {self.username}@{self.hostname}"
