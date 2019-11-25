@@ -4,6 +4,9 @@ Custom click parameter types
 import re
 
 from click.types import ParamType
+from pathlib import Path
+
+from fileselection.fileselection import FileSelectionFile, FileSelectionException
 
 from anonapi.cli.parser import AnonCommandLineParser
 
@@ -58,3 +61,23 @@ class AnonServerKeyParamType(ParamType):
 
     def __repr__(self):
         return "ANON_SERVER_KEY"
+
+
+class FileSelectionFileParam(ParamType):
+    """A FileSelectionFile object
+
+    """
+    name = "file_selection_file"
+
+    def convert(self, value, param, ctx):
+        filepath = Path(value)
+        if not filepath.exists():
+            self.fail(f"No file selection found at '{filepath}'")
+        try:
+            with open(filepath, 'r') as f:
+                return FileSelectionFile.load(f, datafile=filepath)
+        except FileSelectionException as e:
+            self.fail(f"Error reading file selection: {e}")
+
+    def __repr__(self):
+        return "FILE_SELECTION_FILE"

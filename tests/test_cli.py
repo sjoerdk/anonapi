@@ -624,7 +624,7 @@ def test_cli_map_add_folder(anonapi_mock_cli, folder_with_some_dicom_files):
     )
 
     # oh no! no mapping yet!
-    assert "No mapping defined" in result.output
+    assert "No mapping in current" in result.output
 
     # make one
     runner.invoke(entrypoint.cli, f"map init")
