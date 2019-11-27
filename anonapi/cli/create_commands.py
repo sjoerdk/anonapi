@@ -1,6 +1,7 @@
 """Click group and commands for the 'create' subcommand
 """
 import json
+from pathlib import PureWindowsPath, Path
 
 import click
 from click.exceptions import Abort
@@ -50,7 +51,8 @@ class MappingElement:
 
 
 class CreateCommandsContext:
-    """Passed to all methods in the create group. Contains some additional methods over general parser instance
+    """Passed to all methods in the create group. Contains some additional methods over
+     general parser instance
 
     """
 
@@ -257,18 +259,25 @@ def from_mapping(context: CreateCommandsContext, dry_run):
     elements = convert_to_fileselection(make_absolute(elements, parser.current_dir()))
     for element in elements:
         if dry_run:
-            click.echo(element.get_description())
-        else:
-            try:
-                job_id = context.create_job_for_element(element)
-                click.echo(f"Created job with id {job_id}")
-                created_job_ids.append(job_id)
-            except JobCreationException as e:
-                echo_error(e)
-                click.echo(
-                    "Error will probably keep occurring. Stopping further job creation."
-                )
-                break
+            def mock_create(*args, **kwargs):
+                click.echo("create was called with parameters:")
+                click.echo("\n".join(args))
+                click.echo("\n".join(map(str, kwargs.items())))
+                return {'job_id': -1}
+
+            context.parser.client_tool.create_path_job = mock_create
+            context.parser.client_tool.create_pacs_job = mock_create
+
+        try:
+            job_id = context.create_job_for_element(element)
+            click.echo(f"Created job with id {job_id}")
+            created_job_ids.append(job_id)
+        except JobCreationException as e:
+            echo_error(e)
+            click.echo(
+                "Error will probably keep occurring. Stopping further job creation."
+            )
+            break
 
     click.echo(f"created {len(created_job_ids)} jobs: {created_job_ids}")
 

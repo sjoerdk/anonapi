@@ -34,11 +34,13 @@ def anonapi_mock_cli_with_batch(anonapi_mock_cli):
 
 @pytest.fixture
 def mock_requests(monkeypatch):
-    """Replace requests lib with a mock version that does not hit any server and can return arbitrary responses
+    """Replace requests lib with a mock version that does not hit any server and can
+    return arbitrary responses
 
     """
     requests_mock = RequestsMock()
-    # maintain vanilla requests errors because these need to be importable even when mocking
+    # maintain vanilla requests errors because these need to be importable even
+    # when mocking
     requests_mock.exceptions = requests.exceptions
     monkeypatch.setattr("anonapi.client.requests", requests_mock)
     return requests_mock
@@ -46,7 +48,8 @@ def mock_requests(monkeypatch):
 
 @pytest.fixture
 def mock_anonapi_current_dir(anonapi_mock_cli, tmpdir):
-    """Anonapi instance with a tempdir current dir. So you can create, read files in 'current dir'"""
+    """Anonapi instance with a tempdir current dir. So you can create,
+    read files in 'current dir'"""
     anonapi_mock_cli.current_dir = lambda: str(
         tmpdir
     )  # make mock_context thinks tmpdir is its working dir

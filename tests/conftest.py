@@ -47,8 +47,8 @@ def mocked_requests_client():
 
 @fixture
 def anonapi_mock_cli(monkeypatch, tmpdir):
-    """Returns AnonCommandLineParser object and sets this as the default object passed to all click invocations of
-     entrypoint.cli with empty current dir
+    """Returns AnonCommandLineParser object and sets this as the default object
+    passed to all click invocations of entrypoint.cli with empty current dir
 
     """
     settings = DefaultAnonClientSettings()
@@ -71,8 +71,22 @@ def a_folder_with_mapping(tmpdir):
 
 
 @fixture
+def a_folder_with_mapping_and_fileselection(a_folder_with_mapping, a_file_selection):
+    target_path = Path(a_folder_with_mapping) / "a_folder" / 'a_file_selection.txt'
+    target_path.parent.mkdir(exist_ok=True)
+    shutil.copyfile(a_file_selection, target_path)
+    return a_folder_with_mapping, target_path
+
+@fixture
+def mock_cli_with_mapping(anonapi_mock_cli, a_folder_with_mapping):
+    anonapi_mock_cli.current_dir = lambda: str(a_folder_with_mapping)
+    return anonapi_mock_cli
+
+
+@fixture
 def a_folder_with_mapping_diverse(tmpdir):
-    """In addition to a_folder_with_mapping, contains also pacskey identifiers. (Added these later)"""
+    """In addition to a_folder_with_mapping, contains also pacskey identifiers.
+     (Added these later)"""
     shutil.copyfile(
         RESOURCE_PATH / "test_cli" / "anon_mapping_diverse.csv",
         Path(tmpdir) / "anon_mapping.csv",
@@ -93,6 +107,12 @@ def folder_with_some_dicom_files(tmpdir):
     a_folder = tmpdir / "a_folder"
     shutil.copytree(RESOURCE_PATH / "test_cli" / "test_dir", a_folder)
     return FileSelectionFolder(path=a_folder)
+
+
+@fixture
+def a_file_selection(tmpdir):
+    """A file with a valid file selection """
+    return RESOURCE_PATH / "test_cli" / "selection" / "fileselection.txt"
 
 
 class MockContextCliRunner(CliRunner):
