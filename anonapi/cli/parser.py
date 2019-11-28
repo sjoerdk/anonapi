@@ -1,4 +1,5 @@
-"""Command line utility object that gets passed around by click functions to have shared settings etc."""
+"""Command line utility object that gets passed around by click functions to
+have shared settings etc."""
 
 import os
 import click
@@ -76,7 +77,8 @@ class AnonCommandLineParser:
         server = self.settings.active_server
         if not server:
             msg = (
-                f"No active server. Which one do you want to use? Please activate one by using 'server activate <SERVER_NAME>. "
+                f"No active server. Which one do you want to use? Please activate "
+                f"one by using 'server activate <SERVER_NAME>. "
                 f"Available:{str([x.name for x in self.settings.servers])}"
             )
             raise AnonCommandLineParserException(msg)
@@ -84,7 +86,8 @@ class AnonCommandLineParser:
 
     @staticmethod
     def current_dir():
-        """Return full path to the folder this command line mock_context is called from"""
+        """Return full path to the folder this command line mock_context is
+        called from"""
         return os.getcwd()
 
     def get_batch(self):

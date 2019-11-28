@@ -14,6 +14,7 @@ from anonapi.cli import (
     server_commands,
     select_commands,
     create_commands,
+    settings_commands,
 )
 from anonapi.cli.parser import AnonCommandLineParser
 from anonapi.client import AnonClientTool
@@ -48,10 +49,10 @@ def cli(ctx):
 
 
 cli.add_command(parser.status)
-cli.add_command(user_commands.main)
 cli.add_command(job_commands.main)
 cli.add_command(server_commands.main)
 cli.add_command(batch_commands.main)
 cli.add_command(map_commands.main)
 cli.add_command(select_commands.main)
 cli.add_command(create_commands.main)
+cli.add_command(settings_commands.main)
