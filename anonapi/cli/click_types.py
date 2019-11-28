@@ -8,7 +8,7 @@ from pathlib import Path
 
 from fileselection.fileselection import FileSelectionFile, FileSelectionException
 
-from anonapi.cli.parser import AnonCommandLineParser
+from anonapi.context import AnonAPIContext
 
 
 class JobIDRangeParamType(ParamType):
@@ -49,8 +49,8 @@ class AnonServerKeyParamType(ParamType):
 
     def convert(self, value, param, ctx):
         if not ctx:
-            self.fail("This type expects an AnonCommandLineParser object in context")
-        parser: AnonCommandLineParser = ctx.obj
+            self.fail("This type expects an AnonAPIContext object in context")
+        parser: AnonAPIContext = ctx.obj
 
         allowed = [x.name for x in parser.settings.servers]
         if value not in allowed:

@@ -5,7 +5,8 @@ import itertools
 import click
 
 from anonapi.cli.click_types import JobIDRangeParamType
-from anonapi.cli.parser import command_group_function, AnonCommandLineParser
+from anonapi.cli.parser import command_group_function
+from anonapi.context import AnonAPIContext
 from anonapi.client import ClientToolException
 from anonapi.responses import JobsInfoList
 
@@ -18,7 +19,7 @@ def main():
 
 @command_group_function()
 @click.argument("job_id", type=str)
-def info(parser: AnonCommandLineParser, job_id):
+def info(parser: AnonAPIContext, job_id):
     """print job info
     """
     server = parser.get_active_server()
@@ -28,7 +29,7 @@ def info(parser: AnonCommandLineParser, job_id):
 
 @command_group_function(name="list")
 @click.argument("job_ids", type=JobIDRangeParamType(), nargs=-1)
-def job_list(parser: AnonCommandLineParser, job_ids):
+def job_list(parser: AnonAPIContext, job_ids):
     """list info for multiple jobs
     """
     if len(job_ids) == 0:  # handle empty nargs input gracefully
@@ -47,7 +48,7 @@ def job_list(parser: AnonCommandLineParser, job_ids):
 
 @command_group_function()
 @click.argument("job_id", type=str)
-def reset(parser: AnonCommandLineParser, job_id):
+def reset(parser: AnonAPIContext, job_id):
     """reset job, process again
     """
     server = parser.get_active_server()
@@ -57,7 +58,7 @@ def reset(parser: AnonCommandLineParser, job_id):
 
 @command_group_function()
 @click.argument("job_id", type=str)
-def cancel(parser: AnonCommandLineParser, job_id):
+def cancel(parser: AnonAPIContext, job_id):
     """set job status to inactive """
     server = parser.get_active_server()
     job_info = parser.client_tool.cancel_job(server=server, job_id=job_id)

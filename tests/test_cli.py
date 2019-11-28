@@ -10,8 +10,8 @@ from click.testing import CliRunner
 from anonapi.batch import BatchFolder, JobBatch
 from anonapi.cli import entrypoint, user_commands
 from anonapi.cli.entrypoint import get_parser
-from anonapi.cli.parser import AnonCommandLineParserException
 from anonapi.client import APIClientException, ClientToolException
+from anonapi.context import AnonAPIContextException
 from anonapi.mapper import MappingListFolder, MappingLoadError
 from anonapi.responses import APIParseResponseException
 from tests import RESOURCE_PATH
@@ -20,7 +20,7 @@ from tests.factories import RequestsMock, RequestsMockResponseExamples
 
 @pytest.fixture
 def anonapi_mock_cli_with_batch(anonapi_mock_cli):
-    """Returns AnonCommandLineParser object that has a batch defined
+    """Returns AnonAPIContext object that has a batch defined
 
     """
 
@@ -78,7 +78,8 @@ def test_command_line_tool_status_without_active_server(anonapi_mock_cli):
 
 
 def test_command_line_tool_add_remove_server(anonapi_mock_cli):
-    """Test commands to add, remove servers and see whether the number servers that are known is correct"""
+    """Test commands to add, remove servers and see whether the number servers
+    that are known is correct"""
 
     runner = CliRunner()
     assert len(anonapi_mock_cli.settings.servers) == 2
@@ -94,7 +95,7 @@ def test_command_line_tool_add_remove_server(anonapi_mock_cli):
     assert result.exit_code == 2
     assert "Invalid value" in str(result.output)
 
-    with pytest.raises(AnonCommandLineParserException):
+    with pytest.raises(AnonAPIContextException):
         anonapi_mock_cli.get_server_by_name("unknown_server")
 
 
@@ -320,7 +321,7 @@ def test_get_server_when_none_is_active(anonapi_mock_cli):
     """
     anonapi_mock_cli.settings.active_server = None
     # Calling for server here should fail because there is no active server
-    with pytest.raises(AnonCommandLineParserException):
+    with pytest.raises(AnonAPIContextException):
         anonapi_mock_cli.get_active_server()
 
 

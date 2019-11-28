@@ -5,7 +5,8 @@ from pathlib import Path
 
 import click
 
-from anonapi.cli.parser import command_group_function, AnonCommandLineParser, echo_error
+from anonapi.cli.parser import command_group_function, echo_error
+from anonapi.context import AnonAPIContext
 from anonapi.selection import FileFolder, open_as_dicom
 from fileselection.fileselection import FileSelectionFolder, FileSelectionFile
 from tqdm import tqdm
@@ -62,7 +63,7 @@ def describe_selection(selection):
 @click.pass_context
 def main(ctx):
     """select files for a single anonymization job"""
-    parser: AnonCommandLineParser = ctx.obj
+    parser: AnonAPIContext = ctx.obj
     context = SelectCommandContext(current_path=parser.current_dir())
     ctx.obj = context
 

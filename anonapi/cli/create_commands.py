@@ -8,7 +8,8 @@ from click.exceptions import Abort
 from fileselection.fileselection import FileSelectionFolder
 
 from anonapi.batch import BatchFolder, JobBatch
-from anonapi.cli.parser import command_group_function, AnonCommandLineParser, echo_error
+from anonapi.cli.parser import command_group_function, echo_error
+from anonapi.context import AnonAPIContext
 from anonapi.client import APIClientException
 from anonapi.mapper import (
     MappingListFolder,
@@ -56,7 +57,7 @@ class CreateCommandsContext:
 
     """
 
-    def __init__(self, parser: AnonCommandLineParser):
+    def __init__(self, parser: AnonAPIContext):
         self.parser = parser
 
     def create_job_for_element(self, element: MappingElement):

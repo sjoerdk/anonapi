@@ -9,7 +9,8 @@ import string
 from click.exceptions import BadParameter, UsageError
 
 from anonapi.cli.click_types import FileSelectionFileParam
-from anonapi.cli.parser import command_group_function, AnonCommandLineParser, echo_error
+from anonapi.cli.parser import command_group_function, echo_error
+from anonapi.context import AnonAPIContext
 from anonapi.cli.select_commands import create_dicom_selection_click
 from anonapi.mapper import (SourceIdentifierFactory, MappingListFolder, MappingList,
                             AnonymizationParameters, MappingLoadError,
@@ -44,7 +45,7 @@ class MapCommandContext:
 @click.pass_context
 def main(ctx):
     """map original data to anonymized name, id, etc."""
-    parser: AnonCommandLineParser = ctx.obj
+    parser: AnonAPIContext = ctx.obj
     context = MapCommandContext(current_path=parser.current_dir())
     ctx.obj = context
 

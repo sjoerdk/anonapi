@@ -16,7 +16,7 @@ from anonapi.cli import (
     create_commands,
     settings_commands,
 )
-from anonapi.cli.parser import AnonCommandLineParser
+from anonapi.context import AnonAPIContext
 from anonapi.client import AnonClientTool
 from anonapi.settings import AnonClientSettingsFromFile, DefaultAnonClientSettings
 
@@ -33,7 +33,7 @@ def get_parser():
         DefaultAnonClientSettings().save_to_file(settings_file)
     settings = AnonClientSettingsFromFile(settings_file)
     tool = AnonClientTool(username=settings.user_name, token=settings.user_token)
-    parser = AnonCommandLineParser(client_tool=tool, settings=settings)
+    parser = AnonAPIContext(client_tool=tool, settings=settings)
     return parser
 
 

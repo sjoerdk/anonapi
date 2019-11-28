@@ -6,7 +6,7 @@ from _pytest.fixtures import fixture
 from click.testing import CliRunner
 from fileselection.fileselection import FileSelectionFolder
 
-from anonapi.cli.parser import AnonCommandLineParser
+from anonapi.context import AnonAPIContext
 from anonapi.client import WebAPIClient, AnonClientTool
 from anonapi.mapper import MappingListFolder, ExampleMappingList
 from anonapi.objects import RemoteAnonServer
@@ -47,14 +47,14 @@ def mocked_requests_client():
 
 @fixture
 def anonapi_mock_cli(monkeypatch, tmpdir):
-    """Returns AnonCommandLineParser object and sets this as the default object
+    """Returns AnonAPIContext object and sets this as the default object
     passed to all click invocations of entrypoint.cli with empty current dir
 
     """
     settings = DefaultAnonClientSettings()
     settings.servers.append(RemoteAnonServer("testserver2", "https://hostname_of_api2"))
     tool = AnonClientTool(username=settings.user_name, token=settings.user_token)
-    mock_parser = AnonCommandLineParser(client_tool=tool, settings=settings)
+    mock_parser = AnonAPIContext(client_tool=tool, settings=settings)
     mock_parser.current_dir = lambda: str(tmpdir)
     monkeypatch.setattr("anonapi.cli.entrypoint.get_parser", lambda: mock_parser)
 
@@ -147,8 +147,8 @@ class MockContextCliRunner(CliRunner):
         )
 
 
-class AnonCommandLineParserRunner(MockContextCliRunner):
-    """A click runner that always injects a AnonCommandLineParser instance into the context
+class AnonAPIContextRunner(MockContextCliRunner):
+    """A click runner that always injects a AnonAPIContext instance into the context
     """
 
     def __init__(self, *args, mock_context, **kwargs):
@@ -156,7 +156,7 @@ class AnonCommandLineParserRunner(MockContextCliRunner):
 
         Parameters
         ----------
-        mock_context: AnonCommandLineParser
+        mock_context: AnonAPIContext
         """
         super().__init__(*args, mock_context=mock_context, **kwargs)
 
@@ -174,6 +174,6 @@ class AnonCommandLineParserRunner(MockContextCliRunner):
 
         Returns
         -------
-        AnonCommandLineParser
+        AnonAPIContext
         """
         return self.mock_context

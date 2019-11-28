@@ -6,7 +6,7 @@ from anonapi.batch import BatchFolder
 from anonapi.cli.create_commands import main
 from anonapi.mapper import MappingListFolder
 from anonapi.settings import JobDefaultParameters
-from tests.conftest import AnonCommandLineParserRunner
+from tests.conftest import AnonAPIContextRunner
 from tests.factories import RequestsMockResponseExamples
 
 
@@ -14,7 +14,7 @@ from tests.factories import RequestsMockResponseExamples
 def mock_main_runner(anonapi_mock_cli):
     """a click.testing.CliRunner that always passes a mocked context to any call, making sure any operations
     on current dir are done in a temp folder"""
-    runner = AnonCommandLineParserRunner(mock_context=anonapi_mock_cli)
+    runner = AnonAPIContextRunner(mock_context=anonapi_mock_cli)
     return runner
 
 
