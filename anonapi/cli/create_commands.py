@@ -154,7 +154,7 @@ class CreateCommandsContext:
     def add_to_batch(self, created_job_ids):
         """Add job ids as batch in current dir. If batch does not exist, create"""
         parser = self.context
-        batch_folder = BatchFolder(path=parser.current_dir())
+        batch_folder = BatchFolder(path=parser.current_dir)
         if batch_folder.has_batch():
             batch: JobBatch = batch_folder.load()
         else:
@@ -238,7 +238,7 @@ def from_mapping(context: CreateCommandsContext, dry_run):
         click.echo("** Dry run, nothing will be sent to server **")
     parser = context.context
     try:
-        mapping = MappingListFolder(parser.current_dir()).get_mapping()
+        mapping = MappingListFolder(parser.current_dir).get_mapping()
     except MappingLoadError as e:
         click.echo(e)
         return
@@ -261,7 +261,7 @@ def from_mapping(context: CreateCommandsContext, dry_run):
 
     created_job_ids = []
     elements = [MappingElement(x, y) for x, y in mapping.items()]
-    elements = convert_to_fileselection(make_absolute(elements, parser.current_dir()))
+    elements = convert_to_fileselection(make_absolute(elements, parser.current_dir))
     for element in elements:
         if dry_run:
             def mock_create(*args, **kwargs):

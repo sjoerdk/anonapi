@@ -64,7 +64,7 @@ def test_create_from_mapping(mock_from_mapping_runner,
     )
     assert result.exit_code == 0
     assert mock_requests_for_job_creation.requests.post.call_count == 20
-    batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir())
+    batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir)
     assert batch_folder.has_batch()
     assert batch_folder.load().job_ids == [
         1234
@@ -82,7 +82,7 @@ def test_create_from_mapping_server_error(mock_from_mapping_runner, mock_request
     )
     assert result.exit_code == 0
     assert mock_requests.requests.post.call_count == 1
-    batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir())
+    batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir)
     assert (
         not batch_folder.has_batch()
     )  # No batch should be there as all creation failed!
@@ -105,7 +105,7 @@ def test_create_from_mapping_server_error_halfway(
     )
     assert result.exit_code == 0
     assert mock_requests.requests.post.call_count == 3
-    batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir())
+    batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir)
     assert batch_folder.has_batch()
     assert batch_folder.load().job_ids == [1234]
 
@@ -157,7 +157,7 @@ def test_create_from_mapping_relative_path(
     assert result.exit_code == 0
     assert mock_requests_for_job_creation.requests.post.call_count == 20
 
-    current_dir = str(mock_from_mapping_runner.mock_context.current_dir())
+    current_dir = str(mock_from_mapping_runner.mock_context.current_dir)
     batch_folder = BatchFolder(current_dir)
     mapping_folder = MappingListFolder(current_dir)
     paths_in_mapping = map(str, list(mapping_folder.load_list().keys()))
@@ -198,7 +198,7 @@ def test_create_from_mapping_folder_and_pacs(
     assert "Error:" not in result.output
     assert mock_requests.requests.post.call_count == 4
 
-    batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir())
+    batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir)
     assert batch_folder.has_batch()
     assert batch_folder.load().job_ids == [
         1234

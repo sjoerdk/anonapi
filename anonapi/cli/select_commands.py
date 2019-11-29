@@ -66,7 +66,7 @@ def describe_selection(selection):
 @pass_anonapi_context
 def main(context: SelectCommandContext, ctx):
     """select files for a single anonymization job"""
-    ctx.obj = SelectCommandContext(current_path=context.current_dir())
+    ctx.obj = SelectCommandContext(current_path=context.current_dir)
 
 
 @click.command()

@@ -52,7 +52,7 @@ def main(context: AnonAPIContext, ctx):
     """map original data to anonymized name, id, etc."""
 
     # both anonapi_context and base click ctx are passed to be able change ctx.obj
-    ctx.obj = MapCommandContext(current_path=context.current_dir())
+    ctx.obj = MapCommandContext(current_path=context.current_dir)
 
 
 @click.command()

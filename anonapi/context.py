@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from anonapi.batch import BatchFolder
 from anonapi.client import AnonClientTool
@@ -11,7 +12,8 @@ class AnonAPIContext:
 
     """
 
-    def __init__(self, client_tool: AnonClientTool, settings: AnonClientSettings):
+    def __init__(self, client_tool: AnonClientTool, settings: AnonClientSettings,
+                 current_dir: Path = None):
         """Create a anonapi command line mock_context
 
         Parameters
@@ -20,14 +22,24 @@ class AnonAPIContext:
             The tool that that communicates with the web API.
         settings: AnonClientSettings
             Settings object to use for reading and writing settings.
+        current_dir: Path, optional
+            Full path to the directory that anonapi is being called from. Defaults
+            to None
 
         """
         self.client_tool = client_tool
         self.settings = settings
-
-    # == Shared functions ===
+        self.current_dir = current_dir
 
     def create_server_list(self):
+        """ A concise, printable overview of servers
+
+        Returns
+        -------
+        str:
+            A concise, printable overview of servers
+
+        """
         server_list = ""
         for server in self.settings.servers:
             line = f"{server.name:<10} {server.url}"
@@ -46,6 +58,10 @@ class AnonAPIContext:
         AnonAPIContextException:
             If server with that name cannot be found in list of servers
 
+        Returns
+        -------
+        RemoteAnonServer
+            The server with the given name
         """
         server_list = {x.name: x for x in self.settings.servers}
         if short_name not in server_list.keys():
@@ -77,11 +93,10 @@ class AnonAPIContext:
             raise AnonAPIContextException(msg)
         return server
 
-    @staticmethod
-    def current_dir():
+    def current_dir(self):
         """Return full path to the folder this command line mock_context is
         called from"""
-        return os.getcwd()
+        return self.current_dir
 
     def get_batch(self):
         """Get batch defined in current folder
@@ -95,7 +110,7 @@ class AnonAPIContext:
         BatchFolder
         """
 
-        batch = BatchFolder(self.current_dir()).load()
+        batch = BatchFolder(self.current_dir).load()
         if not batch:
             raise NoBatchDefinedException("No batch defined in current folder")
         else:
@@ -103,7 +118,7 @@ class AnonAPIContext:
 
     def get_batch_folder(self):
         """True if there is a batch defined in this folder"""
-        return BatchFolder(self.current_dir())
+        return BatchFolder(self.current_dir)
 
 
 class AnonAPIContextException(Exception):
