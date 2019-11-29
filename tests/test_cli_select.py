@@ -3,10 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 from fileselection.fileselection import FileSelectionFolder, FileSelectionFile
-
-from anonapi.context import AnonAPIContext
 from anonapi.cli.select_commands import main, SelectCommandContext, CLIMessages
-from tests.conftest import AnonAPIContextRunner
 
 
 @pytest.fixture()
@@ -38,23 +35,6 @@ def initialised_selection_folder(mock_selection_folder):
 def mock_selection_context(mock_selection_folder):
     """Context required by all select commands"""
     return SelectCommandContext(current_path=mock_selection_folder.path)
-
-
-@pytest.fixture()
-def mock_cli_parser(mock_selection_folder):
-    """Context required only by select_commands.main. Will yield a temp folder as
-    current_dir()"""
-    parser = AnonAPIContext(client_tool=Mock(), settings=Mock())
-    parser.current_dir = lambda: mock_selection_folder.path
-    return parser
-
-
-@pytest.fixture()
-def mock_main_runner(mock_cli_parser):
-    """a click.testing.CliRunner that always passes a mocked context to any call,
-    making sure any operations on current dir are done in a temp folder"""
-    runner = AnonAPIContextRunner(mock_context=mock_cli_parser)
-    return runner
 
 
 def test_select_status(mock_main_runner, initialised_selection_folder):

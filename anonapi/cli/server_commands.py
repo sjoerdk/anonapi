@@ -5,6 +5,7 @@ import click
 from anonapi.cli.click_types import AnonServerKeyParamType
 from anonapi.cli.parser import command_group_function
 from anonapi.context import AnonAPIContext
+from anonapi.decorators import pass_anonapi_context
 from anonapi.objects import RemoteAnonServer
 
 
@@ -14,7 +15,8 @@ def main():
     pass
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 @click.argument("short_name", type=str)
 @click.argument("url", type=str)
 def add(parser: AnonAPIContext, short_name, url):
@@ -32,7 +34,8 @@ def server_list(parser: AnonAPIContext):
     click.echo(f"Available servers (* = active):\n\n{servers}")
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 @click.argument("short_name", metavar="SHORT_NAME", type=AnonServerKeyParamType())
 def remove(parser: AnonAPIContext, short_name):
     """Remove a server from list in settings"""
@@ -46,7 +49,8 @@ def remove(parser: AnonAPIContext, short_name):
     click.echo(f"removed {server} from list")
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 def status(parser: AnonAPIContext):
     """Check whether active server is online and responding like an anonymization web API, optionaly check given
     server instead of active
@@ -55,7 +59,8 @@ def status(parser: AnonAPIContext):
     click.echo(response)
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 def jobs(parser: AnonAPIContext):
     """List latest 100 jobs for active server, or given server
     """
@@ -63,7 +68,8 @@ def jobs(parser: AnonAPIContext):
     click.echo(response)
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 @click.argument("short_name", metavar="SHORT_NAME", type=AnonServerKeyParamType())
 def activate(parser: AnonAPIContext, short_name):
     """Set given server as activate server, meaning subsequent operations will use this server.

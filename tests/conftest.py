@@ -1,6 +1,7 @@
 """Conftest.py is loaded for each pytest. Contains fixtures shared by multiple tests, amongs other things """
 import shutil
 from pathlib import Path
+from unittest.mock import Mock
 
 from _pytest.fixtures import fixture
 from click.testing import CliRunner
@@ -56,7 +57,7 @@ def anonapi_mock_cli(monkeypatch, tmpdir):
     tool = AnonClientTool(username=settings.user_name, token=settings.user_token)
     mock_parser = AnonAPIContext(client_tool=tool, settings=settings)
     mock_parser.current_dir = lambda: str(tmpdir)
-    monkeypatch.setattr("anonapi.cli.entrypoint.get_parser", lambda: mock_parser)
+    monkeypatch.setattr("anonapi.cli.entrypoint.get_context", lambda: mock_parser)
 
     return mock_parser
 
@@ -115,9 +116,28 @@ def a_file_selection(tmpdir):
     return RESOURCE_PATH / "test_cli" / "selection" / "fileselection.txt"
 
 
+@fixture()
+def mock_api_context(tmpdir):
+    """Context required by many anonapi commands. Will yield a temp folder as
+    current_dir()"""
+    context = AnonAPIContext(client_tool=AnonClientTool(username='test',
+                                                        token='token'),
+                             settings=DefaultAnonClientSettings())
+    context.current_dir = lambda: Path(str(tmpdir))
+    return context
+
+
+@fixture()
+def mock_main_runner(mock_api_context):
+    """a click.testing.CliRunner that always passes a mocked context to any call,
+    making sure any operations on current dir are done in a temp folder"""
+    runner = AnonAPIContextRunner(mock_context=mock_api_context)
+    return runner
+
+
 class MockContextCliRunner(CliRunner):
-    """a click.testing.CliRunner that always passes a mocked context to any call, making sure any operations
-    on current dir are done in a temp folder"""
+    """a click.testing.CliRunner that always passes a mocked context to any call,
+    making sure any operations on current dir are done in a temp folder"""
 
     def __init__(self, *args, mock_context, **kwargs):
 
@@ -169,8 +189,8 @@ class AnonAPIContextRunner(MockContextCliRunner):
         """
         self.mock_context.current_dir = lambda: path
 
-    def get_parser(self):
-        """Get the parser instance that is injected by this runner
+    def get_context(self):
+        """Get the context instance that is injected by this runner
 
         Returns
         -------

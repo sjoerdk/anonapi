@@ -6,16 +6,7 @@ from anonapi.batch import BatchFolder
 from anonapi.cli.create_commands import main
 from anonapi.mapper import MappingListFolder
 from anonapi.settings import JobDefaultParameters
-from tests.conftest import AnonAPIContextRunner
 from tests.factories import RequestsMockResponseExamples
-
-
-@pytest.fixture()
-def mock_main_runner(anonapi_mock_cli):
-    """a click.testing.CliRunner that always passes a mocked context to any call, making sure any operations
-    on current dir are done in a temp folder"""
-    runner = AnonAPIContextRunner(mock_context=anonapi_mock_cli)
-    return runner
 
 
 @pytest.fixture()
@@ -32,7 +23,7 @@ def mock_from_mapping_runner(mock_main_runner_with_mapping):
     * Default job parameters are non-empty"""
 
     parameters = (
-        mock_main_runner_with_mapping.get_parser().settings.job_default_parameters
+        mock_main_runner_with_mapping.get_context().settings.job_default_parameters
     )
     parameters.project_name = "test_project"
     parameters.destination_path = Path("//test/output/path")
@@ -42,7 +33,8 @@ def mock_from_mapping_runner(mock_main_runner_with_mapping):
 
 @pytest.fixture()
 def mock_requests_for_job_creation(mock_requests):
-    """Mock requests library so that every call to it will return a standard anonapi Job created response
+    """Mock requests library so that every call to it will return a standard
+    anonapi Job created response
     """
     mock_requests.set_response(RequestsMockResponseExamples.JOB_CREATED_RESPONSE)
     return mock_requests
@@ -55,11 +47,13 @@ def test_create_from_mapping_no_mapping(mock_main_runner):
     assert "No mapping" in result.output
 
 
-def test_create_from_mapping(mock_from_mapping_runner, mock_requests_for_job_creation):
+def test_create_from_mapping(mock_from_mapping_runner,
+                             mock_requests_for_job_creation):
     """Try from-mapping, creating jobs based on a mapping"""
 
     # Run and answer are you sure 'N'
-    result = mock_from_mapping_runner.invoke(main, "from-mapping", input="N")
+    result = mock_from_mapping_runner.invoke(main, "from-mapping", input="N",
+                                             catch_exceptions=False)
     assert result.exit_code == 0
     assert "Cancelled" in result.output
     assert mock_requests_for_job_creation.requests.post.call_count == 0
@@ -141,7 +135,7 @@ def test_create_set_default_parameters(
 
 def test_show_set_default_parameters(mock_main_runner):
     # Try to run from-mapping
-    parameters: JobDefaultParameters = mock_main_runner.get_parser().settings.job_default_parameters
+    parameters: JobDefaultParameters = mock_main_runner.get_context().settings.job_default_parameters
     parameters.project_name = "test_project"
     parameters.destination_path = "test_destination"
 

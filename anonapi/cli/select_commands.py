@@ -1,14 +1,13 @@
 """Click group and commands for the 'select' subcommand
 """
 import os
-from pathlib import Path
-
 import click
 
-from anonapi.cli.parser import command_group_function, echo_error
-from anonapi.context import AnonAPIContext
+from anonapi.cli.parser import echo_error
+from anonapi.decorators import pass_anonapi_context
 from anonapi.selection import FileFolder, open_as_dicom
 from fileselection.fileselection import FileSelectionFolder, FileSelectionFile
+from pathlib import Path
 from tqdm import tqdm
 
 
@@ -40,8 +39,11 @@ class SelectCommandContext:
         return self.get_current_selection_folder().load_file_selection()
 
 
+pass_select_command_context = click.make_pass_decorator(SelectCommandContext)
+
+
 def describe_selection(selection):
-    """Create a human readable description of the given selection
+    """Create a human-readable description of the given selection
 
     Parameters
     ----------
@@ -61,14 +63,14 @@ def describe_selection(selection):
 
 @click.group(name="select")
 @click.pass_context
-def main(ctx):
+@pass_anonapi_context
+def main(context: SelectCommandContext, ctx):
     """select files for a single anonymization job"""
-    parser: AnonAPIContext = ctx.obj
-    context = SelectCommandContext(current_path=parser.current_dir())
-    ctx.obj = context
+    ctx.obj = SelectCommandContext(current_path=context.current_dir())
 
 
-@command_group_function()
+@click.command()
+@pass_select_command_context
 def status(context: SelectCommandContext):
     """Show selection in current directory"""
     try:
@@ -78,7 +80,8 @@ def status(context: SelectCommandContext):
         echo_error(CLIMessages.NO_SELECTION_DEFINED)
 
 
-@command_group_function()
+@click.command()
+@pass_select_command_context
 def delete(context: SelectCommandContext):
     """Show selection in current directory"""
 
@@ -90,7 +93,8 @@ def delete(context: SelectCommandContext):
         echo_error(CLIMessages.NO_SELECTION_DEFINED)
 
 
-@command_group_function()
+@click.command()
+@pass_select_command_context
 @click.argument("pattern", type=str)
 @click.option("--recurse/--no-recurse", default=True, help="Recurse into directories")
 @click.option(
@@ -140,7 +144,8 @@ def add(context: SelectCommandContext, pattern, recurse, check_dicom,
     click.echo(f"selection now contains {len(selection.selected_paths)} files")
 
 
-@command_group_function()
+@click.command()
+@pass_select_command_context
 def edit(context: SelectCommandContext):
     """initialise a selection for the current directory, add all DICOM files"""
 

@@ -1,16 +1,13 @@
 """Click group and commands for the 'create' subcommand
 """
 import json
-from pathlib import PureWindowsPath, Path
-
 import click
-from click.exceptions import Abort
-from fileselection.fileselection import FileSelectionFolder
 
 from anonapi.batch import BatchFolder, JobBatch
-from anonapi.cli.parser import command_group_function, echo_error
+from anonapi.cli.parser import echo_error
 from anonapi.context import AnonAPIContext
 from anonapi.client import APIClientException
+from anonapi.decorators import pass_anonapi_context
 from anonapi.mapper import (
     MappingListFolder,
     MappingLoadError,
@@ -23,6 +20,9 @@ from anonapi.mapper import (
     SourceIdentifier,
 )
 from anonapi.settings import JobDefaultParameters, AnonClientSettingsException
+from click.exceptions import Abort
+from fileselection.fileselection import FileSelectionFolder
+from pathlib import Path
 
 
 class MappingElement:
@@ -53,12 +53,12 @@ class MappingElement:
 
 class CreateCommandsContext:
     """Passed to all methods in the create group. Contains some additional methods over
-     general parser instance
+     general context instance
 
     """
 
-    def __init__(self, parser: AnonAPIContext):
-        self.parser = parser
+    def __init__(self, context: AnonAPIContext):
+        self.context = context
 
     def create_job_for_element(self, element: MappingElement):
         """Create a job for the given source and parameters
@@ -81,15 +81,15 @@ class CreateCommandsContext:
         """
 
         project_name, destination_path = get_default_parameters(
-            self.parser.settings.job_default_parameters
+            self.context.settings.job_default_parameters
         )
 
         if issubclass(type(element.source), PathIdentifier):
             try:
                 parameters = assert_job_parameters(element.parameters)
-                response = self.parser.client_tool.create_path_job(
+                response = self.context.client_tool.create_path_job(
                     anon_id=parameters.patient_id,
-                    server=self.parser.get_active_server(),
+                    server=self.context.get_active_server(),
                     anon_name=parameters.patient_name,
                     project_name=project_name,
                     source_path=str(element.source),
@@ -103,9 +103,9 @@ class CreateCommandsContext:
         elif issubclass(type(element.source), PACSResourceIdentifier):
             try:
                 parameters = assert_job_parameters(element.parameters)
-                response = self.parser.client_tool.create_pacs_job(
+                response = self.context.client_tool.create_pacs_job(
                     anon_id=parameters.patient_id,
-                    server=self.parser.get_active_server(),
+                    server=self.context.get_active_server(),
                     anon_name=parameters.patient_name,
                     project_name=project_name,
                     source_instance_id=self.get_source_instance_id_value(
@@ -129,11 +129,11 @@ class CreateCommandsContext:
     def get_source_instance_id_value(identifier: SourceIdentifier):
         """Give the value for source_instance_id that IDIS understands
 
-        For historical reasons, StudyInstanceUIDs are given without prepended key. This should change. For now
-        just do this conversion.
+        For historical reasons, StudyInstanceUIDs are given without prepended key.
+        This should change. For now just do this conversion.
         Example:
-        StudyInstanceUID should be passed as "123.4.5.15.5.56",
-        but AccessionNumber should be passed as "accession_number:1234567.3434636"
+        StudyInstanceUID should be parsed as "123.4.5.15.5.56",
+        but AccessionNumber should be parsed as "accession_number:1234567.3434636"
 
 
         Parameters
@@ -153,7 +153,7 @@ class CreateCommandsContext:
 
     def add_to_batch(self, created_job_ids):
         """Add job ids as batch in current dir. If batch does not exist, create"""
-        parser = self.parser
+        parser = self.context
         batch_folder = BatchFolder(path=parser.current_dir())
         if batch_folder.has_batch():
             batch: JobBatch = batch_folder.load()
@@ -171,12 +171,15 @@ class CreateCommandsContext:
             batch_folder.save(batch)
 
 
+pass_create_commands_context = click.make_pass_decorator(CreateCommandsContext)
+
+
 @click.group(name="create")
 @click.pass_context
-def main(ctx):
+@pass_anonapi_context
+def main(context: AnonAPIContext, ctx):
     """create jobs"""
-    parser = ctx.obj
-    ctx.obj = CreateCommandsContext(parser=parser)
+    ctx.obj = CreateCommandsContext(context=context)
 
 
 def make_absolute(elements, root_path):
@@ -224,7 +227,8 @@ def convert_to_fileselection(elements):
     return elements
 
 
-@command_group_function()
+@click.command()
+@pass_create_commands_context
 @click.option(
     "--dry-run/--no-dry-run", default=False, help="Do not post to server, just print"
 )
@@ -232,7 +236,7 @@ def from_mapping(context: CreateCommandsContext, dry_run):
     """Create jobs from mapping in current folder"""
     if dry_run:
         click.echo("** Dry run, nothing will be sent to server **")
-    parser = context.parser
+    parser = context.context
     try:
         mapping = MappingListFolder(parser.current_dir()).get_mapping()
     except MappingLoadError as e:
@@ -266,8 +270,8 @@ def from_mapping(context: CreateCommandsContext, dry_run):
                 click.echo("\n".join(map(str, kwargs.items())))
                 return {'job_id': -1}
 
-            context.parser.client_tool.create_path_job = mock_create
-            context.parser.client_tool.create_pacs_job = mock_create
+            context.context.client_tool.create_path_job = mock_create
+            context.context.client_tool.create_pacs_job = mock_create
 
         try:
             job_id = context.create_job_for_element(element)
@@ -288,10 +292,11 @@ def from_mapping(context: CreateCommandsContext, dry_run):
     click.echo("Done")
 
 
-@command_group_function()
+@click.command()
+@pass_create_commands_context
 def set_defaults(context: CreateCommandsContext):
     """Set project name used when creating jobs"""
-    job_default_parameters: JobDefaultParameters = context.parser.settings.job_default_parameters
+    job_default_parameters: JobDefaultParameters = context.context.settings.job_default_parameters
     click.echo(
         "Please set default parameters current value shown in [brackets]. Pressing enter without input will keep"
         "current value"
@@ -313,15 +318,16 @@ def set_defaults(context: CreateCommandsContext):
 
     job_default_parameters.project_name = project_name
     job_default_parameters.destination_path = destination_path
-    context.parser.settings.save()
+    context.context.settings.save()
     click.echo("Saved")
 
 
-@command_group_function()
+@click.command()
+@pass_create_commands_context
 def show_defaults(context: CreateCommandsContext):
     """show project name used when creating jobs"""
 
-    job_default_parameters: JobDefaultParameters = context.parser.settings.job_default_parameters
+    job_default_parameters: JobDefaultParameters = context.context.settings.job_default_parameters
     click.echo(f"default IDIS project name: {job_default_parameters.project_name}")
     click.echo(
         f"default job destination directory: {job_default_parameters.destination_path}"

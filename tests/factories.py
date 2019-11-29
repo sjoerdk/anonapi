@@ -44,8 +44,8 @@ class RequestMockResponse:
 
 
 class RequestsMock:
-    """ Can be put in place of the requests module. Does not hit any server but returns kind of realistic arbitrary
-    responses
+    """ Can be put in place of the requests module. Does not hit any server but
+    returns kind of realistic arbitrary responses
 
     """
 
@@ -122,8 +122,9 @@ class RequestsMock:
 
 
 class RequestsMockResponseExamples:
-    """Some examples of http response texts that an anonymization web API server might send back. Harvested and
-    simplified these from a live API server running git revision 9c36082e3dafab5fac0fb9d34963970493b20776 in diag repo
+    """Some examples of http response texts that an anonymization web API server
+     might send back. Harvested and simplified these from a live API server
+     running git revision 9c36082e3dafab5fac0fb9d34963970493b20776 in diag repo
 
     """
 

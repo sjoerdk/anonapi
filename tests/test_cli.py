@@ -9,7 +9,7 @@ from click.testing import CliRunner
 
 from anonapi.batch import BatchFolder, JobBatch
 from anonapi.cli import entrypoint, user_commands
-from anonapi.cli.entrypoint import get_parser
+from anonapi.cli.entrypoint import get_context
 from anonapi.client import APIClientException, ClientToolException
 from anonapi.context import AnonAPIContextException
 from anonapi.mapper import MappingListFolder, MappingLoadError
@@ -560,9 +560,8 @@ def test_cli_batch_id_range(anonapi_mock_cli, tmpdir):
     ]
 
 
-def test_cli_map(mock_anonapi_current_dir):
-    runner = CliRunner()
-    result = runner.invoke(entrypoint.cli, "map init")
+def test_cli_map(mock_main_runner):
+    result = mock_main_runner.invoke(entrypoint.cli, "map init", catch_exceptions=False)
     assert result.exit_code == 0
 
 
@@ -682,5 +681,5 @@ def test_cli_entrypoint(monkeypatch, tmpdir):
     """Call main entrypoint with empty homedir. This should create a default
      settings file"""
     monkeypatch.setattr("anonapi.cli.entrypoint.pathlib.Path.home", lambda: tmpdir)
-    parser = get_parser()
+    parser = get_context()
     assert parser.settings.user_name == "username"

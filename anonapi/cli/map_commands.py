@@ -9,9 +9,10 @@ import string
 from click.exceptions import BadParameter, UsageError
 
 from anonapi.cli.click_types import FileSelectionFileParam
-from anonapi.cli.parser import command_group_function, echo_error
-from anonapi.context import AnonAPIContext
+from anonapi.cli.parser import echo_error
 from anonapi.cli.select_commands import create_dicom_selection_click
+from anonapi.context import AnonAPIContext
+from anonapi.decorators import pass_anonapi_context
 from anonapi.mapper import (SourceIdentifierFactory, MappingListFolder, MappingList,
                             AnonymizationParameters, MappingLoadError,
                             ExampleMappingList, MapperException)
@@ -41,16 +42,21 @@ class MapCommandContext:
         return self.get_current_mapping_folder().get_mapping()
 
 
+pass_map_command_context = click.make_pass_decorator(MapCommandContext)
+
+
 @click.group(name="map")
 @click.pass_context
-def main(ctx):
+@pass_anonapi_context
+def main(context: AnonAPIContext, ctx):
     """map original data to anonymized name, id, etc."""
-    parser: AnonAPIContext = ctx.obj
-    context = MapCommandContext(current_path=parser.current_dir())
-    ctx.obj = context
+
+    # both anonapi_context and base click ctx are passed to be able change ctx.obj
+    ctx.obj = MapCommandContext(current_path=context.current_dir())
 
 
-@command_group_function()
+@click.command()
+@pass_map_command_context
 def status(context: MapCommandContext):
     """Show mapping in current directory"""
     try:
@@ -60,7 +66,8 @@ def status(context: MapCommandContext):
         echo_error(e)
 
 
-@command_group_function()
+@click.command()
+@pass_map_command_context
 def init(context: MapCommandContext):
     """Save a default mapping in the current folder"""
     folder = context.get_current_mapping_folder()
@@ -69,7 +76,8 @@ def init(context: MapCommandContext):
     click.echo(f"Initialised example mapping in {mapping_list.DEFAULT_FILENAME}")
 
 
-@command_group_function()
+@click.command()
+@pass_map_command_context
 def delete(context: MapCommandContext):
     """delete mapping in current folder"""
     folder = context.get_current_mapping_folder()
@@ -87,7 +95,8 @@ def get_mapping(context):
         raise UsageError("No mapping in current folder")
 
 
-@command_group_function()
+@click.command()
+@pass_map_command_context
 @click.argument("path", type=click.Path(exists=True))
 def add_study_folder(context: MapCommandContext, path):
     """Add all dicom files in given folder to map
@@ -111,7 +120,8 @@ def add_study_folder(context: MapCommandContext, path):
     click.echo(f"Done. Added '{path}' to mapping")
 
 
-@command_group_function()
+@click.command()
+@pass_map_command_context
 @click.argument("selection", type=FileSelectionFileParam())
 def add_selection(context: MapCommandContext, selection):
     """Add selection file to mapping
@@ -137,7 +147,9 @@ def add_selection(context: MapCommandContext, selection):
     context.get_current_mapping_folder().save_list(mapping)
     click.echo(f"Done. Added '{identifier}' to mapping")
 
-@command_group_function()
+
+@click.command()
+@pass_map_command_context
 def edit(context: MapCommandContext):
     """Edit the current mapping in OS default editor
     """

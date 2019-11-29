@@ -21,8 +21,12 @@ from anonapi.client import AnonClientTool
 from anonapi.settings import AnonClientSettingsFromFile, DefaultAnonClientSettings
 
 
-def get_parser():
+def get_context():
     """Create a default mock_context instance
+
+    Returns
+    -------
+    AnonAPIContext
     """
 
     settings_file = pathlib.Path.home() / "AnonWebAPIClientSettings.yml"
@@ -45,7 +49,7 @@ def cli(ctx):
     Controls remote anonymization servers
     Use the commands below with -h for more info
     """
-    ctx.obj = get_parser()
+    ctx.obj = get_context()
 
 
 cli.add_command(parser.status)

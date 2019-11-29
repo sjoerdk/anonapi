@@ -1,21 +1,17 @@
 """Click group and commands for the 'batch' subcommand
 """
 import itertools
-
 import click
 
 from anonapi.batch import JobBatch
 from anonapi.cli.click_types import JobIDRangeParamType
-from anonapi.cli.parser import (
-    command_group_function,
-    echo_error,
-)
+from anonapi.cli.parser import echo_error
+from anonapi.client import ClientToolException
 from anonapi.context import AnonAPIContext, AnonAPIContextException, \
     NoBatchDefinedException
-from anonapi.client import ClientToolException
-from collections import Counter
-
+from anonapi.decorators import pass_anonapi_context
 from anonapi.responses import JobStatus
+from collections import Counter
 
 
 @click.group(name="batch")
@@ -24,7 +20,8 @@ def main():
     pass
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 def init(parser: AnonAPIContext):
     """Save an empty batch in the current folder, for current server"""
     batch_folder = parser.get_batch_folder()
@@ -38,7 +35,8 @@ def init(parser: AnonAPIContext):
         click.echo(f"Initialised batch for {server} in current dir")
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 def info(parser: AnonAPIContext):
     """Show batch in current directory"""
     try:
@@ -49,14 +47,16 @@ def info(parser: AnonAPIContext):
         echo_error(e)
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 def delete(parser: AnonAPIContext):
     """delete batch in current folder"""
     parser.get_batch_folder().delete_batch()
     click.echo(f"Removed batch in current dir")
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 @click.argument("job_ids", type=JobIDRangeParamType(), nargs=-1)
 def add(parser: AnonAPIContext, job_ids):
     """Add ids to current batch. Will not add already existing. Space separated, ranges like 1-40
@@ -70,7 +70,8 @@ def add(parser: AnonAPIContext, job_ids):
     click.echo(f"Added {job_ids} to batch")
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 @click.argument("job_ids", type=JobIDRangeParamType(), nargs=-1)
 def remove(parser: AnonAPIContext, job_ids):
     """Remove ids from current batch. Space separated, ranges like 1-40 allowed
@@ -84,7 +85,8 @@ def remove(parser: AnonAPIContext, job_ids):
     click.echo(f"Removed {job_ids} from batch")
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 def status(parser: AnonAPIContext):
     """Print status overview for all jobs in batch"""
     try:
@@ -120,7 +122,8 @@ def status(parser: AnonAPIContext):
     click.echo("\n".join(summary))
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 def reset(parser: AnonAPIContext):
     """Reset every job in the current batch"""
     batch: JobBatch = parser.get_batch()
@@ -136,7 +139,8 @@ def reset(parser: AnonAPIContext):
         click.echo("User cancelled")
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 def cancel(parser: AnonAPIContext):
     """Cancel every job in the current batch"""
     batch: JobBatch = parser.get_batch()
@@ -154,7 +158,8 @@ def cancel(parser: AnonAPIContext):
         click.echo("User cancelled")
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 def reset_error(parser: AnonAPIContext):
     """Reset all jobs with error status in the current batch"""
     batch: JobBatch = parser.get_batch()

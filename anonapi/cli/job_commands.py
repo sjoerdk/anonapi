@@ -8,7 +8,7 @@ from anonapi.cli.click_types import JobIDRangeParamType
 from anonapi.cli.parser import command_group_function
 from anonapi.context import AnonAPIContext
 from anonapi.client import ClientToolException
-from anonapi.responses import JobsInfoList
+from anonapi.decorators import pass_anonapi_context
 
 
 @click.group(name="job")
@@ -17,7 +17,8 @@ def main():
     pass
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 @click.argument("job_id", type=str)
 def info(parser: AnonAPIContext, job_id):
     """print job info
@@ -46,7 +47,8 @@ def job_list(parser: AnonAPIContext, job_ids):
         click.echo(e)
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 @click.argument("job_id", type=str)
 def reset(parser: AnonAPIContext, job_id):
     """reset job, process again
@@ -56,7 +58,8 @@ def reset(parser: AnonAPIContext, job_id):
     click.echo(job_info)
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 @click.argument("job_id", type=str)
 def cancel(parser: AnonAPIContext, job_id):
     """set job status to inactive """
