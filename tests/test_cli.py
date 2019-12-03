@@ -449,7 +449,7 @@ def test_cli_batch_status(mock_main_runner, mock_requests):
     runner = mock_main_runner
     # run batch status without a batch
     result = runner.invoke(entrypoint.cli, "batch status")
-    assert result.exit_code == 0
+    assert result.exit_code == 1
 
     context = mock_main_runner.get_context()
 
@@ -640,7 +640,7 @@ def test_cli_map_info_load_exception(mock_main_runner, monkeypatch):
 
     result = runner.invoke(entrypoint.cli, "map status")
 
-    assert result.exit_code == 0
+    assert result.exit_code == 1
     assert "Test Exception" in result.output
 
 
@@ -692,7 +692,7 @@ def test_cli_map_delete(mock_main_runner, a_folder_with_mapping):
 
     # deleting  again will yield nice message
     result = mock_main_runner.invoke(entrypoint.cli, "map delete")
-    assert result.exit_code == 0
+    assert result.exit_code == 1
     assert "No mapping defined" in result.output
 
 

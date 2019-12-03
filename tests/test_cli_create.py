@@ -117,7 +117,7 @@ def test_create_set_default_parameters(
     result = mock_main_runner_with_mapping.invoke(main, "from-mapping", input="Y")
 
     # This should not work because essential settings are missing
-    assert result.exit_code == 0
+    assert result.exit_code == 1
     assert "Could not find default project name" in result.output
     assert mock_requests_for_job_creation.requests.post.call_count == 0
 

@@ -4,7 +4,6 @@ import json
 import click
 
 from anonapi.batch import BatchFolder, JobBatch
-from anonapi.cli.parser import echo_error
 from anonapi.context import AnonAPIContext
 from anonapi.client import APIClientException
 from anonapi.decorators import pass_anonapi_context
@@ -20,7 +19,7 @@ from anonapi.mapper import (
     SourceIdentifier,
 )
 from anonapi.settings import JobDefaultParameters, AnonClientSettingsException
-from click.exceptions import Abort
+from click.exceptions import Abort, ClickException
 from fileselection.fileselection import FileSelectionFolder
 from pathlib import Path
 
@@ -248,7 +247,7 @@ def from_mapping(context: CreateCommandsContext, dry_run):
             parser.settings.job_default_parameters
         )
     except AnonClientSettingsException as e:
-        echo_error(f"{e}. Please use set-defaults te set them")
+        raise ClickException(f"{e}. Please use set-defaults te set them")
         return  # Without these parameters jobs cannot be created. Stop loop
 
     question = (
@@ -278,7 +277,6 @@ def from_mapping(context: CreateCommandsContext, dry_run):
             click.echo(f"Created job with id {job_id}")
             created_job_ids.append(job_id)
         except JobCreationException as e:
-            echo_error(e)
             click.echo(
                 "Error will probably keep occurring. Stopping further job creation."
             )

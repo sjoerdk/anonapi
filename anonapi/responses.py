@@ -81,8 +81,6 @@ class JobInfoColumns:
     DEFAULT_COLUMNS = [job_id, date, status, files_downloaded, files_processed, user]
     EXTENDED_COLUMNS = DEFAULT_COLUMNS + [pseudo_name]
 
-# to table
-
 
 def format_job_info_list(job_infos, columns=JobInfoColumns.DEFAULT_COLUMNS):
     """To list that can be printed to console

@@ -2,10 +2,10 @@
 """
 import itertools
 import click
+from click.exceptions import ClickException
 
 from anonapi.batch import JobBatch
 from anonapi.cli.click_types import JobIDRangeParamType
-from anonapi.cli.parser import echo_error
 from anonapi.client import ClientToolException
 from anonapi.context import AnonAPIContext, AnonAPIContextException, \
     NoBatchDefinedException
@@ -42,9 +42,9 @@ def info(parser: AnonAPIContext):
     try:
         click.echo(parser.get_batch().to_string())
     except NoBatchDefinedException as e:
-        echo_error(str(e) + ". You can create one with 'anon batch init'")
+        raise ClickException(str(e) + ". You can create one with 'anon batch init'")
     except AnonAPIContextException as e:
-        echo_error(e)
+        raise ClickException(e)
 
 
 @click.command()
@@ -94,7 +94,7 @@ def status(parser: AnonAPIContext, patient_name):
     try:
         batch = parser.get_batch()
     except NoBatchDefinedException as e:
-        echo_error(e)
+        raise ClickException(e)
         return
     if patient_name:
         get_extended_info = True
@@ -108,7 +108,7 @@ def status(parser: AnonAPIContext, patient_name):
             get_extended_info=get_extended_info
         )
     except ClientToolException as e:
-        echo_error(e)
+        raise ClickException(e)
         return
 
     click.echo(f"Job info for {len(infos)} jobs on {batch.server}:")
@@ -178,7 +178,7 @@ def reset_error(parser: AnonAPIContext):
             server=batch.server, job_ids=batch.job_ids
         )
     except ClientToolException as e:
-        echo_error(f"Error resetting: {str(e)}")
+        raise ClickException(f"Error resetting: {str(e)}")
         return
 
     job_ids = [x.job_id for x in infos if x.status == JobStatus.ERROR]

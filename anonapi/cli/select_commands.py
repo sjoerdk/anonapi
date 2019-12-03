@@ -2,8 +2,8 @@
 """
 import os
 import click
+from click.exceptions import ClickException
 
-from anonapi.cli.parser import echo_error
 from anonapi.decorators import pass_anonapi_context
 from anonapi.selection import FileFolder, open_as_dicom
 from fileselection.fileselection import FileSelectionFolder, FileSelectionFile
@@ -77,7 +77,7 @@ def status(context: SelectCommandContext):
         selection = context.get_current_selection()
         click.echo(describe_selection(selection))
     except FileNotFoundError as e:
-        echo_error(CLIMessages.NO_SELECTION_DEFINED)
+        raise ClickException(CLIMessages.NO_SELECTION_DEFINED)
 
 
 @click.command()
@@ -90,7 +90,7 @@ def delete(context: SelectCommandContext):
         os.remove(selection_folder.get_data_file_path())
         click.echo("Removed file selection in current folder")
     else:
-        echo_error(CLIMessages.NO_SELECTION_DEFINED)
+        raise ClickException(CLIMessages.NO_SELECTION_DEFINED)
 
 
 @click.command()
@@ -151,7 +151,7 @@ def edit(context: SelectCommandContext):
 
     selection_folder = context.get_current_selection_folder()
     if not selection_folder.has_file_selection():
-        echo_error(CLIMessages.NO_SELECTION_DEFINED)
+        raise ClickException(CLIMessages.NO_SELECTION_DEFINED)
     else:
         click.launch(str(selection_folder.get_data_file_path()))
 

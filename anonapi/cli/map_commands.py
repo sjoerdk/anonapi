@@ -6,10 +6,9 @@ import datetime
 import random
 import string
 
-from click.exceptions import BadParameter, UsageError
+from click.exceptions import BadParameter, UsageError, ClickException
 
 from anonapi.cli.click_types import FileSelectionFileParam
-from anonapi.cli.parser import echo_error
 from anonapi.cli.select_commands import create_dicom_selection_click
 from anonapi.context import AnonAPIContext
 from anonapi.decorators import pass_anonapi_context
@@ -63,7 +62,7 @@ def status(context: MapCommandContext):
         mapping = context.get_current_mapping()
         click.echo(mapping.to_table_string())
     except MappingLoadError as e:
-        echo_error(e)
+        raise ClickException(e)
 
 
 @click.command()
@@ -82,7 +81,7 @@ def delete(context: MapCommandContext):
     """delete mapping in current folder"""
     folder = context.get_current_mapping_folder()
     if not folder.has_mapping_list():
-        echo_error("No mapping defined in current folder")
+        raise ClickException("No mapping defined in current folder")
         return
     folder.delete_list()
     click.echo(f"Removed mapping in current dir")
