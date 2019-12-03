@@ -10,7 +10,7 @@ from anonapi.client import ClientToolException
 from anonapi.context import AnonAPIContext, AnonAPIContextException, \
     NoBatchDefinedException
 from anonapi.decorators import pass_anonapi_context
-from anonapi.responses import JobStatus
+from anonapi.responses import JobStatus, JobInfoColumns
 from collections import Counter
 
 
@@ -87,25 +87,35 @@ def remove(parser: AnonAPIContext, job_ids):
 
 @click.command()
 @pass_anonapi_context
-def status(parser: AnonAPIContext):
+@click.option("--patient-name/--no-patient-name", default=False,
+              help="Add pseudo patient id to table")
+def status(parser: AnonAPIContext, patient_name):
     """Print status overview for all jobs in batch"""
     try:
         batch = parser.get_batch()
     except NoBatchDefinedException as e:
         echo_error(e)
         return
+    if patient_name:
+        get_extended_info = True
+    else:
+        get_extended_info = False
 
     ids_queried = batch.job_ids
     try:
         infos = parser.client_tool.get_job_info_list(
-            server=batch.server, job_ids=ids_queried
+            server=batch.server, job_ids=ids_queried,
+            get_extended_info=get_extended_info
         )
     except ClientToolException as e:
         echo_error(e)
         return
 
     click.echo(f"Job info for {len(infos)} jobs on {batch.server}:")
-    click.echo(infos.as_table_string())
+    columns_to_show = JobInfoColumns.DEFAULT_COLUMNS.copy()
+    if patient_name:
+        columns_to_show += [JobInfoColumns.pseudo_name]
+    click.echo(infos.as_table_string(columns=columns_to_show))
 
     summary = ["Status       count   percentage", "-------------------------------"]
     status_count = Counter([x.status for x in infos])

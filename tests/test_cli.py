@@ -326,7 +326,7 @@ def test_command_line_tool_server_functions(
     Kind of a mop up test trying to get coverage up"""
     runner = mock_main_runner
     mock_requests.set_response_text(text=server_response)
-    result = runner.invoke(entrypoint.cli, command)
+    result = runner.invoke(entrypoint.cli, command, catch_exceptions=False)
     assert expected_print in result.output
 
 
@@ -465,6 +465,29 @@ def test_cli_batch_status(mock_main_runner, mock_requests):
     assert all(
         text in result.output for text in ["DONE", "UPLOAD", "1000", "1002", "5000"]
     )
+
+
+def test_cli_batch_status_extended(mock_main_runner, mock_requests):
+    runner = mock_main_runner
+    context = mock_main_runner.get_context()
+    batch = JobBatch(
+        job_ids=["1001", "1002", "1003"], server=context.get_active_server()
+    )
+    context.get_batch = lambda: batch  # set current batch to mock batch
+
+    mock_requests.set_response_text(
+        text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_EXTENDED
+    )
+    result = runner.invoke(entrypoint.cli, "batch status --patient-name",
+                           catch_exceptions=False)
+    assert all(
+        text in result.output for text in ["1982", "DONE", "1001", "1002", "1003"]
+    )
+
+    # without the flag this should not be shown
+    result = runner.invoke(entrypoint.cli, "batch status",
+                           catch_exceptions=False)
+    assert "1982" not in result.output
 
 
 def test_cli_batch_cancel(mock_main_runner_with_batch, mock_requests):

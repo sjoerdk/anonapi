@@ -11,7 +11,8 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['pyyaml', 'click', 'tqdm', 'fileselection', 'pydicom']
+requirements = ['pyyaml', 'click', 'tqdm', 'fileselection', 'pydicom',
+                'tabulate']
 
 setup_requirements = ['pytest-runner', ]
 

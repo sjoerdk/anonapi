@@ -1,6 +1,7 @@
 """Entrypoint for calling CLI with click.
 
 """
+import os
 import pathlib
 
 import click
@@ -37,7 +38,8 @@ def get_context():
         DefaultAnonClientSettings().save_to_file(settings_file)
     settings = AnonClientSettingsFromFile(settings_file)
     tool = AnonClientTool(username=settings.user_name, token=settings.user_token)
-    parser = AnonAPIContext(client_tool=tool, settings=settings)
+    parser = AnonAPIContext(client_tool=tool, settings=settings,
+                            current_dir=os.getcwd())
     return parser
 
 
