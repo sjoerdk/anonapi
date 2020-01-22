@@ -1,17 +1,23 @@
 """Click group and commands for the 'batch' subcommand
 """
 import itertools
+from typing import List
+
 import click
 from click.exceptions import ClickException
+from tabulate import tabulate
 
 from anonapi.batch import JobBatch
 from anonapi.cli.click_types import JobIDRangeParamType
 from anonapi.client import ClientToolException
-from anonapi.context import AnonAPIContext, AnonAPIContextException, \
-    NoBatchDefinedException
+from anonapi.context import (
+    AnonAPIContext,
+    AnonAPIContextException,
+    NoBatchDefinedException,
+)
 from anonapi.decorators import pass_anonapi_context
-from anonapi.responses import JobStatus, JobInfoColumns
-from collections import Counter
+from anonapi.responses import JobStatus, JobInfoColumns, JobInfo
+from collections import Counter, defaultdict
 
 
 @click.group(name="batch")
@@ -87,8 +93,11 @@ def remove(parser: AnonAPIContext, job_ids):
 
 @click.command()
 @pass_anonapi_context
-@click.option("--patient-name/--no-patient-name", default=False,
-              help="Add pseudo patient id to table")
+@click.option(
+    "--patient-name/--no-patient-name",
+    default=False,
+    help="Add pseudo patient id to table",
+)
 def status(parser: AnonAPIContext, patient_name):
     """Print status overview for all jobs in batch"""
     try:
@@ -104,8 +113,9 @@ def status(parser: AnonAPIContext, patient_name):
     ids_queried = batch.job_ids
     try:
         infos = parser.client_tool.get_job_info_list(
-            server=batch.server, job_ids=ids_queried,
-            get_extended_info=get_extended_info
+            server=batch.server,
+            job_ids=ids_queried,
+            get_extended_info=get_extended_info,
         )
     except ClientToolException as e:
         raise ClickException(e)
@@ -194,5 +204,27 @@ def reset_error(parser: AnonAPIContext):
         click.echo("User cancelled")
 
 
-for func in [info, status, reset, init, delete, add, remove, cancel, reset_error]:
+@click.command()
+@pass_anonapi_context
+def show_errors(parser: AnonAPIContext):
+    """Show full error message for all error jobs in batch"""
+    batch: JobBatch = parser.get_batch()
+    try:
+        infos = parser.client_tool.get_job_info_list(
+            server=batch.server, job_ids=batch.job_ids
+        )
+    except ClientToolException as e:
+        raise ClickException(f"Error resetting: {str(e)}")
+
+
+    error_infos: List[JobInfo] = [x for x in infos if x.status == JobStatus.ERROR]
+    table = defaultdict(list)
+    for x in error_infos:
+        table["id"].append(x.job_id)
+        table["error message"].append(x.error)
+    click.echo(tabulate(table, headers='keys', tablefmt='simple'))
+
+
+for func in [info, status, reset, init, delete, add, remove, cancel, reset_error,
+             show_errors]:
     main.add_command(func)
