@@ -216,16 +216,18 @@ def show_error(parser: AnonAPIContext):
     except ClientToolException as e:
         raise ClickException(f"Error resetting: {str(e)}")
 
-
     error_infos: List[JobInfo] = [x for x in infos if x.status == JobStatus.ERROR]
 
-    output = ""
-    for info in error_infos:
-        output += f"{format_job_info_list([info])}\n"
-        output += "error message:\n"
-        output += f"{info.error}\n\n"
+    if error_infos:
+        output = ""
+        for info in error_infos:
+            output += f"{format_job_info_list([info])}\n"
+            output += "error message:\n"
+            output += f"{info.error}\n\n"
 
-    click.echo(output)
+        click.echo(output)
+    else:
+        click.echo("There are no jobs with error status in this batch")
 
 
 for func in [info, status, reset, init, delete, add, remove, cancel, reset_error,
