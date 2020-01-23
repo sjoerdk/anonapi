@@ -16,7 +16,7 @@ from anonapi.context import (
     NoBatchDefinedException,
 )
 from anonapi.decorators import pass_anonapi_context
-from anonapi.responses import JobStatus, JobInfoColumns, JobInfo
+from anonapi.responses import JobStatus, JobInfoColumns, JobInfo, format_job_info_list
 from collections import Counter, defaultdict
 
 
@@ -206,7 +206,7 @@ def reset_error(parser: AnonAPIContext):
 
 @click.command()
 @pass_anonapi_context
-def show_errors(parser: AnonAPIContext):
+def show_error(parser: AnonAPIContext):
     """Show full error message for all error jobs in batch"""
     batch: JobBatch = parser.get_batch()
     try:
@@ -218,13 +218,16 @@ def show_errors(parser: AnonAPIContext):
 
 
     error_infos: List[JobInfo] = [x for x in infos if x.status == JobStatus.ERROR]
-    table = defaultdict(list)
-    for x in error_infos:
-        table["id"].append(x.job_id)
-        table["error message"].append(x.error)
-    click.echo(tabulate(table, headers='keys', tablefmt='simple'))
+
+    output = ""
+    for info in error_infos:
+        output += f"{format_job_info_list([info])}\n"
+        output += "error message:\n"
+        output += f"{info.error}\n\n"
+
+    click.echo(output)
 
 
 for func in [info, status, reset, init, delete, add, remove, cancel, reset_error,
-             show_errors]:
+             show_error]:
     main.add_command(func)
