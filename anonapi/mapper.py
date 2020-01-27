@@ -7,7 +7,7 @@ Excel, maybe notepad
 """
 import csv
 import os
-from collections import UserDict
+from collections import UserDict, defaultdict
 from os import path
 from pathlib import Path
 
@@ -274,6 +274,86 @@ class AnonymizationParameters:
             }
         else:
             return all_values
+
+
+class Mapping:
+    """Everything needed for creating anonymization jobs
+
+    Wrapper around MappingList that adds description and mapping-wide settings
+    such as output dir
+    """
+
+    # Headers used in between sections in csv file
+    DESCRIPTION_HEADER = "## Description ##"
+    OPTIONS_HEADER = "## Options ##"
+    MAPPING_HEADER = "## Mapping ##"
+    ALL_HEADERS = [DESCRIPTION_HEADER, OPTIONS_HEADER, MAPPING_HEADER]
+
+    def __init__(self, mapping, output_dir=None, pims_key=None):
+        self.mapping = mapping
+        self.settings = {'output_dir': output_dir,
+                         'pims_key': pims_key}
+        self.description
+
+    @property
+    def output_dir(self):
+        return self.settings['output_dir']
+
+    @property
+    def pims_key(self):
+        return self.settings['pims_key']
+
+    def save(self, f, parameters_to_write):
+        pass
+
+    @classmethod
+    def load(cls, f):
+        """ Load a mapping from a csv file stream """
+        # split content into three sections
+
+        return cls.parse_sections(f)
+
+    @classmethod
+    def parse_sections(cls, f):
+        """A mapping csv file consists of three sections devided by headers.
+         Try to parse each one
+
+        Parameters
+        ----------
+        f: file handled opened with read flag
+
+        Returns
+        -------
+        Dict
+            A dict with all lines under each of the headers in cls.ALL_HEADERS
+
+        Raises
+        ------
+        MappingLoadError
+            If not all headers can be found or are not in the expected order
+
+        """
+        collected = defaultdict(list)
+        headers_to_find = cls.ALL_HEADERS.copy()
+        header_to_find = headers_to_find.pop(0)
+        current_header = None
+        for line in f.readlines():
+            if header_to_find.lower() in line.lower():
+                # this is our header, start recording
+                current_header = header_to_find
+                # and look for the next one. If there is one.
+                if headers_to_find:
+                    header_to_find = headers_to_find.pop(0)
+                continue  # skip header line itself
+            if current_header:
+                collected[current_header].append(line)
+
+        # check the results do we have all headers?
+        if headers_to_find:
+            raise MappingLoadError(
+                f'Could not find required headers "{headers_to_find}"')
+
+        return collected
 
 
 class MappingList(UserDict):

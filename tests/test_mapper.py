@@ -1,3 +1,4 @@
+from io import StringIO
 from pathlib import Path
 
 import pytest
@@ -5,12 +6,15 @@ from fileselection.fileselection import FileSelectionFile
 
 from anonapi.mapper import (MappingList, SourceIdentifierFactory,
                             UnknownSourceIdentifier, AnonymizationParameters,
-                            MappingLoadError, MappingListFolder, MapperException)
+                            MappingLoadError, MappingListFolder, MapperException,
+                            Mapping)
 from tests.factories import (
     AnonymizationParametersFactory,
     FileSelectionIdentifierFactory,
 )
 from tests import RESOURCE_PATH
+from tests.resources.test_mapper.example_mapping_inputs import \
+    CAN_BE_PARSED_AS_MAPPING, CAN_NOT_BE_PARSED_AS_MAPPING
 
 
 @pytest.fixture()
@@ -54,6 +58,31 @@ def test_load():
     with open(mapping_file, "r") as f:
         mapping = MappingList.load(f)
     assert len(mapping) == 20
+
+
+def test_mapping_load():
+    """Load file with CSV part and general part"""
+    mapping_file = RESOURCE_PATH / "test_mapper" / "with_mapping_wide_settings.csv"
+    with open(mapping_file, "r") as f:
+        mapping = Mapping.load(f)
+    assert len(mapping) == 20
+
+
+@pytest.mark.parametrize('content', CAN_BE_PARSED_AS_MAPPING)
+def test_mapping_parse(content):
+    """Parse into sections"""
+
+    stream = StringIO(initial_value=content)
+    parsed = Mapping.parse_sections(stream)
+    assert len(parsed) == 3
+
+
+@pytest.mark.parametrize('content', CAN_NOT_BE_PARSED_AS_MAPPING)
+def test_mapping_parse_exceptions(content):
+    """For  these cases parsing should fail"""
+    stream = StringIO(initial_value=content)
+    with pytest.raises(MappingLoadError):
+        _ = Mapping.parse_sections(stream)
 
 
 def test_load_pims_only():
