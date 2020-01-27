@@ -1,25 +1,39 @@
 """Functions to filter and select files from folders.
 Useful for example for selecting only DICOM files in a folder.
 """
+from fnmatch import fnmatch
 from pathlib import Path
+from time import sleep
 
 import pydicom
 from pydicom.errors import InvalidDicomError
 
 
-class DICOMFileFolder:
-    """A folder that might contains at least some dicom files.
+class FileFolder:
+    """A folder that might contain some files. Makes it easy to iterate
+    over these files in different ways
     """
 
     def __init__(self, path):
-        self.path = path
+        self.path = Path(path)
 
-    def all_files(self):
-        """Iterator that yields all subpaths. Allows progress bar
+    def iterate(
+        self, pattern="*", recurse=True, exclude_patterns=None, ignore_dotfiles=True
+    ):
+        """Iterator that yields subpaths. Makes it easy to use progress bar
 
         Parameters
         ----------
-        paths: List[Pathlike]
+        pattern: str, optional
+            Glob file pattern. Default is '*' (match all)
+        recurse: bool, optional
+            Search for paths in all underlying directories. Default is True
+        exclude_patterns: List[str], optional
+            Exclude any path that matches any of these patterns.
+            Patterns are unix-style: * as wildcard. See fnmatch function.
+            Defaults to emtpy list meaning no exclusions
+        ignore_dotfiles: bool, optional
+            Ignore any filename starting with '.'
 
         Returns
         -------
@@ -27,59 +41,44 @@ class DICOMFileFolder:
             Yields Path if the path is a file, None otherwise
 
         """
-        folder = Path(self.path)
-        for x in folder.glob("**/*"):
-            if x.is_file():
+        if not exclude_patterns:
+            exclude_patterns = []
+
+        if recurse:
+            glob_pattern = f"**/{pattern}"
+        else:
+            glob_pattern = f"{pattern}"
+
+        all_paths_iter = self.path.glob(glob_pattern)
+        for x in all_paths_iter:
+            # sleep(0.2)
+            exclude = any(
+                [fnmatch(x.relative_to(self.path), y) for y in exclude_patterns]
+            )
+            ignore = x.name.startswith(".") and ignore_dotfiles
+            if x.is_file() and not exclude and not ignore:
                 yield x
             else:
-                yield None
-
-    @staticmethod
-    def all_dicom_files(paths):
-        """Create an iterator so loading files as dicom can be monitored and a progress bar can be shown
-
-        Parameters
-        ----------
-        paths: List[Pathlike]
-
-        Returns
-        -------
-        iterator
-            yields pydicom.dataset.DataSet If file could be loaded as dicom,
-
-        """
-        return DICOMFileList(paths)
+                continue
 
 
-class DICOMFileList:
-    def __init__(self, paths):
-        """Container of potential DICOM files. Can be used as iterator for trying to open files as DICOM
+def open_as_dicom(path):
+    """Tries to open path as dicom
 
-        Parameters
-        ----------
-        paths: List[Pathlike]
-            paths to try to load as DICOM
+    Parameters
+    ----------
+    path: Pathlike
+        Path a to a file
 
-        """
-        self.paths = paths
-
-    def __len__(self):
-        return len(self.paths)
-
-    def __iter__(self):
-        """Opens each path in turn. Tries to opens as DICOM
-
-        Returns
-        -------
-        (Path, pydicom.dataset)
-            if path is DICOM
-        (Path, None)
-            if not
-
-        """
-        for path in self.paths:
-            try:
-                ds = pydicom.dcmread(str(path))
-                yield path, ds
-            except InvalidDicomError:
-                yield path, None
+    Returns
+    -------
+    pydicom.dataset
+        If path can be opened as dicom
+    None
+        If path cannot be opened
+    """
+    # sleep(0.2)
+    try:
+        return pydicom.dcmread(str(path))
+    except InvalidDicomError:
+        return None

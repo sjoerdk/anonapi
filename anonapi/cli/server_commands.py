@@ -3,7 +3,9 @@
 import click
 
 from anonapi.cli.click_types import AnonServerKeyParamType
-from anonapi.cli.parser import AnonCommandLineParser, command_group_function
+from anonapi.cli.parser import command_group_function
+from anonapi.context import AnonAPIContext
+from anonapi.decorators import pass_anonapi_context
 from anonapi.objects import RemoteAnonServer
 
 
@@ -13,10 +15,11 @@ def main():
     pass
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 @click.argument("short_name", type=str)
 @click.argument("url", type=str)
-def add(parser: AnonCommandLineParser, short_name, url):
+def add(parser: AnonAPIContext, short_name, url):
     """Add a server to the list of servers in settings """
     server = RemoteAnonServer(name=short_name, url=url)
     parser.settings.servers.append(server)
@@ -25,15 +28,16 @@ def add(parser: AnonCommandLineParser, short_name, url):
 
 
 @command_group_function(name="list")
-def server_list(parser: AnonCommandLineParser):
+def server_list(parser: AnonAPIContext):
     """show all servers in settings """
     servers = parser.create_server_list()
     click.echo(f"Available servers (* = active):\n\n{servers}")
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 @click.argument("short_name", metavar="SHORT_NAME", type=AnonServerKeyParamType())
-def remove(parser: AnonCommandLineParser, short_name):
+def remove(parser: AnonAPIContext, short_name):
     """Remove a server from list in settings"""
     server = parser.get_server_by_name(short_name)
     if parser.settings.active_server == server:
@@ -45,8 +49,9 @@ def remove(parser: AnonCommandLineParser, short_name):
     click.echo(f"removed {server} from list")
 
 
-@command_group_function()
-def status(parser: AnonCommandLineParser):
+@click.command()
+@pass_anonapi_context
+def status(parser: AnonAPIContext):
     """Check whether active server is online and responding like an anonymization web API, optionaly check given
     server instead of active
     """
@@ -54,17 +59,19 @@ def status(parser: AnonCommandLineParser):
     click.echo(response)
 
 
-@command_group_function()
-def jobs(parser: AnonCommandLineParser):
+@click.command()
+@pass_anonapi_context
+def jobs(parser: AnonAPIContext):
     """List latest 100 jobs for active server, or given server
     """
     response = parser.client_tool.get_jobs(parser.get_active_server())
     click.echo(response)
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 @click.argument("short_name", metavar="SHORT_NAME", type=AnonServerKeyParamType())
-def activate(parser: AnonCommandLineParser, short_name):
+def activate(parser: AnonAPIContext, short_name):
     """Set given server as activate server, meaning subsequent operations will use this server.
     """
     server = parser.get_server_by_name(short_name)

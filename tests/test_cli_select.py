@@ -3,10 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 from fileselection.fileselection import FileSelectionFolder, FileSelectionFile
-
-from anonapi.cli.parser import AnonCommandLineParser
 from anonapi.cli.select_commands import main, SelectCommandContext, CLIMessages
-from tests.conftest import AnonCommandLineParserRunner
 
 
 @pytest.fixture()
@@ -40,22 +37,6 @@ def mock_selection_context(mock_selection_folder):
     return SelectCommandContext(current_path=mock_selection_folder.path)
 
 
-@pytest.fixture()
-def mock_cli_parser(mock_selection_folder):
-    """Context required only by select_commands.main. Will yield a temp folder as current_dir()"""
-    parser = AnonCommandLineParser(client_tool=Mock(), settings=Mock())
-    parser.current_dir = lambda: mock_selection_folder.path
-    return parser
-
-
-@pytest.fixture()
-def mock_main_runner(mock_cli_parser):
-    """a click.testing.CliRunner that always passes a mocked context to any call, making sure any operations
-    on current dir are done in a temp folder"""
-    runner = AnonCommandLineParserRunner(mock_context=mock_cli_parser)
-    return runner
-
-
 def test_select_status(mock_main_runner, initialised_selection_folder):
     result = mock_main_runner.invoke(main, "status")
 
@@ -74,15 +55,54 @@ def test_select_delete(mock_main_runner, initialised_selection_folder):
     assert "There is no selection defined" in result.output
 
 
-def test_select_create(mock_main_runner, folder_with_some_dicom_files):
+def test_select_add(mock_main_runner, folder_with_some_dicom_files):
     selection_folder = folder_with_some_dicom_files
     mock_main_runner.set_mock_current_dir(selection_folder.path)
 
     assert not selection_folder.has_file_selection()
-    result = mock_main_runner.invoke(main, "create")
+    result = mock_main_runner.invoke(main, args=["add", "*"], catch_exceptions=False)
     assert result.exit_code == 0
-    assert selection_folder.has_file_selection()
-    assert "Found 3 DICOM files" in result.output
+
+
+def test_select_add_append(mock_main_runner, folder_with_some_dicom_files):
+    """Running add twice should add only new paths"""
+    selection_folder = folder_with_some_dicom_files
+    mock_main_runner.set_mock_current_dir(selection_folder.path)
+
+    # start with emtpy selection and add a file
+    assert not selection_folder.has_file_selection()
+    result = mock_main_runner.invoke(main, args=["add", "*.txt"],
+                                     catch_exceptions=False)
+    assert len(selection_folder.load_file_selection().selected_paths) == 1
+
+    # now add the same file again
+    result = mock_main_runner.invoke(main, args=["add", "*.txt"],
+                                     catch_exceptions=False)
+    # this should not have added any new file because it was already there
+    assert len(selection_folder.load_file_selection().selected_paths) == 1
+    # now add more
+    result = mock_main_runner.invoke(main, args=["add", "1"],
+                                     catch_exceptions=False)
+    assert len(selection_folder.load_file_selection().selected_paths) == 3
+
+
+def test_select_add_exclude(mock_main_runner, folder_with_some_dicom_files):
+    """Running add twice should add only new paths"""
+    selection_folder = folder_with_some_dicom_files
+    mock_main_runner.set_mock_current_dir(selection_folder.path)
+
+    # start with emtpy selection and add a file
+    assert not selection_folder.has_file_selection()
+    mock_main_runner.invoke(main, args=["add", "1"],
+                            catch_exceptions=False)
+    assert len(selection_folder.load_file_selection().selected_paths) == 2
+
+    mock_main_runner.invoke(main, args=["delete"], catch_exceptions=False)
+    assert not selection_folder.has_file_selection()
+
+    mock_main_runner.invoke(main, args="add * --exclude-pattern 2.0* --exclude-pattern *1".split(" "),
+                            catch_exceptions=False)
+    assert len(selection_folder.load_file_selection().selected_paths) == 2
 
 
 def test_select_edit(mock_main_runner, initialised_selection_folder, monkeypatch):

@@ -39,7 +39,8 @@ def test_settings_file(test_settings_folder):
 
 @pytest.fixture
 def test_settings_file_old(test_settings_folder):
-    """Copy of a correctly formatted settings file before adding job_default_parameters param"""
+    """Copy of a correctly formatted settings file before adding job_default_
+    parameters param"""
     return test_settings_folder / "settings_old.yml"
 
 
@@ -83,8 +84,8 @@ def test_settings_save_with_none_active(test_settings_file):
 
 
 def test_settings_load_error(test_settings_folder):
-    """ Poor mans YAML validation should at least raise some informative exception when a key is missing from
-    settings
+    """ Poor mans YAML validation should at least raise some informative exception
+    when a key is missing from settings
     """
     settings_file_wrong = test_settings_folder / "settings_wrong.yml"
     with pytest.raises(AnonClientSettingsException):
@@ -106,8 +107,9 @@ def test_anon_client_settings_init_with_no_servers():
 
 
 def test_settings_load_old(test_settings_file_old):
-    """A parameter was added to settings. You should still be able to load older settings files that do not
-    contain this settings. A default version of the new setting should be added silently"""
+    """A parameter was added to settings. You should still be able to load older
+    settings files that do not contain this settings. A default version of the new
+    setting should be added silently"""
     settings = AnonClientSettingsFromFile(test_settings_file_old)
 
     assert settings.user_name == "kees"
@@ -116,3 +118,5 @@ def test_settings_load_old(test_settings_file_old):
     assert settings.job_default_parameters is not None
     assert len(settings.servers) == 2
     assert str(settings) == f"Settings at {str(test_settings_file_old)}"
+
+

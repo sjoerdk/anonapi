@@ -42,13 +42,13 @@ Set your username. For radboudumc this is your z-number. To set z1234567 as your
 
 .. code-block:: console
 
-    $ anon user set_username z1234567
+    $ anon settings user set_username z1234567
 
 Obtain an API token. This might require your z-number password)
 
 .. code-block:: console
 
-    $ anon user get_token
+    $ anon settings user get_token
 
 
 

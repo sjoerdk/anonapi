@@ -44,8 +44,8 @@ class RequestMockResponse:
 
 
 class RequestsMock:
-    """ Can be put in place of the requests module. Does not hit any server but returns kind of realistic arbitrary
-    responses
+    """ Can be put in place of the requests module. Does not hit any server but
+    returns kind of realistic arbitrary responses
 
     """
 
@@ -122,8 +122,9 @@ class RequestsMock:
 
 
 class RequestsMockResponseExamples:
-    """Some examples of http response texts that an anonymization web API server might send back. Harvested and
-    simplified these from a live API server running git revision 9c36082e3dafab5fac0fb9d34963970493b20776 in diag repo
+    """Some examples of http response texts that an anonymization web API server
+     might send back. Harvested and simplified these from a live API server
+     running git revision 9c36082e3dafab5fac0fb9d34963970493b20776 in diag repo
 
     """
 
@@ -151,6 +152,49 @@ class RequestsMockResponseExamples:
         '"UPLOADED", "error": null, "description": null, "project_name": "testproject", "priority": 1,'
         ' "files_downloaded": 3, "files_processed": 3}}'
     )  # Response to 'get_jobs_list'
+
+    JOBS_LIST_GET_JOBS_EXTENDED = (
+        '{"1001": {"job_id": 1001, "date": "2019-11-26T16:34:07", "user_name": '
+        '"z428172", "status": "DONE", "error": " ", "description": "For ticket '
+        '#8941", "project_name": "Wetenschap-Algemeen", "priority": 0, "files'
+        '_downloaded": 11, "files_processed": 11, "destination_id": 53767, '
+        '"destination_name": null, "destination_path": '
+        '"\\\\\\\\umcsanfsclp01\\\\radng_axti\\\\datasets\\\\CoffeeBreak\\\\Coffeebreak'
+        '_newrecons", "destination_network": null, "destination_status": "BASE",'
+        ' "destination_type": "PATH", "source_id": 53767, "source_instance_id":'
+        ' null, "source_status": "NEW", "source_type": "PATH", "source_'
+        'anonymizedpatientid": "1982", "source_anonymizedpatientname": "1982", '
+        '"source_pims_keyfile_id": null, "source_name": null, "source_path": '
+        '"fileselection:\\\\\\\\umcsanfsclp01\\\\radng_ctarchive\\\\clinical_'
+        'archive\\\\0677380\\\\fileselection.txt", "source_protocol": 3178, '
+        '"source_subject": 3178}, "1002": {"job_id": 1002, "date": '
+        '"2019-11-26T16:34:08", "user_name": "z428172", "status": "DONE",'
+        ' "error": null, "description": "For ticket #8941", "project_name": '
+        '"Wetenschap-Algemeen", "priority": 0, "files_downloaded": 11, '
+        '"files_processed": 11, "destination_id": 1002, "destination_name": null, '
+        '"destination_path": "\\\\\\\\umcsanfsclp01\\\\radng_axti\\\\datasets'
+        '\\\\CoffeeBreak\\\\Coffeebreak_newrecons", "destination_network": '
+        'null, "destination_status": "BASE", "destination_type": "PATH", "source'
+        '_id": 1002, "source_instance_id": null, "source_status": "NEW", "source'
+        '_type": "PATH", "source_anonymizedpatientid": "1983", "source_'
+        'anonymizedpatientname": "1983", "source_pims_keyfile_id": null, '
+        '"source_name": null, "source_path": "fileselection:\\\\\\\\umcsanfsclp0'
+        '1\\\\radng_ctarchive\\\\clinical_archive\\\\5187581\\\\fileselection.'
+        'txt", "source_protocol": 3178, "source_subject": 3178}, "1003": '
+        '{"job_id": 1003, "date": "2019-11-26T16:34:08", "user_name": "z428172", '
+        '"status": "DONE", "error": " ", "description": "For ticket #8941",'
+        ' "project_name": "Wetenschap-Algemeen", "priority": 0, '
+        '"files_downloaded": 11, "files_processed": 11, "destination_id": 1001,'
+        ' "destination_name": null, "destination_path": "\\\\\\\\umcsanfsclp01'
+        '\\\\radng_axti\\\\datasets\\\\CoffeeBreak\\\\Coffeebreak_newrecons", '
+        '"destination_network": null, "destination_status": "BASE", "destination'
+        '_type": "PATH", "source_id": 1001, "source_instance_id": null, '
+        '"source_status": "NEW", "source_type": "PATH", "source_anonymizedpatientid":'
+        ' "1984", "source_anonymizedpatientname": "1984", "source_pims_keyfile_'
+        'id": null, "source_name": null, "source_path": "fileselection:\\\\\\\\'
+        'umcsanfsclp01\\\\radng_ctarchive\\\\clinical_archive\\\\0572800\\\\'
+        'fileselection.txt", "source_protocol": 3178, "source_subject": 3178}}'
+    )  # Response to 'get_jobs_list_extended'
 
     JOBS_LIST_GET_JOBS_LIST_WITH_ERROR = (
         '{"1": {"job_id": 1, "date": "2016-08-26T15:04:44", "user_name": "Z495159", '

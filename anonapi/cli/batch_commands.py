@@ -1,22 +1,23 @@
 """Click group and commands for the 'batch' subcommand
 """
 import itertools
+from typing import List
 
 import click
+from click.exceptions import ClickException
+from tabulate import tabulate
 
 from anonapi.batch import JobBatch
 from anonapi.cli.click_types import JobIDRangeParamType
-from anonapi.cli.parser import (
-    command_group_function,
-    AnonCommandLineParser,
-    AnonCommandLineParserException,
-    NoBatchDefinedException,
-    echo_error,
-)
 from anonapi.client import ClientToolException
-from collections import Counter
-
-from anonapi.responses import JobStatus
+from anonapi.context import (
+    AnonAPIContext,
+    AnonAPIContextException,
+    NoBatchDefinedException,
+)
+from anonapi.decorators import pass_anonapi_context
+from anonapi.responses import JobStatus, JobInfoColumns, JobInfo, format_job_info_list
+from collections import Counter, defaultdict
 
 
 @click.group(name="batch")
@@ -25,12 +26,13 @@ def main():
     pass
 
 
-@command_group_function()
-def init(parser: AnonCommandLineParser,):
+@click.command()
+@pass_anonapi_context
+def init(parser: AnonAPIContext):
     """Save an empty batch in the current folder, for current server"""
     batch_folder = parser.get_batch_folder()
     if batch_folder.has_batch():
-        raise AnonCommandLineParserException(
+        raise AnonAPIContextException(
             "Cannot init, A batch is already defined in this folder"
         )
     else:
@@ -39,27 +41,30 @@ def init(parser: AnonCommandLineParser,):
         click.echo(f"Initialised batch for {server} in current dir")
 
 
-@command_group_function()
-def info(parser: AnonCommandLineParser,):
+@click.command()
+@pass_anonapi_context
+def info(parser: AnonAPIContext):
     """Show batch in current directory"""
     try:
         click.echo(parser.get_batch().to_string())
     except NoBatchDefinedException as e:
-        echo_error(str(e) + ". You can create one with 'anon batch init'")
-    except AnonCommandLineParserException as e:
-        echo_error(e)
+        raise ClickException(str(e) + ". You can create one with 'anon batch init'")
+    except AnonAPIContextException as e:
+        raise ClickException(e)
 
 
-@command_group_function()
-def delete(parser: AnonCommandLineParser,):
+@click.command()
+@pass_anonapi_context
+def delete(parser: AnonAPIContext):
     """delete batch in current folder"""
     parser.get_batch_folder().delete_batch()
     click.echo(f"Removed batch in current dir")
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 @click.argument("job_ids", type=JobIDRangeParamType(), nargs=-1)
-def add(parser: AnonCommandLineParser, job_ids):
+def add(parser: AnonAPIContext, job_ids):
     """Add ids to current batch. Will not add already existing. Space separated, ranges like 1-40
     allowed
     """
@@ -71,9 +76,10 @@ def add(parser: AnonCommandLineParser, job_ids):
     click.echo(f"Added {job_ids} to batch")
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 @click.argument("job_ids", type=JobIDRangeParamType(), nargs=-1)
-def remove(parser: AnonCommandLineParser, job_ids):
+def remove(parser: AnonAPIContext, job_ids):
     """Remove ids from current batch. Space separated, ranges like 1-40 allowed
     """
     job_ids = [x for x in itertools.chain(*job_ids)]  # make into one list
@@ -85,26 +91,41 @@ def remove(parser: AnonCommandLineParser, job_ids):
     click.echo(f"Removed {job_ids} from batch")
 
 
-@command_group_function()
-def status(parser: AnonCommandLineParser,):
+@click.command()
+@pass_anonapi_context
+@click.option(
+    "--patient-name/--no-patient-name",
+    default=False,
+    help="Add pseudo patient id to table",
+)
+def status(parser: AnonAPIContext, patient_name):
     """Print status overview for all jobs in batch"""
     try:
         batch = parser.get_batch()
     except NoBatchDefinedException as e:
-        echo_error(e)
+        raise ClickException(e)
         return
+    if patient_name:
+        get_extended_info = True
+    else:
+        get_extended_info = False
 
     ids_queried = batch.job_ids
     try:
         infos = parser.client_tool.get_job_info_list(
-            server=batch.server, job_ids=ids_queried
+            server=batch.server,
+            job_ids=ids_queried,
+            get_extended_info=get_extended_info,
         )
     except ClientToolException as e:
-        echo_error(e)
+        raise ClickException(e)
         return
 
     click.echo(f"Job info for {len(infos)} jobs on {batch.server}:")
-    click.echo(infos.as_table_string())
+    columns_to_show = JobInfoColumns.DEFAULT_COLUMNS.copy()
+    if patient_name:
+        columns_to_show += [JobInfoColumns.pseudo_name]
+    click.echo(infos.as_table_string(columns=columns_to_show))
 
     summary = ["Status       count   percentage", "-------------------------------"]
     status_count = Counter([x.status for x in infos])
@@ -121,8 +142,9 @@ def status(parser: AnonCommandLineParser,):
     click.echo("\n".join(summary))
 
 
-@command_group_function()
-def reset(parser: AnonCommandLineParser,):
+@click.command()
+@pass_anonapi_context
+def reset(parser: AnonAPIContext):
     """Reset every job in the current batch"""
     batch: JobBatch = parser.get_batch()
 
@@ -137,8 +159,9 @@ def reset(parser: AnonCommandLineParser,):
         click.echo("User cancelled")
 
 
-@command_group_function()
-def cancel(parser: AnonCommandLineParser,):
+@click.command()
+@pass_anonapi_context
+def cancel(parser: AnonAPIContext):
     """Cancel every job in the current batch"""
     batch: JobBatch = parser.get_batch()
 
@@ -155,8 +178,9 @@ def cancel(parser: AnonCommandLineParser,):
         click.echo("User cancelled")
 
 
-@command_group_function()
-def reset_error(parser: AnonCommandLineParser,):
+@click.command()
+@pass_anonapi_context
+def reset_error(parser: AnonAPIContext):
     """Reset all jobs with error status in the current batch"""
     batch: JobBatch = parser.get_batch()
     try:
@@ -164,7 +188,7 @@ def reset_error(parser: AnonCommandLineParser,):
             server=batch.server, job_ids=batch.job_ids
         )
     except ClientToolException as e:
-        echo_error(f"Error resetting: {str(e)}")
+        raise ClickException(f"Error resetting: {str(e)}")
         return
 
     job_ids = [x.job_id for x in infos if x.status == JobStatus.ERROR]
@@ -180,5 +204,32 @@ def reset_error(parser: AnonCommandLineParser,):
         click.echo("User cancelled")
 
 
-for func in [info, status, reset, init, delete, add, remove, cancel, reset_error]:
+@click.command()
+@pass_anonapi_context
+def show_error(parser: AnonAPIContext):
+    """Show full error message for all error jobs in batch"""
+    batch: JobBatch = parser.get_batch()
+    try:
+        infos = parser.client_tool.get_job_info_list(
+            server=batch.server, job_ids=batch.job_ids
+        )
+    except ClientToolException as e:
+        raise ClickException(f"Error resetting: {str(e)}")
+
+    error_infos: List[JobInfo] = [x for x in infos if x.status == JobStatus.ERROR]
+
+    if error_infos:
+        output = ""
+        for info in error_infos:
+            output += f"{format_job_info_list([info])}\n"
+            output += "error message:\n"
+            output += f"{info.error}\n\n"
+
+        click.echo(output)
+    else:
+        click.echo("There are no jobs with error status in this batch")
+
+
+for func in [info, status, reset, init, delete, add, remove, cancel, reset_error,
+             show_error]:
     main.add_command(func)

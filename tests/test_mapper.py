@@ -1,15 +1,11 @@
 from pathlib import Path
 
 import pytest
+from fileselection.fileselection import FileSelectionFile
 
-from anonapi.mapper import (
-    MappingList,
-    SourceIdentifierFactory,
-    UnknownSourceIdentifier,
-    AnonymizationParameters,
-    MappingLoadError,
-    MappingListFolder,
-)
+from anonapi.mapper import (MappingList, SourceIdentifierFactory,
+                            UnknownSourceIdentifier, AnonymizationParameters,
+                            MappingLoadError, MappingListFolder, MapperException)
 from tests.factories import (
     AnonymizationParametersFactory,
     FileSelectionIdentifierFactory,
@@ -85,12 +81,21 @@ def test_load_exceptions(file_to_open, expected_exception):
 
 def test_source_identifier_factory():
     factory = SourceIdentifierFactory()
-    assert factory.get_source_identifier("folder:/something/folder").key == "folder"
-    assert factory.get_source_identifier("base:123234").key == "base"
+    assert factory.get_source_identifier_for_key("folder:/something/folder").key == "folder"
+    assert factory.get_source_identifier_for_key("base:123234").key == "base"
 
     for faulty_key in ["somethingelse:123234", "folder::123234", "folder123234"]:
         with pytest.raises(UnknownSourceIdentifier):
-            factory.get_source_identifier(faulty_key)
+            factory.get_source_identifier_for_key(faulty_key)
+
+
+def test_source_identifier_factory_object_to_identifier():
+    factory = SourceIdentifierFactory()
+    identifier = factory.get_source_identifier_for_obj(
+        FileSelectionFile(data_file_path='testpath/folder/datafile.txt',
+                          description='test'))
+
+    assert str(identifier) == 'fileselection:testpath/folder/datafile.txt'
 
 
 def test_write_subset(tmpdir, a_mapping):
@@ -142,9 +147,23 @@ def test_mapping_list_folder():
     without_mapping = MappingListFolder(
         RESOURCE_PATH / "test_mapper" / "mapping_list_folder" / "without_mapping"
     )
-
     assert with_mapping.has_mapping_list()
     assert not without_mapping.has_mapping_list()
+
+
+def test_mapping_list_folder_path_funcs():
+    path = RESOURCE_PATH / "test_mapper" / "mapping_list_folder" / "with_mapping"
+    assert str(MappingListFolder(path).make_relative(path / "foo/bar")) == "foo/bar"
+    assert str(MappingListFolder(path).make_relative("already/relative")
+               ) == "already/relative"
+
+    with pytest.raises(MapperException):
+        MappingListFolder(path).make_relative("/outside/scope")
+
+    assert MappingListFolder(path).make_absolute("foo/bar") == path / "foo/bar"
+
+    with pytest.raises(MapperException):
+        MappingListFolder(path).make_absolute("/absolute/path")
 
 
 def test_mapping_folder_read_write(tmpdir, a_mapping):
