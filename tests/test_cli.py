@@ -537,6 +537,17 @@ def test_cli_batch_reset(mock_main_runner_with_batch, mock_requests):
     )  # No requests should have been sent
 
 
+def test_cli_batch_show_errors(mock_main_runner_with_batch, mock_requests):
+
+    runner = mock_main_runner_with_batch
+    mock_requests.set_response_text(
+        text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST_WITH_ERROR)
+
+    result = runner.invoke(entrypoint.cli, "batch show-error")
+    assert result.exit_code == 0
+    assert 'Terrible error'in result.output
+
+
 def test_cli_batch_reset_error(mock_main_runner_with_batch, mock_requests):
     """Try operations actually calling server"""
     runner = mock_main_runner_with_batch

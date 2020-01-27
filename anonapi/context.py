@@ -107,7 +107,7 @@ class AnonAPIContext:
 
         Returns
         -------
-        BatchFolder
+        JobBatch
         """
 
         batch = BatchFolder(self.current_dir).load()

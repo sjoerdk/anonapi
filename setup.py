@@ -12,7 +12,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = ['pyyaml', 'click', 'tqdm', 'fileselection', 'pydicom',
-                'tabulate']
+                'tabulate', 'requests']
 
 setup_requirements = ['pytest-runner', ]
 
@@ -47,6 +47,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/sjoerdk/anonapi',
-    version='0.2.3',
+    version='0.3.1',
     zip_safe=False,
 )
