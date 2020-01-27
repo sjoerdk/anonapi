@@ -96,7 +96,7 @@ def a_file_selection(tmpdir):
     return RESOURCE_PATH / "test_cli" / "selection" / "fileselection.txt"
 
 
-@fixture()
+@fixture
 def mock_api_context(tmpdir):
     """Context required by many anonapi commands. Will yield a temp folder as
     current_dir"""
@@ -110,7 +110,7 @@ def mock_api_context(tmpdir):
     return context
 
 
-@fixture()
+@fixture
 def mock_cli_base_context(monkeypatch, mock_api_context):
     """entrypoint.cli creates a context from local settings. Stop this and return a
     mock context instead
@@ -119,7 +119,7 @@ def mock_cli_base_context(monkeypatch, mock_api_context):
                         lambda: mock_api_context)
 
 
-@fixture()
+@fixture
 def mock_main_runner(mock_api_context, mock_cli_base_context):
     """a click.testing.CliRunner that always passes a mocked context to any call,
     making sure any operations on current dir are done in a temp folder"""
