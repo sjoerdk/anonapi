@@ -7,7 +7,6 @@ python models on the server side and the client side. But we're not using django
 """
 
 from collections import UserList
-
 from tabulate import tabulate
 
 
