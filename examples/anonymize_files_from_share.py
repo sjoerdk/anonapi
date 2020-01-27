@@ -3,7 +3,6 @@ from anonapi.client import WebAPIClient
 
 def anonymize_files_from_share():
     """Create an IDIS job that pulls files from a network share
-
     """
 
     # Create a client that will talk to the web API

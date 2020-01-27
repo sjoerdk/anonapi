@@ -10,7 +10,6 @@ from anonapi.objects import RemoteAnonServer
 
 
 class YamlSavable:
-
     def to_dict(self):
         """
         Returns
@@ -86,8 +85,7 @@ class JobBatch(YamlSavable):
         str
 
         """
-        return {'server': self.server.to_dict(),
-                'job_ids': self.job_ids}
+        return {"server": self.server.to_dict(), "job_ids": self.job_ids}
 
     def to_string(self):
         """This batch as string
@@ -101,7 +99,10 @@ class JobBatch(YamlSavable):
 
     @classmethod
     def from_dict(cls, dict_in):
-        return cls(job_ids=dict_in['job_ids'], server=RemoteAnonServer.from_dict(dict_in['server']))
+        return cls(
+            job_ids=dict_in["job_ids"],
+            server=RemoteAnonServer.from_dict(dict_in["server"]),
+        )
 
 
 class BatchFolder:
@@ -109,7 +110,7 @@ class BatchFolder:
 
     """
 
-    BATCH_FILE_NAME = '.anonbatch'
+    BATCH_FILE_NAME = ".anonbatch"
 
     def __init__(self, path):
         """
@@ -133,16 +134,16 @@ class BatchFolder:
 
         Returns
         -------
-        JobBatch:
+        JobBatch
             If there is a batch defined in this folder
 
-        None:
+        None
             If not
         """
         if not self.has_batch():
             return None
         else:
-            with open(self.batch_file_path, 'r') as f:
+            with open(self.batch_file_path, "r") as f:
                 return JobBatch.load(f)
 
     def save(self, batch):
@@ -155,7 +156,7 @@ class BatchFolder:
 
 
         """
-        with open(self.batch_file_path, 'w') as f:
+        with open(self.batch_file_path, "w") as f:
             batch.save(f)
 
     def delete_batch(self):
@@ -173,7 +174,3 @@ class BatchFolder:
 
 class BatchFolderException(Exception):
     pass
-
-
-
-

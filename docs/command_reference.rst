@@ -1,116 +1,27 @@
-=========
-CLI Usage
-=========
+.. _command_reference:
 
-How to use the anonapi Command Line Interface (CLI)
+Command reference
+=================
 
-    * :ref:`usage-cli-setup` : for quick overview of jobs and cancel/restart.
-
-    * :ref:`usage-cli-reference` : for information on each CLI function
-
-.. _usage-cli-setup:
-
-Command Line Interface (CLI) setup
-==================================
-After :doc:`installation` you can use the CLI from any terminal via the keyword 'anon':
-
-.. code-block:: console
-
-    $ anon           # prints basic usage information
-
-    $ anon status    # prints current configuration
-
-
-CLI Commands
-------------
-use -h for help on any CLI command or subcommand. For example:
-
-.. code-block:: console
-
-    $ anon -h   # print overview of commands
-
-    $ anon server -h   # print overview of all server subcommands
-
-
-Add a server to the CLI
------------------------
-The CLI saves server locations locally for easy access. To add a server follow these steps:
-
-First Find the url of an IDIS anonymization web API. An overview of servers within the radboudumc can be found
-`here <https://repos.diagnijmegen.nl/trac/wiki/IDIS_web_API#servers>`_.
-
-Lets say the server address is https://anonapi.org/server1. you can now add this server as 'server1':
-
-.. code-block:: console
-
-    $ anon server add server1 https://anonapi.org/server1
-
-See a list of all servers known locally
-
-.. code-block:: console
-
-    $ anon server list
-
-Activate server1. All subsequent commands will use this server.
-
-.. code-block:: console
-
-    $ anon server activate server1
-
-
-Configure credentials
----------------------
-To make calls to any IDIS web API, the CLI needs to know which credentials to use. Do the following:
-
-Set your username. For radboudumc this is your z-number. To set z1234567 as your username:
-
-.. code-block:: console
-
-    $ anon user set_username z1234567
-
-Obtain an API token. This might require your z-number password)
-
-.. code-block:: console
-
-    $ anon user get_token
-
-
-Example commands
-----------------
-.. code-block:: console
-
-
-    $ anon server jobs  # Show 50 most recent jobs on server
-
-    $ anon job info 123  # Print extended info on job 123
-
-    $ anon job cancel 123  # Cancel job 123
-
-    $ anon job reset 123  # Restart job 123
-
-
-.. _usage-cli-reference:
-
-Command Line Interface (CLI) reference
-======================================
-
-Overview of all CLI functions. For more information, use 'anon <function> -h' in the CLI itself
+Overview of all CLI functions. For more information, type 'anon <function>' and press enter in the CLI itself
 
 status
 ------
-Display information on the command line tool itself. Which API servers it knows about, current active server.
+Display information on the command line tool itself. Which API servers it knows about, current active server
 
 .. code-block:: console
 
-    $ anon status -h   # list all commands
+    $ anon status   # list all commands
+
+.. _server_commands:
 
 server
 ------
-Work with Anonymization server API servers. Add, remove servers, set active server.
+Work with Anonymization server API servers. Add, remove servers, set active server
 
 .. code-block:: console
 
-    $ anon server -h   # list all commands
+    $ anon server   # list all commands
 
 job
 ---
@@ -118,16 +29,16 @@ Work with single jobs. Get extended info, reset, restart a job
 
 .. code-block:: console
 
-    $ anon job -h   # list all commands
+    $ anon job   # list all commands
 
 
-user
-----
-Information and editing of credentials that are used to communicate with the API.
+settings
+--------
+Local settings for this anonapi instance. Credentials that are used to communicate with the API, path mapping etc.
 
 .. code-block:: console
 
-    $ anon user -h   # list all commands
+    $ anon settings user   # list all commands
 
 
 .. _batch:
@@ -204,4 +115,3 @@ For convenience, it is possible to pass job ids for batch add and batch remove a
         server:
           name: p01
           url: https://apiservers/p01
-

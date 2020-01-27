@@ -1,7 +1,8 @@
 servers:
   sandbox: https://umcradanont01/sandbox
   p01: https://umcradanonp11/p01
-
+create_job_defaults:
+  project_name: Wetenschap-Algemeen
 user_name: kees
 user_token: token
 active_server_name: some_old_server

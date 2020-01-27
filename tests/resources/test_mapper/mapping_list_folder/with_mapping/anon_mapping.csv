@@ -1,0 +1,21 @@
+source,patient_id,patient_name,description
+folder:/folder/file0,patient0,patientName0,test description
+folder:/folder/file1,patient1,patientName1,test description
+folder:/folder/file2,patient2,patientName2,test description
+folder:/folder/file3,patient3,patientName3,test description
+folder:/folder/file4,patient4,patientName4,test description
+folder:/folder/file5,patient5,patientName5,test description
+folder:/folder/file6,patient6,patientName6,test description
+folder:/folder/file7,patient7,patientName7,test description
+folder:/folder/file8,patient8,patientName8,test description
+folder:/folder/file9,patient9,patientName9,test description
+folder:/folder/file10,patient10,patientName10,test description
+folder:/folder/file11,patient11,patientName11,test description
+folder:/folder/file12,patient12,patientName12,test description
+folder:/folder/file13,patient13,patientName13,test description
+folder:/folder/file14,patient14,patientName14,test description
+folder:/folder/file15,patient15,patientName15,test description
+folder:/folder/file16/nogiets,patient16,patientName16,test description
+folder:/folder/file17,patient17,patientName17,test description
+folder:/folder/file18,patient18,patientName18,test description
+folder:/folder/file19,patient19,patientName19,test description

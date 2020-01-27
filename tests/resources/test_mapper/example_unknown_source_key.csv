@@ -1,0 +1,6 @@
+source,patient_id,patient_name,description
+folder:/folder/file0,patient0,patientName0,test description
+folder:/folder/file1,patient1,patientName1,test description
+folder:/folder/file2,patient2,patientName2,test description
+floldertypo:1234,patient2,patientname,desc
+folder:/folder/file4,patient4,patientName4,test description

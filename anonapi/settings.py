@@ -11,7 +11,7 @@ from anonapi.objects import RemoteAnonServer
 class AnonClientSettings:
     """Settings used by anonymization web API client """
 
-    def __init__(self, servers, user_name, user_token):
+    def __init__(self, servers, user_name, user_token, job_default_parameters=None):
         """
         Parameters
         ----------
@@ -21,11 +21,17 @@ class AnonClientSettings:
             user name
         user_token: str
             API token
+        job_default_parameters: JobDefaultParameters, optional
+            When creating jobs, use these settings by default
 
         """
         self.servers = servers
         self.user_name = user_name
         self.user_token = user_token
+        if job_default_parameters:
+            self.job_default_parameters = job_default_parameters
+        else:
+            self.job_default_parameters = []
         if servers:
             self.active_server = servers[0]
         else:
@@ -39,6 +45,7 @@ class AnonClientSettings:
             "servers": {x.name: x.url for x in self.servers},
             "user_name": self.user_name,
             "user_token": self.user_token,
+            "job_default_parameters": self.job_default_parameters.to_dict(),
         }
         if self.active_server:
             datamap["active_server_name"] = self.active_server.name
@@ -74,15 +81,19 @@ class DefaultAnonClientSettings(AnonClientSettings):
 
         """
         super().__init__(
-            servers=[RemoteAnonServer("test", "https://hostname_of_api")],
+            servers=[RemoteAnonServer("testserver", "https://hostname_of_api")],
             user_name="username",
             user_token="token",
+            job_default_parameters=JobDefaultParameters(
+                project_name="",  # these need to be set by user later
+                destination_path="",
+            ),
         )
 
 
 class DataMap:
-    """Structure to hold output from a yaml load(). Raises error when you cannot get() an expected key
-    Poor man's substitute for schema validation.
+    """Structure to hold output from a yaml load(). Raises error when you cannot get()
+     an expected key Poor man's substitute for schema validation.
 
     """
 
@@ -94,6 +105,9 @@ class DataMap:
             msg = f"expected to find key '{key}'"
             raise AnonClientSettingsFromFileException(msg)
         return self._datamap[key]
+
+    def __iter__(self):
+        return self._datamap.__iter__()
 
 
 class AnonClientSettingsFromFile(AnonClientSettings):
@@ -121,13 +135,25 @@ class AnonClientSettingsFromFile(AnonClientSettings):
             msg = f"Could not read all settings from {self.filename}: {e}"
             raise AnonClientSettingsException(msg)
 
+        if "job_default_parameters" in datamap:
+            create_job_defaults_parsed = JobDefaultParameters.from_dict(
+                datamap.get("job_default_parameters")
+            )
+        else:  # if this is an old settings file 'job_default_parameters' will
+               # not exist. Just insert a default
+            create_job_defaults_parsed = (
+                DefaultAnonClientSettings().job_default_parameters
+            )
+
         servers_parsed = {}
         for name, url in servers.items():
             servers_parsed[name] = RemoteAnonServer(name=name, url=url)
+
         super().__init__(
             servers=list(servers_parsed.values()),
             user_name=user_name,
             user_token=user_token,
+            job_default_parameters=create_job_defaults_parsed,
         )
         # set active server
         if active_server_name is None:
@@ -144,6 +170,50 @@ class AnonClientSettingsFromFile(AnonClientSettings):
 
     def save(self):
         super().save_to_file(self.filename)
+
+
+class JobDefaultParameters:
+    """Parameters that generally remain the same when creating jobs
+    """
+
+    def __init__(self, project_name, destination_path):
+        """
+
+        Parameters
+        ----------
+        project_name: str
+        destination_path: Path
+        """
+        self.project_name = project_name
+        self.destination_path = destination_path
+
+    def to_dict(self):
+        return {
+            "project_name": self.project_name,
+            "destination_path": self.destination_path,
+        }
+
+    @classmethod
+    def from_dict(cls, dict_in):
+        """
+
+        Parameters
+        ----------
+        dict_in: dict
+
+        Raises
+        ------
+        KeyError
+            When expected parameter is missing from dict
+
+        Returns
+        -------
+        JobDefaultParameters
+        """
+        return cls(
+            project_name=dict_in["project_name"],
+            destination_path=dict_in["destination_path"],
+        )
 
 
 class AnonClientSettingsException(Exception):

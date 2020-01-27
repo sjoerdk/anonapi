@@ -1,0 +1,2 @@
+source,patient_id,patient_name,description,pims_key
+study_instance_uid:123.12121212.12345678,,,"A study which should be retrieved from PACS, identified by StudyInstanceUID",49

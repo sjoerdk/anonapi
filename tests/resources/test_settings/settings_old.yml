@@ -1,0 +1,6 @@
+servers:
+  sandbox: https://umcradanont01/sandbox
+  p01: https://umcradanonp11/p01
+user_name: kees
+user_token: token
+active_server_name: sandbox
