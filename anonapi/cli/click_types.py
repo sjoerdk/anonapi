@@ -4,8 +4,11 @@ Custom click parameter types
 import re
 
 from click.types import ParamType
+from pathlib import Path
 
-from anonapi.cli.parser import AnonCommandLineParser
+from fileselection.fileselection import FileSelectionFile, FileSelectionException
+
+from anonapi.context import AnonAPIContext
 
 
 class JobIDRangeParamType(ParamType):
@@ -29,9 +32,7 @@ class JobIDRangeParamType(ParamType):
             return value
 
         if type(value) is list:
-            return (
-                value
-            )  # Make sure function is idempotent. Feeding output into convert() again will not change output
+            return value  # Make sure function is idempotent. Feeding output into convert() again will not change output
 
         match = re.match("^(?P<start>[0-9]+)-(?P<end>[0-9]+)$", value)
         if match:  # expand range and add each item
@@ -48,8 +49,8 @@ class AnonServerKeyParamType(ParamType):
 
     def convert(self, value, param, ctx):
         if not ctx:
-            self.fail("This type expects an AnonCommandLineParser object in context")
-        parser: AnonCommandLineParser = ctx.obj
+            self.fail("This type expects an AnonAPIContext object in context")
+        parser: AnonAPIContext = ctx.obj
 
         allowed = [x.name for x in parser.settings.servers]
         if value not in allowed:
@@ -60,3 +61,23 @@ class AnonServerKeyParamType(ParamType):
 
     def __repr__(self):
         return "ANON_SERVER_KEY"
+
+
+class FileSelectionFileParam(ParamType):
+    """A FileSelectionFile object
+
+    """
+    name = "file_selection_file"
+
+    def convert(self, value, param, ctx):
+        filepath = Path(value)
+        if not filepath.exists():
+            self.fail(f"No file selection found at '{filepath}'")
+        try:
+            with open(filepath, 'r') as f:
+                return FileSelectionFile.load(f, datafile=filepath)
+        except FileSelectionException as e:
+            self.fail(f"Error reading file selection: {e}")
+
+    def __repr__(self):
+        return "FILE_SELECTION_FILE"

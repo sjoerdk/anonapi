@@ -11,7 +11,8 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['pyyaml', 'click', 'tqdm', 'fileselection', 'pydicom']
+requirements = ['pyyaml', 'click', 'tqdm', 'fileselection', 'pydicom',
+                'tabulate', 'requests']
 
 setup_requirements = ['pytest-runner', ]
 
@@ -46,6 +47,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/sjoerdk/anonapi',
-    version='0.1.17',
+    version='0.3.1',
     zip_safe=False,
 )

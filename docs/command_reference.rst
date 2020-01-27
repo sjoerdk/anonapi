@@ -32,13 +32,13 @@ Work with single jobs. Get extended info, reset, restart a job
     $ anon job   # list all commands
 
 
-user
-----
-Information and editing of credentials that are used to communicate with the API
+settings
+--------
+Local settings for this anonapi instance. Credentials that are used to communicate with the API, path mapping etc.
 
 .. code-block:: console
 
-    $ anon user   # list all commands
+    $ anon settings user   # list all commands
 
 
 .. _batch:

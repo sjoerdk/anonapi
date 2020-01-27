@@ -1,6 +1,8 @@
-"""Makes it possible to map source files to anonymized id, name etc. Pre-processing step for creating IDIS jobs
+"""Makes it possible to map source files to anonymized id, name etc.
+Pre-processing step for creating IDIS jobs
 
-Meant to be usable in a command line, with minimal windows editing tools. Maybe Excel, maybe notepad
+Meant to be usable in a command line, with minimal windows editing tools. Maybe
+Excel, maybe notepad
 
 """
 import csv
@@ -9,9 +11,7 @@ from collections import UserDict
 from os import path
 from pathlib import Path
 
-from fileselection.fileselection import FileSelectionFolder
-
-from anonapi.cli.parser import AnonCommandLineParserException
+from fileselection.fileselection import FileSelectionFile
 
 
 class SourceIdentifier:
@@ -22,7 +22,8 @@ class SourceIdentifier:
     key: str
         Class level attribute to identify this class of identifiers
     identifier: str
-        Instance level attribute giving the actual value for this identifier. For example a specific path or UID
+        Instance level attribute giving the actual value for this identifier.
+        For example a specific path or UID
     """
 
     key = "base"  # key with which this class is identified
@@ -50,18 +51,64 @@ class PathIdentifier(SourceIdentifier):
         super().__init__(Path(identifier))
 
 
+class ObjectIdentifier(SourceIdentifier):
+    """An identifier that can be translated from and to a python object
+
+    """
+    associated_object_class = None
+
+    @classmethod
+    def from_object(cls, object):
+        """
+
+        Returns
+        -------
+        ObjectIdentifier instance or child of ObjectIdentifier instance
+        """
+        raise NotImplemented
+
+    def to_object(self):
+        """
+        Returns
+        -------
+        instance of self.object_class corresponding to this identifier
+        """
+
+
 class FileSelectionFolderIdentifier(PathIdentifier):
-    """A file selection in a specific folder. Selection file name is default. Folder can be relative or absolute
+    """A file selection in a specific folder. Selection file name is default.
+    Folder can be relative or absolute
     """
 
     key = "folder"
 
 
-class FileSelectionIdentifier(PathIdentifier):
+class FileSelectionIdentifier(PathIdentifier, ObjectIdentifier):
     """A file selection in a specific file
     """
 
     key = "fileselection"
+    associated_object_class = FileSelectionFile
+
+    @classmethod
+    def from_object(cls, object: FileSelectionFile):
+        return cls(identifier=object.data_file_path)
+
+    def to_object(self):
+        """
+
+        Returns
+        -------
+        FileSelectionFile
+
+        Raises
+        ------
+        FileNotFoundError
+            When the fileselection file cannot be found on local disk
+
+        """
+        with open(self.identifier, 'r') as f:
+            return FileSelectionFile.load(f, datafile=self.identifier)
 
 
 class PACSResourceIdentifier(SourceIdentifier):
@@ -95,9 +142,10 @@ class SourceIdentifierFactory:
         FileSelectionFolderIdentifier,
         StudyInstanceUIDIdentifier,
         AccessionNumberIdentifier,
+        FileSelectionIdentifier
     ]
 
-    def get_source_identifier(self, key):
+    def get_source_identifier_for_key(self, key):
         """Cast given key string back to identifier object
 
         Parameters
@@ -119,7 +167,8 @@ class SourceIdentifierFactory:
             type_key, identifier = key.split(":")
         except ValueError as e:
             msg = (
-                f"'{key}' is not a valid source. There should be a single colon ':' sign somewhere. "
+                f"'{key}' is not a valid source. There should be a single colon"
+                f" ':' sign somewhere. "
                 f"Original error: {e}"
             )
             raise UnknownSourceIdentifier(msg)
@@ -132,9 +181,46 @@ class SourceIdentifierFactory:
             f"Unknown identifier '{key}'. Known identifiers: {[x.key for x in self.types]}"
         )
 
+    def get_source_identifier_for_obj(self, object):
+        """Generate an identifier for a given object
+
+        Parameters
+        ----------
+        object: obj
+            Object instance to get identifier for
+
+        Raises
+        ------
+        UnknownObject:
+            When no identifier can be created for this object
+
+        Returns
+        -------
+        SourceIdentifier or subtype
+            Idenfitier for the given object
+        """
+        # get all indentifier types that can handle translation to and from objects
+        object_types = \
+            [x for x in self.types if hasattr(x, 'associated_object_class')]
+
+        object_identifier_class = None
+        for x in self.types:
+            try:
+                if x.associated_object_class == type(object):
+                    object_identifier_class = x
+                    break
+            except AttributeError:
+                continue
+        if not object_identifier_class:
+            raise UnknownObject(f"Unknown object: {object}. I can't create an"
+                                f"identifier for this")
+
+        return object_identifier_class.from_object(object)
+
 
 class AnonymizationParameters:
-    """Settings that can be set when creating a job and that are likely to change within a single mapping
+    """Settings that can be set when creating a job and that are likely to
+    change within a single mapping
 
     """
 
@@ -159,7 +245,8 @@ class AnonymizationParameters:
         Parameters
         ----------
         parameters_to_include: List[str], optional
-            List of strings from AnonymizationParameters.field_names. Defaults to all parameters
+            List of strings from AnonymizationParameters.field_names. Defaults
+            to all parameters
 
         Returns
         -------
@@ -169,7 +256,8 @@ class AnonymizationParameters:
             for param in parameters_to_include:
                 if param not in AnonymizationParameters.field_names:
                     raise ValueError(
-                        f"Unknown parameter '{param}'. Allowed: {AnonymizationParameters.field_names}"
+                        f"Unknown parameter '{param}'. "
+                        f"Allowed: {AnonymizationParameters.field_names}"
                     )
 
         all_values = {
@@ -201,7 +289,7 @@ class MappingList(UserDict):
         Parameters
         ----------
         mapping: Dict[SourceIdentifier, AnonymizationParameters]
-            Initialize mapping with this dicts
+            Initialize mapping with these dicts
 
         """
         self.data = mapping
@@ -214,7 +302,8 @@ class MappingList(UserDict):
         f: stream
             Write to this
         parameters_to_write: List[str], optional
-            List of strings from AnonymizationParameters.field_names. Defaults to all parameters
+            List of strings from AnonymizationParameters.field_names.
+            Defaults to all parameters
 
         """
 
@@ -258,7 +347,7 @@ class MappingList(UserDict):
         mapping = {}
         for row in reader:
             try:
-                source = id_factory.get_source_identifier(row["source"])
+                source = id_factory.get_source_identifier_for_key(row["source"])
             except KeyError as e:
                 raise MappingLoadError(
                     f"Could not find column with header 'source'. This is required."
@@ -316,6 +405,55 @@ class MappingListFolder:
 
     def full_path(self):
         return self.folder_path / self.DEFAULT_FILENAME
+
+    def make_relative(self, path):
+        """Make the given path relative to this mapping folder
+
+        Parameters
+        ----------
+        path: Pathlike
+
+        Returns
+        -------
+        Path
+            Path relative to this mapping folder
+
+        Raises
+        ------
+        MapperException
+            When path cannot be made relative
+
+        """
+        path = Path(path)
+        if not path.is_absolute():
+            return path
+        try:
+            return path.relative_to(self.folder_path)
+        except ValueError as e:
+            raise MapperException(f"Error making path relative: {e}")
+
+    def make_absolute(self, path):
+        """Get absolute path to the given path, assuming it is in this mapping folder
+
+        Parameters
+        ----------
+        path: Pathlike
+
+        Returns
+        -------
+        Path
+            Absolute path, assuming mapping folder as base folder
+
+        Raises
+        ------
+        MapperException
+            When given path is already absolute
+
+        """
+        path = Path(path)
+        if path.is_absolute():
+            raise MapperException("Cannot make absolute path absolute")
+        return self.folder_path / Path(path)
 
     def has_mapping_list(self):
         """Is there a default mapping list defined in this folder?"""
@@ -383,7 +521,8 @@ def get_example_mapping_list():
 
 
 class ExampleMappingList(MappingList):
-    """A mapping list with some example content. Gives an overview of possible identifiers
+    """A mapping list with some example content. Gives an overview of possible
+     identifiers
 
     """
 
@@ -394,20 +533,26 @@ class ExampleMappingList(MappingList):
             ): AnonymizationParameters(
                 patient_name="Patient1",
                 patient_id="001",
-                description="A study for which the data is coming from a folder",
+                description="All files from folder1",
             ),
             StudyInstanceUIDIdentifier(
                 "123.12121212.12345678"
             ): AnonymizationParameters(
                 patient_name="Patient2",
                 patient_id="002",
-                description="A study which should be retrieved from PACS, identified by StudyInstanceUID",
+                description="A study which should be retrieved from PACS, "
+                            "identified by StudyInstanceUID",
             ),
             AccessionNumberIdentifier("12345678.1234567"): AnonymizationParameters(
                 patient_name="Patient3",
                 patient_id="003",
-                description="A study which should be retrieved from PACS, identified by AccessionNumber",
+                description="A study which should be retrieved from PACS, "
+                            "identified by AccessionNumber",
             ),
+            FileSelectionIdentifier(
+                Path("folder2/fileselection.txt")): AnonymizationParameters(
+                    patient_name="Patient4", patient_id="004",
+                    description="A selection of files in folder2")
         }
         super().__init__(mapping=mapping)
 
@@ -417,6 +562,10 @@ class MapperException(Exception):
 
 
 class UnknownSourceIdentifier(MapperException):
+    pass
+
+
+class UnknownObject(MapperException):
     pass
 
 

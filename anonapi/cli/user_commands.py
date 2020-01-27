@@ -6,7 +6,8 @@ import string
 
 import click
 
-from anonapi.cli.parser import AnonCommandLineParser, command_group_function
+from anonapi.context import AnonAPIContext
+from anonapi.decorators import pass_anonapi_context
 
 
 @click.group(name="user")
@@ -14,17 +15,19 @@ def main():
     """manage API credentials"""
 
 
-@command_group_function()
-def info(parser: AnonCommandLineParser):
+@click.command()
+@pass_anonapi_context
+def info(parser: AnonAPIContext):
     """show current credentials"""
     click.echo(
         f"username is {parser.settings.user_name}\nAPI token: {parser.settings.user_token}"
     )
 
 
-@command_group_function()
+@click.command()
+@pass_anonapi_context
 @click.argument("user_name", type=str)
-def set_username(parser: AnonCommandLineParser, user_name):
+def set_username(parser: AnonAPIContext, user_name):
     """Set the given username in settings
     """
     parser.settings.user_name = user_name
@@ -32,8 +35,9 @@ def set_username(parser: AnonCommandLineParser, user_name):
     click.echo(f"username is now '{user_name}'")
 
 
-@command_group_function()
-def get_token(parser: AnonCommandLineParser):
+@click.command()
+@pass_anonapi_context
+def get_token(parser: AnonAPIContext):
     """Obtain a security token
     """
     token = "".join(

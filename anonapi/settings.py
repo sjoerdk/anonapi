@@ -92,8 +92,8 @@ class DefaultAnonClientSettings(AnonClientSettings):
 
 
 class DataMap:
-    """Structure to hold output from a yaml load(). Raises error when you cannot get() an expected key
-    Poor man's substitute for schema validation.
+    """Structure to hold output from a yaml load(). Raises error when you cannot get()
+     an expected key Poor man's substitute for schema validation.
 
     """
 
@@ -139,7 +139,8 @@ class AnonClientSettingsFromFile(AnonClientSettings):
             create_job_defaults_parsed = JobDefaultParameters.from_dict(
                 datamap.get("job_default_parameters")
             )
-        else:  # if this is an old settings file 'job_default_parameters' will not exist. Just insert a default
+        else:  # if this is an old settings file 'job_default_parameters' will
+               # not exist. Just insert a default
             create_job_defaults_parsed = (
                 DefaultAnonClientSettings().job_default_parameters
             )

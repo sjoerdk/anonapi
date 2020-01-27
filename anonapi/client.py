@@ -1,16 +1,14 @@
-"""Anonymization web API client. Can interface with Anonymization server to retrieve, create, modify anonymization jobs
+"""Anonymization web API client. Can interface with Anonymization server to retrieve,
+ create, modify anonymization jobs
 """
 
 import requests
 import json
 
 from anonapi.objects import RemoteAnonServer
-from anonapi.responses import (
-    JobsInfoList,
-    parse_job_infos_response,
-    APIParseResponseException,
-    format_job_info_list,
-)
+from anonapi.responses import (JobsInfoList, parse_job_infos_response,
+                               APIParseResponseException, format_job_info_list,
+                               JobInfo)
 
 
 class WebAPIClient:
@@ -26,8 +24,8 @@ class WebAPIClient:
         token: str
             token to use to authenticate user with api
         validate_https: bool, optional
-            if True, raise error if api https certificate cannot be verified. If False, just show warning.
-            Default value True
+            if True, raise error if api https certificate cannot be verified. If
+            False, just show warning. Default value True
 
         """
 
@@ -35,9 +33,8 @@ class WebAPIClient:
         self.username = username
         self.token = token
         self.validate_https = bool(validate_https)
-        self.requestslib = (
-            requests
-        )  # mostly for clean testing. Allows to switch out the actual http-calling code
+        self.requestslib = requests  # mostly for clean testing. Allows to switch
+        # out the actual http-calling code
 
     def __str__(self):
         return f"WebAPIClient for {self.username}@{self.hostname}"
@@ -64,8 +61,8 @@ class WebAPIClient:
             when authorization fails
 
         APIClientAPIException:
-            when API call is successful, but the API returns some reason for error (for example 'job_id not found',
-            or 'missing parameter')
+            when API call is successful, but the API returns some reason for error
+            (for example 'job_id not found', or 'missing parameter')
 
         APIClientException:
             When server cannot be found
@@ -257,8 +254,9 @@ class WebAPIClient:
 class AnonClientTool:
     """Performs several actions via the Anonymization web API interface.
 
-    One abstraction level above WebAPIClient. Client deals with https calls, get and post,
-    this tool should not do any http operations, and instead deal with servers and jobs.
+    One abstraction level above WebAPIClient. Client deals with https calls, get and
+    post, this tool should not do any http operations, and instead deal with servers
+    and jobs.
     """
 
     def __init__(self, username, token):
@@ -331,8 +329,9 @@ class AnonClientTool:
             info_string = f"Error getting job info from {server}:\n{str(e)}"
         return info_string
 
-    def get_job_info_list(self, server: RemoteAnonServer, job_ids):
-        """Get a list of info on the given job ids. Info is shorter then full info
+    def get_job_info_list(self, server: RemoteAnonServer, job_ids,
+                          get_extended_info=False):
+        """Get a list of info on the given job ids.
 
         Parameters
         ----------
@@ -340,6 +339,10 @@ class AnonClientTool:
             get job info from this server
         job_ids: List[str]
             list of jobs to get info for
+        get_extended_info: Boolean, optional
+            query API for additional info about source and destination. Made this
+            optional because the resulting DB query is bigger. Might be slower.
+            Defaults to False, meaning only core info is retrieved
 
         Returns
         -------
@@ -353,9 +356,14 @@ class AnonClientTool:
 
         """
         client = self.get_client(server.url)
+        if get_extended_info:
+            api_function_name = "get_jobs_list_extended"
+        else:
+            api_function_name = "get_jobs_list"
         try:
             return JobsInfoList(
-                parse_job_infos_response(client.get("get_jobs_list", job_ids=job_ids))
+                [JobInfo(x) for x in client.get(api_function_name,
+                                                job_ids=job_ids).values()]
             )
         except APIClientException as e:
             raise ClientToolException(f"Error getting jobs from {server}:\n{str(e)}")
