@@ -5,7 +5,7 @@ Modules
 Anon
 ----
 
-.. automodule:: anonapi.anon
+.. automodule:: anonapi.cli
     :members:
     :undoc-members:
     :show-inheritance:
@@ -47,6 +47,11 @@ To see the source code for these examples, press the [source] link to the right 
     :show-inheritance:
 
 .. automodule:: examples.anonymize_files_from_share
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: examples.anonymize_files_sop_class_filter
     :members:
     :undoc-members:
     :show-inheritance:

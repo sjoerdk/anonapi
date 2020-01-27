@@ -6,12 +6,16 @@ Welcome to AnonAPI's documentation!
    :caption: Contents:
 
    readme
+   quickstart
    installation
+   configuration
    usage
+   command_reference
+   troubleshooting
+   python_usage
    modules
    contributing
    authors
-   history
 
 Indices and tables
 ==================

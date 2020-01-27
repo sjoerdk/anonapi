@@ -1,0 +1,5 @@
+source,patient_id,patient_name,description,pims_key
+folder:example/folder1,001,Patient1,All files from folder1,
+study_instance_uid:123.12121212.12345678,002,Patient2,"A study which should be retrieved from PACS, identified by StudyInstanceUID",
+accession_number:12345678.1234567,003,Patient3,"A study which should be retrieved from PACS, identified by AccessionNumber",
+fileselection:folder2/fileselection.txt,004,Patient4,A selection of files in folder2,

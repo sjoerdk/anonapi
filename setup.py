@@ -11,11 +11,12 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['pyyaml', ]
+requirements = ['pyyaml', 'click', 'tqdm', 'fileselection', 'pydicom',
+                'tabulate', 'requests']
 
 setup_requirements = ['pytest-runner', ]
 
-test_requirements = ['pytest', 'pyyaml']
+test_requirements = ['pytest', 'pyyaml', 'factory_boy']
 
 setup(
     author="Sjoerd Kerkstra",
@@ -36,16 +37,16 @@ setup(
     include_package_data=True,
     keywords='anonapi',
     name='anonapi',
-    packages=find_packages(include=['anonapi']),
+    packages=find_packages(include=['anonapi', 'anonapi.cli']),
     entry_points={
         'console_scripts': [
-            'anon = anonapi.anon:main'
+            'anon = anonapi.cli.entrypoint:cli'
         ]
     },
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/sjoerdk/anonapi',
-    version='0.0.20',
+    version='0.3.1',
     zip_safe=False,
 )
