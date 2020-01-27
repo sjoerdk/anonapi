@@ -9,9 +9,9 @@ pytest-runner==5.1
 tqdm==4.42.0
 pydicom==1.4.1
 tqdm==4.32.1
+sphinx_rtd_theme==0.4.3
 Sphinx==2.3.1
 sphinx-autodoc-typehints==1.10.3
-sphinx_rtd_theme==0.4.2
 tox==3.14.3
 twine==3.1.1
 watchdog==0.9.0
