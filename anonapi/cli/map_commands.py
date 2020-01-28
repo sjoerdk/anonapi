@@ -12,9 +12,10 @@ from anonapi.cli.click_types import FileSelectionFileParam
 from anonapi.cli.select_commands import create_dicom_selection_click
 from anonapi.context import AnonAPIContext
 from anonapi.decorators import pass_anonapi_context
-from anonapi.mapper import (SourceIdentifierFactory, MappingListFolder, MappingList,
+from anonapi.mapper import (MappingListFolder, MappingList,
                             AnonymizationParameters, MappingLoadError,
                             ExampleMappingList, MapperException)
+from anonapi.parameters import SourceIdentifierFactory
 
 
 class MapCommandContext:

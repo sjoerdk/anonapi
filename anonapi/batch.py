@@ -6,6 +6,7 @@ from pathlib import Path
 
 import yaml
 
+from anonapi.exceptions import AnonAPIException
 from anonapi.objects import RemoteAnonServer
 
 
@@ -172,5 +173,5 @@ class BatchFolder:
         os.remove(self.batch_file_path)
 
 
-class BatchFolderException(Exception):
+class BatchFolderException(AnonAPIException):
     pass

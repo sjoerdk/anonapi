@@ -5,6 +5,7 @@ from typing import List
 
 import yaml
 
+from anonapi.exceptions import AnonAPIException
 from anonapi.objects import RemoteAnonServer
 
 
@@ -216,7 +217,7 @@ class JobDefaultParameters:
         )
 
 
-class AnonClientSettingsException(Exception):
+class AnonClientSettingsException(AnonAPIException):
     pass
 
 

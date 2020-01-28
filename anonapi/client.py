@@ -5,6 +5,7 @@
 import requests
 import json
 
+from anonapi.exceptions import AnonAPIException
 from anonapi.objects import RemoteAnonServer
 from anonapi.responses import (JobsInfoList, parse_job_infos_response,
                                APIParseResponseException, format_job_info_list,
@@ -547,19 +548,19 @@ class AnonClientTool:
         return info
 
 
-class ClientInterfaceException(Exception):
+class ClientInterfaceException(AnonAPIException):
     """A general problem with client interface """
 
     pass
 
 
-class APIClientException(Exception):
+class APIClientException(AnonAPIException):
     """A general problem with the APIClient """
 
     pass
 
 
-class APIClient404Exception(Exception):
+class APIClient404Exception(AnonAPIException):
     """object not found. Made this into a separate function to be able to ignore it in special cases"""
 
     pass
@@ -589,5 +590,5 @@ class APIClientAPIException(APIClientException):
         self.api_errors = api_errors
 
 
-class ClientToolException(Exception):
+class ClientToolException(AnonAPIException):
     pass

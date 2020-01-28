@@ -9,15 +9,10 @@ from anonapi.client import APIClientException
 from anonapi.decorators import pass_anonapi_context
 from anonapi.mapper import (
     MappingListFolder,
-    MappingLoadError,
-    FileSelectionFolderIdentifier,
-    AnonymizationParameters,
-    PathIdentifier,
-    FileSelectionIdentifier,
-    PACSResourceIdentifier,
-    StudyInstanceUIDIdentifier,
-    SourceIdentifier,
-)
+    MappingLoadError, AnonymizationParameters, )
+from anonapi.parameters import SourceIdentifier, PathIdentifier, \
+    FileSelectionFolderIdentifier, FileSelectionIdentifier, PACSResourceIdentifier, \
+    StudyInstanceUIDIdentifier
 from anonapi.settings import JobDefaultParameters, AnonClientSettingsException
 from click.exceptions import Abort, ClickException
 from fileselection.fileselection import FileSelectionFolder
@@ -36,7 +31,7 @@ class MappingElement:
 
         Parameters
         ----------
-        source: SourceIdentifier
+        source: anonapi.parameters.SourceIdentifier
         parameters: AnonymizationParameters
         """
         self.source = source
@@ -137,7 +132,7 @@ class CreateCommandsContext:
 
         Parameters
         ----------
-        identifier: SourceIdentifier
+        identifier: anonapi.parameters.SourceIdentifier
             The identifier for which to get the id string
 
         Returns

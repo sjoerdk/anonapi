@@ -3,6 +3,7 @@ from pathlib import Path
 
 from anonapi.batch import BatchFolder
 from anonapi.client import AnonClientTool
+from anonapi.exceptions import AnonAPIException
 from anonapi.settings import AnonClientSettings
 
 
@@ -121,7 +122,7 @@ class AnonAPIContext:
         return BatchFolder(self.current_dir)
 
 
-class AnonAPIContextException(Exception):
+class AnonAPIContextException(AnonAPIException):
     pass
 
 

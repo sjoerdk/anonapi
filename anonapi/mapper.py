@@ -11,227 +11,27 @@ from collections import UserDict, defaultdict
 from os import path
 from pathlib import Path
 
-from fileselection.fileselection import FileSelectionFile
-
-
-class SourceIdentifier:
-    """A string representing a place where data is coming from
-
-    Attributes
-    ----------
-    key: str
-        Class level attribute to identify this class of identifiers
-    identifier: str
-        Instance level attribute giving the actual value for this identifier.
-        For example a specific path or UID
-    """
-
-    key = "base"  # key with which this class is identified
-
-    def __init__(self, identifier):
-        self.identifier = identifier
-
-    def __str__(self):
-        return f"{self.key}:{self.identifier}"
-
-
-class PathIdentifier(SourceIdentifier):
-    """Refers to a path
-    """
-
-    key = "path"
-
-    def __init__(self, identifier):
-        """
-
-        Parameters
-        ----------
-        identifier: pathlike
-        """
-        super().__init__(Path(identifier))
-
-
-class ObjectIdentifier(SourceIdentifier):
-    """An identifier that can be translated from and to a python object
-
-    """
-    associated_object_class = None
-
-    @classmethod
-    def from_object(cls, object):
-        """
-
-        Returns
-        -------
-        ObjectIdentifier instance or child of ObjectIdentifier instance
-        """
-        raise NotImplemented
-
-    def to_object(self):
-        """
-        Returns
-        -------
-        instance of self.object_class corresponding to this identifier
-        """
-
-
-class FileSelectionFolderIdentifier(PathIdentifier):
-    """A file selection in a specific folder. Selection file name is default.
-    Folder can be relative or absolute
-    """
-
-    key = "folder"
-
-
-class FileSelectionIdentifier(PathIdentifier, ObjectIdentifier):
-    """A file selection in a specific file
-    """
-
-    key = "fileselection"
-    associated_object_class = FileSelectionFile
-
-    @classmethod
-    def from_object(cls, object: FileSelectionFile):
-        return cls(identifier=object.data_file_path)
-
-    def to_object(self):
-        """
-
-        Returns
-        -------
-        FileSelectionFile
-
-        Raises
-        ------
-        FileNotFoundError
-            When the fileselection file cannot be found on local disk
-
-        """
-        with open(self.identifier, 'r') as f:
-            return FileSelectionFile.load(f, datafile=self.identifier)
-
-
-class PACSResourceIdentifier(SourceIdentifier):
-    """A key to for some object in a PACS system
-
-    """
-
-    key = "pacs_resource"
-
-
-class StudyInstanceUIDIdentifier(PACSResourceIdentifier):
-    """a DICOM StudyInstanceUID
-    """
-
-    key = "study_instance_uid"
-
-
-class AccessionNumberIdentifier(PACSResourceIdentifier):
-    """A DICOM AccessionNumber
-    """
-
-    key = "accession_number"
-
-
-class SourceIdentifierFactory:
-    """Creates SourceIdentifier objects based on key string
-    """
-
-    types = [
-        SourceIdentifier,
-        FileSelectionFolderIdentifier,
-        StudyInstanceUIDIdentifier,
-        AccessionNumberIdentifier,
-        FileSelectionIdentifier
-    ]
-
-    def get_source_identifier_for_key(self, key):
-        """Cast given key string back to identifier object
-
-        Parameters
-        ----------
-        key: str
-            Key to cast, like 'folder:/myfolder'
-
-        Raises
-        ------
-        UnknownSourceIdentifier:
-            When the key cannot be cast to any known identifier
-
-        Returns
-        -------
-        SourceIdentifier or subtype
-        The type that the given key represents
-        """
-        try:
-            type_key, identifier = key.split(":")
-        except ValueError as e:
-            msg = (
-                f"'{key}' is not a valid source. There should be a single colon"
-                f" ':' sign somewhere. "
-                f"Original error: {e}"
-            )
-            raise UnknownSourceIdentifier(msg)
-
-        for id_type in self.types:
-            if id_type.key == type_key:
-                return id_type(identifier=identifier)
-
-        raise UnknownSourceIdentifier(
-            f"Unknown identifier '{key}'. Known identifiers: {[x.key for x in self.types]}"
-        )
-
-    def get_source_identifier_for_obj(self, object):
-        """Generate an identifier for a given object
-
-        Parameters
-        ----------
-        object: obj
-            Object instance to get identifier for
-
-        Raises
-        ------
-        UnknownObject:
-            When no identifier can be created for this object
-
-        Returns
-        -------
-        SourceIdentifier or subtype
-            Idenfitier for the given object
-        """
-        # get all indentifier types that can handle translation to and from objects
-        object_types = \
-            [x for x in self.types if hasattr(x, 'associated_object_class')]
-
-        object_identifier_class = None
-        for x in self.types:
-            try:
-                if x.associated_object_class == type(object):
-                    object_identifier_class = x
-                    break
-            except AttributeError:
-                continue
-        if not object_identifier_class:
-            raise UnknownObject(f"Unknown object: {object}. I can't create an"
-                                f"identifier for this")
-
-        return object_identifier_class.from_object(object)
+from anonapi.exceptions import AnonAPIException
+from anonapi.parameters import PatientID, PatientName, Description, PIMSKey, \
+    OutputPath, FileSelectionFolderIdentifier, FileSelectionIdentifier, \
+    StudyInstanceUIDIdentifier, AccessionNumberIdentifier, SourceIdentifierFactory, \
+    SourceIdentifierParameter
 
 
 class AnonymizationParameters:
     """Settings that can be set when creating a job
 
     """
+    # parameter classes
+    PATIENT_ID = PatientID
+    PATIENT_NAME = PatientName
+    DESCRIPTION = Description
+    PIMS_KEY = PIMSKey
+    OUTPUT_PATH = OutputPath
 
-    PATIENT_ID_NAME = "patient_id"
-    PATIENT_NAME = "patient_name"
-    DESCRIPTION_NAME = "description"
-    PIMS_KEY = "pims_key"
-    OUTPUT_PATH = "output_path"
+    parameters = [PATIENT_ID, PATIENT_NAME, DESCRIPTION, PIMS_KEY, OUTPUT_PATH]
+    field_names = [x.field_name for x in parameters]
 
-    field_names = [PATIENT_ID_NAME, PATIENT_NAME, DESCRIPTION_NAME, PIMS_KEY,
-                   OUTPUT_PATH]
-    
     def __init__(
         self, patient_id=None, patient_name=None, description=None, pims_key=None,
             output_path=None
@@ -244,42 +44,47 @@ class AnonymizationParameters:
             output_path = Path(output_path)
         self.output_path = output_path
 
+    def as_parameters(self):
+        """This object as a list of instantiated Parameter objects.
+
+        Returns
+        -------
+        List[Parameter]
+        """
+        return [self.PATIENT_ID(self.patient_id),
+                self.PATIENT_NAME(self.patient_name),
+                self.DESCRIPTION(self.description),
+                self.PIMS_KEY(self.pims_key),
+                self.OUTPUT_PATH(self.output_path)]
+
+
     def as_dict(self, parameters_to_include=None):
         """
 
         Parameters
         ----------
-        parameters_to_include: List[str], optional
-            List of strings from AnonymizationParameters.field_names. Defaults
+        parameters_to_include: List[Parameter], optional
+            List of Parameter objects to write. Defaults
             to all parameters
 
         Returns
         -------
 
         """
+        params = self.as_parameters()
         if parameters_to_include:
-            for param in parameters_to_include:
-                if param not in AnonymizationParameters.field_names:
-                    raise ValueError(
-                        f"Unknown parameter '{param}'. "
-                        f"Allowed: {AnonymizationParameters.field_names}"
-                    )
+            params = [x for x in params if type(x) in parameters_to_include]
+        as_dict = {}
 
-        all_values = {
-            self.PATIENT_ID_NAME: self.patient_id,
-            self.PATIENT_NAME: self.patient_name,
-            self.DESCRIPTION_NAME: self.description,
-            self.PIMS_KEY: self.pims_key,
-            self.output_path: str(self.output_path)
-        }
-        if parameters_to_include:
-            return {
-                key: value
-                for key, value in all_values.items()
-                if key in parameters_to_include
-            }
-        else:
-            return all_values
+        for param in params:
+            value = param.value
+            if not value:
+                value = ""
+            as_dict[param.field_name] = value
+
+        return as_dict
+
+        return params
 
 
 class Mapping:
@@ -395,7 +200,7 @@ class MappingList(UserDict):
         """
         self.data = mapping
 
-    def save(self, f, parameters_to_write=AnonymizationParameters.field_names):
+    def save(self, f, parameters_to_write=AnonymizationParameters.parameters):
         """
 
         Parameters
@@ -413,7 +218,7 @@ class MappingList(UserDict):
             delimiter=",",
             quotechar='"',
             quoting=csv.QUOTE_MINIMAL,
-            fieldnames=["source"] + parameters_to_write,
+            fieldnames=[x.field_name for x in ([SourceIdentifierParameter] + parameters_to_write)],
         )
         writer.writeheader()
         for identifier, parameters in self.data.items():
@@ -658,15 +463,7 @@ class ExampleMappingList(MappingList):
         super().__init__(mapping=mapping)
 
 
-class MapperException(Exception):
-    pass
-
-
-class UnknownSourceIdentifier(MapperException):
-    pass
-
-
-class UnknownObject(MapperException):
+class MapperException(AnonAPIException):
     pass
 
 

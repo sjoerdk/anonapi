@@ -5,7 +5,8 @@ from unittest.mock import Mock
 from requests.models import Response
 import factory
 
-from anonapi.mapper import AnonymizationParameters, FileSelectionFolderIdentifier
+from anonapi.mapper import AnonymizationParameters
+from anonapi.parameters import FileSelectionFolderIdentifier
 
 
 class AnonymizationParametersFactory(factory.Factory):

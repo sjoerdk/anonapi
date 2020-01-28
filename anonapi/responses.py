@@ -9,6 +9,8 @@ python models on the server side and the client side. But we're not using django
 from collections import UserList
 from tabulate import tabulate
 
+from anonapi.exceptions import AnonAPIException
+
 
 class JobStatus:
     """ Job status string the API server uses
@@ -159,5 +161,5 @@ class JobsInfoList(UserList):
         return format_job_info_list(self.data, columns=columns)
 
 
-class APIParseResponseException(Exception):
+class APIParseResponseException(AnonAPIException):
     pass

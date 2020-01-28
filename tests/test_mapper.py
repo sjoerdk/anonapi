@@ -4,10 +4,11 @@ from pathlib import Path
 import pytest
 from fileselection.fileselection import FileSelectionFile
 
-from anonapi.mapper import (MappingList, SourceIdentifierFactory,
-                            UnknownSourceIdentifier, AnonymizationParameters,
+from anonapi.mapper import (MappingList, AnonymizationParameters,
                             MappingLoadError, MappingListFolder, MapperException,
                             Mapping)
+from anonapi.parameters import SourceIdentifierFactory, \
+    UnknownSourceIdentifierException
 from tests.factories import (
     AnonymizationParametersFactory,
     FileSelectionIdentifierFactory,
@@ -93,8 +94,8 @@ def test_load_pims_only():
 @pytest.mark.parametrize(
     "file_to_open, expected_exception",
     [
-        ("example_corrupt_mapping.csv", UnknownSourceIdentifier),
-        ("example_unknown_source_key.csv", UnknownSourceIdentifier),
+        ("example_corrupt_mapping.csv", UnknownSourceIdentifierException),
+        ("example_unknown_source_key.csv", UnknownSourceIdentifierException),
         ("example_mapping_no_header.csv", MappingLoadError),
         ("example_mapping_random_content.csv", MappingLoadError),
     ],
@@ -112,7 +113,7 @@ def test_source_identifier_factory():
     assert factory.get_source_identifier_for_key("base:123234").key == "base"
 
     for faulty_key in ["somethingelse:123234", "folder::123234", "folder123234"]:
-        with pytest.raises(UnknownSourceIdentifier):
+        with pytest.raises(UnknownSourceIdentifierException):
             factory.get_source_identifier_for_key(faulty_key)
 
 
@@ -133,7 +134,7 @@ def test_write_subset(tmpdir, a_mapping):
     mapfile = Path(tmpdir) / "mapping.csv"
     with open(mapfile, "w") as f:
         mapping_list.save(
-            f, parameters_to_write=[AnonymizationParameters.PATIENT_ID_NAME]
+            f, parameters_to_write=[AnonymizationParameters.PATIENT_ID]
         )
 
     # when loading this file again, the parameters that were not written should be missing
@@ -147,16 +148,6 @@ def test_write_subset(tmpdir, a_mapping):
         assert loaded[identifier].patient_id is not None
         assert loaded[identifier].patient_name is None
         assert loaded[identifier].description is None
-
-
-def test_write_subset_unknown_parameter(tmpdir, a_mapping):
-    """Try to constrain to a parameter that is not a valid anonymization parameter
-    """
-    mapping_list = MappingList(mapping=a_mapping)
-
-    with pytest.raises(ValueError):
-        with open(Path(tmpdir) / "mapping.csv", "w") as f:
-            mapping_list.save(f, parameters_to_write=["Whatisthis"])
 
 
 def test_format_job_info(a_mapping):
