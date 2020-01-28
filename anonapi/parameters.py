@@ -180,7 +180,7 @@ class SourceIdentifierFactory:
             The type that the given key represents
         """
         try:
-            type_key, identifier = key.split(":")
+            type_key, identifier = key.split(":", maxsplit=1)
         except ValueError as e:
             msg = (
                 f"'{key}' is not a valid source. There should be a single colon"
@@ -275,9 +275,9 @@ class PIMSKey(Parameter):
     field_name = 'pims_key'
 
 
-class OutputPath(Parameter):
+class DestinationPath(Parameter):
     value_type = Path
-    field_name = 'output_path'
+    field_name = 'destination_path'
 
 
 class SourceIdentifierParameter(Parameter):
@@ -289,7 +289,56 @@ class SourceIdentifierParameter(Parameter):
         self.value = SourceIdentifier.cast_to_subtype(value)
 
 
+class ParameterFactory:
+    """Knows about all sort of parameters and can convert between string and object
+    representation"""
+
+    PARAMETER_TYPES = [PatientID, PatientName, Description, PIMSKey, DestinationPath,
+                       SourceIdentifierParameter]
+
+    @classmethod
+    def parse_from_string(cls, string):
+        """
+
+        Parameters
+        ----------
+        string: str
+            A valid string respresentation of Parameter
+
+        Returns
+        -------
+        Parameter
+            An instance, instantiated with a value, if any was found in the string
+
+        Raises
+        ------
+        ParameterParsingError
+            If the string cannot be parsed as any known parameter
+
+        """
+        try:
+            key, value = string.split(",", maxsplit=1)
+        except ValueError:
+            raise ParameterParsingError(
+                f"Could split '{string}' into key and value. There should be a "
+                f"comma somewhere.")
+        for param_type in cls.PARAMETER_TYPES:
+            if param_type.field_name == key:
+                try:
+                    return param_type(value)
+                except UnknownSourceIdentifierException as e:
+                    raise ParameterParsingError(
+                        f"Error parsing source identifier:{e}")
+        raise ParameterParsingError(
+            f"Could not parse {string} to any known parameter. "
+            f"Tried {[x.field_name for x in cls.PARAMETER_TYPES]}")
+
+
 class ParameterException(AnonAPIException):
+    pass
+
+
+class ParameterParsingError(ParameterException):
     pass
 
 

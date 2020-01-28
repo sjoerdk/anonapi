@@ -7,15 +7,16 @@ Excel, maybe notepad
 """
 import csv
 import os
-from collections import UserDict, defaultdict
-from os import path
-from pathlib import Path
 
 from anonapi.exceptions import AnonAPIException
 from anonapi.parameters import PatientID, PatientName, Description, PIMSKey, \
-    OutputPath, FileSelectionFolderIdentifier, FileSelectionIdentifier, \
+    DestinationPath, FileSelectionFolderIdentifier, FileSelectionIdentifier, \
     StudyInstanceUIDIdentifier, AccessionNumberIdentifier, SourceIdentifierFactory, \
-    SourceIdentifierParameter
+    SourceIdentifierParameter, ParameterFactory
+from collections import UserDict, defaultdict
+from io import StringIO
+from pathlib import Path
+from os import path
 
 
 class AnonymizationParameters:
@@ -27,22 +28,20 @@ class AnonymizationParameters:
     PATIENT_NAME = PatientName
     DESCRIPTION = Description
     PIMS_KEY = PIMSKey
-    OUTPUT_PATH = OutputPath
+    DESTINATION_PATH = DestinationPath
 
-    parameters = [PATIENT_ID, PATIENT_NAME, DESCRIPTION, PIMS_KEY, OUTPUT_PATH]
+    parameters = [PATIENT_ID, PATIENT_NAME, DESCRIPTION, PIMS_KEY, DESTINATION_PATH]
     field_names = [x.field_name for x in parameters]
 
     def __init__(
         self, patient_id=None, patient_name=None, description=None, pims_key=None,
-            output_path=None
+            output_path=None, destination_path=None
     ):
         self.patient_id = patient_id
         self.patient_name = patient_name
         self.description = description
         self.pims_key = pims_key
-        if output_path:
-            output_path = Path(output_path)
-        self.output_path = output_path
+        self.destination_path = destination_path
 
     def as_parameters(self):
         """This object as a list of instantiated Parameter objects.
@@ -55,7 +54,7 @@ class AnonymizationParameters:
                 self.PATIENT_NAME(self.patient_name),
                 self.DESCRIPTION(self.description),
                 self.PIMS_KEY(self.pims_key),
-                self.OUTPUT_PATH(self.output_path)]
+                self.DESTINATION_PATH(self.destination_path)]
 
 
     def as_dict(self, parameters_to_include=None):
@@ -100,35 +99,40 @@ class Mapping:
     MAPPING_HEADER = "## Mapping ##"
     ALL_HEADERS = [DESCRIPTION_HEADER, OPTIONS_HEADER, MAPPING_HEADER]
 
-    def __init__(self, mapping, output_dir, pims_key=None, description=None):
+    def __init__(self, mapping, options, description=None):
         """
 
         Parameters
         ----------
         mapping: MappingList
             The per-job mapping table
-        output_dir: path, optional
-            directory to write data to. Defaults to None
-        pims_key: str, optional
-            Key for PIMS project to use for generating pseudonyms. Defaults to None
+        options: List[Parameter]
+            List of parameters that have been set for the entire mapping
         description: str, optional
             Human readable description of this mapping. Can contain newline chars
         """
         self.mapping = mapping
-        self.settings = {'output_dir': output_dir,
-                         'pims_key': pims_key}
+        self.options = options
         self.description = description
 
-    @property
-    def output_dir(self):
-        return self.settings['output_dir']
+    def save(self, f):
+        # write description
+        f.write(self.DESCRIPTION_HEADER + os.linesep)
+        f.write(self.description)
+        f.write(os.linesep)
 
-    @property
-    def pims_key(self):
-        return self.settings['pims_key']
+        # write options
+        f.write(self.OPTIONS_HEADER + os.linesep)
+        f.write(os.linesep.join([str(x) for x in self.options]))
+        f.write(os.linesep)
+        f.write(os.linesep)
 
-    def save(self, f, parameters_to_write):
-        pass
+        # write mapping
+        f.write(self.MAPPING_HEADER + os.linesep)
+        mapping_content = StringIO()
+        self.mapping.save(mapping_content)
+        mapping_content.seek(0)
+        f.write(mapping_content.read())
 
     @classmethod
     def load(cls, f):
@@ -136,8 +140,20 @@ class Mapping:
         # split content into three sections
 
         sections = cls.parse_sections(f)
-        test = 1
-        return cls(description=sections[cls.DESCRIPTION_HEADER])
+
+        description = "".join([x for x in sections[cls.DESCRIPTION_HEADER]
+                               if x is not '\n' and x is not '\r\n'])
+
+        option_lines = [x.replace('\r', '').replace('\n', '') for x in
+                        sections[cls.OPTIONS_HEADER]]
+        option_lines = [x for x in option_lines if x]  # remove empty lines
+        options = [ParameterFactory.parse_from_string(line) for line in option_lines]
+
+        mapping_content = StringIO("".join(sections[cls.MAPPING_HEADER]))
+        mapping = MappingList.load(mapping_content)
+        return cls(mapping=mapping,
+                   options=options,
+                   description=description)
 
     @classmethod
     def parse_sections(cls, f):

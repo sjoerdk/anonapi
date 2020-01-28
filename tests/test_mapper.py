@@ -61,12 +61,24 @@ def test_load():
     assert len(mapping) == 20
 
 
-def test_mapping_load():
+def test_mapping_load_save():
     """Load file with CSV part and general part"""
     mapping_file = RESOURCE_PATH / "test_mapper" / "with_mapping_wide_settings.csv"
-    #with open(mapping_file, "r") as f:
-    #    mapping = Mapping.load(f)
-    #assert len(mapping) == 20
+    with open(mapping_file, "r") as f:
+        mapping = Mapping.load(f)
+    assert 'some comment' in mapping.description
+    assert len(mapping.mapping) == 20
+    assert len(mapping.options) == 2
+
+    output_file = StringIO()
+    mapping.save(output_file)
+    output_file.seek(0)
+    loaded = Mapping.load(output_file)
+
+    # saved and loaded again should be the same as original
+    assert mapping.description == loaded.description
+    assert [str(x) for x in mapping.options] == [str(x) for x in loaded.options]
+    assert [str(x) for x in mapping.mapping] == [str(x) for x in loaded.mapping]
 
 
 @pytest.mark.parametrize('content', CAN_BE_PARSED_AS_MAPPING)
@@ -112,7 +124,7 @@ def test_source_identifier_factory():
     assert factory.get_source_identifier_for_key("folder:/something/folder").key == "folder"
     assert factory.get_source_identifier_for_key("base:123234").key == "base"
 
-    for faulty_key in ["somethingelse:123234", "folder::123234", "folder123234"]:
+    for faulty_key in ["somethingelse:123234", "folder,123234", "folder123234"]:
         with pytest.raises(UnknownSourceIdentifierException):
             factory.get_source_identifier_for_key(faulty_key)
 
