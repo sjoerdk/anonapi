@@ -219,8 +219,7 @@ class SourceIdentifierFactory:
 
 
 class AnonymizationParameters:
-    """Settings that can be set when creating a job and that are likely to
-    change within a single mapping
+    """Settings that can be set when creating a job
 
     """
 
@@ -228,16 +227,22 @@ class AnonymizationParameters:
     PATIENT_NAME = "patient_name"
     DESCRIPTION_NAME = "description"
     PIMS_KEY = "pims_key"
+    OUTPUT_PATH = "output_path"
 
-    field_names = [PATIENT_ID_NAME, PATIENT_NAME, DESCRIPTION_NAME, PIMS_KEY]
-
+    field_names = [PATIENT_ID_NAME, PATIENT_NAME, DESCRIPTION_NAME, PIMS_KEY,
+                   OUTPUT_PATH]
+    
     def __init__(
-        self, patient_id=None, patient_name=None, description=None, pims_key=None
+        self, patient_id=None, patient_name=None, description=None, pims_key=None,
+            output_path=None
     ):
         self.patient_id = patient_id
         self.patient_name = patient_name
         self.description = description
         self.pims_key = pims_key
+        if output_path:
+            output_path = Path(output_path)
+        self.output_path = output_path
 
     def as_dict(self, parameters_to_include=None):
         """
@@ -265,6 +270,7 @@ class AnonymizationParameters:
             self.PATIENT_NAME: self.patient_name,
             self.DESCRIPTION_NAME: self.description,
             self.PIMS_KEY: self.pims_key,
+            self.output_path: str(self.output_path)
         }
         if parameters_to_include:
             return {
@@ -289,11 +295,24 @@ class Mapping:
     MAPPING_HEADER = "## Mapping ##"
     ALL_HEADERS = [DESCRIPTION_HEADER, OPTIONS_HEADER, MAPPING_HEADER]
 
-    def __init__(self, mapping, output_dir=None, pims_key=None):
+    def __init__(self, mapping, output_dir, pims_key=None, description=None):
+        """
+
+        Parameters
+        ----------
+        mapping: MappingList
+            The per-job mapping table
+        output_dir: path, optional
+            directory to write data to. Defaults to None
+        pims_key: str, optional
+            Key for PIMS project to use for generating pseudonyms. Defaults to None
+        description: str, optional
+            Human readable description of this mapping. Can contain newline chars
+        """
         self.mapping = mapping
         self.settings = {'output_dir': output_dir,
                          'pims_key': pims_key}
-        self.description
+        self.description = description
 
     @property
     def output_dir(self):
@@ -311,7 +330,9 @@ class Mapping:
         """ Load a mapping from a csv file stream """
         # split content into three sections
 
-        return cls.parse_sections(f)
+        sections = cls.parse_sections(f)
+        test = 1
+        return cls(description=sections[cls.DESCRIPTION_HEADER])
 
     @classmethod
     def parse_sections(cls, f):
