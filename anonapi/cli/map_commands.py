@@ -3,6 +3,7 @@
 
 import click
 import datetime
+import getpass
 import random
 import string
 
@@ -12,10 +13,10 @@ from anonapi.cli.click_types import FileSelectionFileParam
 from anonapi.cli.select_commands import create_dicom_selection_click
 from anonapi.context import AnonAPIContext
 from anonapi.decorators import pass_anonapi_context
-from anonapi.mapper import (MappingListFolder, MappingList,
-                            AnonymizationParameters, MappingLoadError,
-                            ExampleMappingList, MapperException)
-from anonapi.parameters import SourceIdentifierFactory
+from anonapi.mapper import (MappingListFolder, MappingList, AnonymizationParameters,
+                            MappingLoadError, ExampleMappingList, MapperException,
+                            Mapping)
+from anonapi.parameters import SourceIdentifierFactory, DestinationPath
 
 
 class MapCommandContext:
@@ -71,9 +72,13 @@ def status(context: MapCommandContext):
 def init(context: MapCommandContext):
     """Save a default mapping in the current folder"""
     folder = context.get_current_mapping_folder()
-    mapping_list = ExampleMappingList()
-    folder.save_list(mapping_list)
-    click.echo(f"Initialised example mapping in {mapping_list.DEFAULT_FILENAME}")
+    mapping = Mapping(mapping=ExampleMappingList(),
+                      options=[DestinationPath(r'\\an\example\path')],
+                      description=
+                      f"Mapping created {datetime.datetime.now()} "
+                      f"by {getpass.getuser()}\n")
+    folder.save_list(mapping)
+    click.echo(f"Initialised example mapping in {mapping.mapping.DEFAULT_FILENAME}")
 
 
 @click.command()

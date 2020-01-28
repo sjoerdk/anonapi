@@ -22,6 +22,8 @@ from os import path
 class AnonymizationParameters:
     """Settings that can be set when creating a job
 
+    Collecting these together in an object why again?
+
     """
     # parameter classes
     PATIENT_ID = PatientID
@@ -381,7 +383,7 @@ class MappingListFolder:
         """Is there a default mapping list defined in this folder?"""
         return self.full_path().exists()
 
-    def save_list(self, mapping_list: MappingList):
+    def save_list(self, mapping_list):
         with open(self.full_path(), "w") as f:
             mapping_list.save(f)
 

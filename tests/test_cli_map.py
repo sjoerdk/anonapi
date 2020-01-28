@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import Mock
 
 from click.testing import CliRunner
@@ -40,8 +41,11 @@ def test_cli_map_add_selection(map_command_runner_mapping_dir,
     assert "fileselection:a_folder/a_file_selection.txt" in map(str, mapping.keys())
 
 
-def test_cli_map(mock_main_runner, mock_cli_base_context):
+def test_cli_map(mock_main_runner, mock_cli_base_context, tmpdir):
     result = mock_main_runner.invoke(entrypoint.cli, "map init", catch_exceptions=False)
+    with open(Path(tmpdir) / 'anon_mapping.csv', 'r') as f:
+        content = f.read()
+
     assert result.exit_code == 0
 
 
