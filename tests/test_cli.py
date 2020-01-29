@@ -184,7 +184,7 @@ def test_cli_job_list(mock_main_runner, mock_requests):
 
 
 def test_cli_job_list_errors(mock_main_runner, mock_requests):
-    """Giving no parameters should yield helpful error string. Not python stacktrace"""
+    """Giving no rows should yield helpful error string. Not python stacktrace"""
     runner = mock_main_runner
     mock_requests.set_response_text(
         text=RequestsMockResponseExamples.REQUIRED_PARAMETER_NOT_SUPPLIED,

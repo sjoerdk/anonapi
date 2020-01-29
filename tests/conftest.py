@@ -9,7 +9,7 @@ from fileselection.fileselection import FileSelectionFolder
 
 from anonapi.context import AnonAPIContext
 from anonapi.client import WebAPIClient, AnonClientTool
-from anonapi.mapper import MappingListFolder, ExampleMappingList
+from anonapi.mapper import MappingFolder, ExampleJobParameterGrid
 from anonapi.objects import RemoteAnonServer
 from anonapi.settings import DefaultAnonClientSettings
 from tests.factories import RequestsMock

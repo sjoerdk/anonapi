@@ -17,7 +17,7 @@ def test_selection_tool(a_file_folder):
 
 
 def test_selection_tool_parameters(a_file_folder):
-    """Try out different iteration parameters FileFolder"""
+    """Try out different iteration rows FileFolder"""
 
     folder = a_file_folder
 

@@ -47,7 +47,7 @@ class JobInfo:
         self.files_downloaded = json_raw["files_downloaded"]
         self.files_processed = json_raw["files_processed"]
 
-        # extended parameters that might not be given
+        # extended rows that might not be given
         self.destination_path = json_raw.get('destination_path')
         self.source_anonymizedpatientid = json_raw.get('source_anonymizedpatientid')
         self.source_anonymizedpatientname = json_raw.get(

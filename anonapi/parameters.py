@@ -2,7 +2,7 @@
 which is just a string. Others are more complex, such as 'source' which has its own
 type family and validation.
 
-Put these in separate module because parameters appear in several guises throughout
+Put these in separate module because rows appear in several guises throughout
 the job creation process and I want a unified type
 
 """
@@ -51,55 +51,14 @@ class SourceIdentifier:
         return SourceIdentifierFactory().get_source_identifier_for_key(identifier)
 
 
-class PathIdentifier(SourceIdentifier):
-    """Refers to a path
-    """
-
-    key = "path"
-
-    def __init__(self, identifier):
-        """
-
-        Parameters
-        ----------
-        identifier: pathlike
-        """
-        super().__init__(Path(identifier))
-
-
-class ObjectIdentifier(SourceIdentifier):
-    """An identifier that can be translated from and to a python object
-
-    """
-    associated_object_class = None
-
-    @classmethod
-    def from_object(cls, object):
-        """
-
-        Returns
-        -------
-        ObjectIdentifier instance or child of ObjectIdentifier instance
-        """
-        raise NotImplemented
-
-    def to_object(self):
-        """
-        Returns
-        -------
-        instance of self.object_class corresponding to this identifier
-        """
-
-
-class FileSelectionFolderIdentifier(PathIdentifier):
-    """A file selection in a specific folder. Selection file name is default.
-    Folder can be relative or absolute
+class FolderIdentifier(SourceIdentifier):
+    """Refers to a complete folder
     """
 
     key = "folder"
 
 
-class FileSelectionIdentifier(PathIdentifier, ObjectIdentifier):
+class FileSelectionIdentifier(SourceIdentifier):
     """A file selection in a specific file
     """
 
@@ -155,7 +114,7 @@ class SourceIdentifierFactory:
 
     types = [
         SourceIdentifier,
-        FileSelectionFolderIdentifier,
+        FolderIdentifier,
         StudyInstanceUIDIdentifier,
         AccessionNumberIdentifier,
         FileSelectionIdentifier
@@ -194,15 +153,16 @@ class SourceIdentifierFactory:
                 return id_type(identifier=identifier)
 
         raise UnknownSourceIdentifierException(
-            f"Unknown identifier '{key}'. Known identifiers: {[x.key for x in self.types]}"
+            f"Unknown identifier '{key}'. Known identifiers: "
+            f"{[x.key for x in self.types]}"
         )
 
-    def get_source_identifier_for_obj(self, object):
+    def get_source_identifier_for_obj(self, object_in):
         """Generate an identifier for a given object
 
         Parameters
         ----------
-        object: obj
+        object_in: obj
             Object instance to get identifier for
 
         Raises
@@ -222,23 +182,24 @@ class SourceIdentifierFactory:
         object_identifier_class = None
         for x in self.types:
             try:
-                if x.associated_object_class == type(object):
+                if x.associated_object_class == type(object_in):
                     object_identifier_class = x
                     break
             except AttributeError:
                 continue
         if not object_identifier_class:
-            raise UnknownObjectException(f"Unknown object: {object}. I can't create an"
-                                f"identifier for this")
+            raise UnknownObjectException(
+                f"Unknown object: {object_in}. I can't create an"
+                f"identifier for this")
 
-        return object_identifier_class.from_object(object)
+        return object_identifier_class.from_object(object_in)
 
 
 class Parameter:
     """A typed, human readable,  persistable key-value pair that means something
     in anonapi
 
-    Made this because the mapping csv file contains parameters in different
+    Made this because the mapping csv file contains rows in different
     forms. I still want to treat them the same
     """
 
@@ -247,7 +208,7 @@ class Parameter:
 
     def __init__(self, value=None):
         if not value:
-            self.value = None  # parameters can be empty, regardless of the type
+            self.value = None  # rows can be empty, regardless of the type
         else:
             self.value = self.value_type(value)
 
@@ -257,6 +218,9 @@ class Parameter:
         else:
             value = self.value
         return f"{self.field_name},{value}"
+    
+    def has_value(self):
+        return bool(self.value)
 
 
 class PatientID(Parameter):
@@ -285,12 +249,21 @@ class SourceIdentifierParameter(Parameter):
     value_type = SourceIdentifier
     field_name = 'source'
 
-    def __init__(self, value):
-        self.value = SourceIdentifier.cast_to_subtype(value)
+    def __init__(self, value: str):
+        """
+
+        Parameters
+        ----------
+        value: str
+            Valid source identifier string
+
+        """
+        super(SourceIdentifierParameter, self).__init__()
+        self.value = SourceIdentifier.cast_to_subtype(str(value))
 
 
 class ParameterFactory:
-    """Knows about all sort of parameters and can convert between string and object
+    """Knows about all sort of rows and can convert between string and object
     representation"""
 
     PARAMETER_TYPES = [PatientID, PatientName, Description, PIMSKey, DestinationPath,
@@ -322,6 +295,10 @@ class ParameterFactory:
             raise ParameterParsingError(
                 f"Could split '{string}' into key and value. There should be a "
                 f"comma somewhere.")
+        return cls.parse_from_key_value(key=key, value=value)
+
+    @classmethod
+    def parse_from_key_value(cls, key, value):
         for param_type in cls.PARAMETER_TYPES:
             if param_type.field_name == key:
                 try:
@@ -330,8 +307,15 @@ class ParameterFactory:
                     raise ParameterParsingError(
                         f"Error parsing source identifier:{e}")
         raise ParameterParsingError(
-            f"Could not parse {string} to any known parameter. "
+            f"Could not parse key={key}, value={value} to any known parameter. "
             f"Tried {[x.field_name for x in cls.PARAMETER_TYPES]}")
+
+
+COMMON_JOB_PARAMETERS = [SourceIdentifierParameter, PatientID, PatientName,
+                         Description]
+COMMON_GLOBAL_PARAMETERS = [PIMSKey, DestinationPath]
+
+ALL_PARAMETERS = COMMON_JOB_PARAMETERS + COMMON_GLOBAL_PARAMETERS
 
 
 class ParameterException(AnonAPIException):

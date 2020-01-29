@@ -7,7 +7,7 @@ from pytest import fixture
 
 from anonapi.cli import entrypoint
 from anonapi.cli.map_commands import MapCommandContext, add_selection
-from anonapi.mapper import MappingLoadError, MappingListFolder
+from anonapi.mapper import MappingLoadError, MappingFolder
 from tests.conftest import MockContextCliRunner
 from tests import RESOURCE_PATH
 
@@ -81,7 +81,7 @@ def test_cli_map_info_load_exception(mock_main_runner, monkeypatch):
     def mock_load(x):
         raise MappingLoadError("Test Exception")
 
-    monkeypatch.setattr("anonapi.mapper.MappingList.load", mock_load)
+    monkeypatch.setattr("anonapi.mapper.JobParameterGrid.load", mock_load)
     runner = CliRunner()
 
     result = runner.invoke(entrypoint.cli, "map status")
@@ -119,14 +119,14 @@ def test_cli_map_delete(mock_main_runner, a_folder_with_mapping):
     """running map info should give you a nice print of contents"""
     mock_main_runner.set_mock_current_dir(a_folder_with_mapping)
 
-    mapping_folder = MappingListFolder(a_folder_with_mapping)
-    assert mapping_folder.has_mapping_list()
+    mapping_folder = MappingFolder(a_folder_with_mapping)
+    assert mapping_folder.has_mapping()
 
     result = mock_main_runner.invoke(entrypoint.cli, "map delete",
                                      catch_exceptions=False)
 
     assert result.exit_code == 0
-    assert not mapping_folder.has_mapping_list()
+    assert not mapping_folder.has_mapping()
 
     # deleting  again will yield nice message
     result = mock_main_runner.invoke(entrypoint.cli, "map delete")

@@ -2,6 +2,7 @@ import pytest
 
 from anonapi.parameters import SourceIdentifier, SourceIdentifierParameter, Parameter, \
     ParameterFactory, ParameterParsingError
+from tests.factories import SourceIdentifierParameterFactory
 
 
 def test_source_identifier_parameter():

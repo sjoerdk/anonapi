@@ -156,12 +156,12 @@ class WebAPIClient:
         return args_in
 
     def get_documentation(self):
-        """ Query the API for info on all functions and parameters.
+        """ Query the API for info on all functions and rows.
 
         Returns
         -------
         dict
-            nested dict with info on all functions and parameters
+            nested dict with info on all functions and rows
 
         Raises
         ------

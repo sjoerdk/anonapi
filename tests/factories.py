@@ -1,28 +1,89 @@
 """ Shared classes used in other tests. For generating test data """
+import itertools
 from itertools import cycle
 from typing import List
 from unittest.mock import Mock
 from requests.models import Response
 import factory
 
-from anonapi.mapper import AnonymizationParameters
-from anonapi.parameters import FileSelectionFolderIdentifier
+from anonapi.parameters import PatientID, PatientName, Description, PIMSKey, \
+    SourceIdentifierParameter, FolderIdentifier, StudyInstanceUIDIdentifier, \
+    FileSelectionIdentifier
 
 
-class AnonymizationParametersFactory(factory.Factory):
+class PatientIDFactory(factory.Factory):
     class Meta:
-        model = AnonymizationParameters
+        model = PatientID
 
-    patient_id = factory.sequence(lambda n: f"patient{n}")
-    patient_name = factory.sequence(lambda n: f"patientName{n}")
-    description = "test description"
+    value = factory.sequence(lambda n: f"patientID{n}")
+
+
+class PatientNameFactory(factory.Factory):
+    class Meta:
+        model = PatientName
+
+    value = factory.sequence(lambda n: f"patientName{n}")
+
+
+class DescriptionFactory(factory.Factory):
+    class Meta:
+        model = Description
+
+    value = factory.sequence(lambda n: f"A description, number {n}")
+
+
+class PIMSKeyFactory(factory.Factory):
+    class Meta:
+        model = PIMSKey
+
+    value = factory.sequence(lambda n: str(100+n))
 
 
 class FileSelectionIdentifierFactory(factory.Factory):
     class Meta:
-        model = FileSelectionFolderIdentifier
+        model = FileSelectionIdentifier
 
     identifier = factory.sequence(lambda n: f"/folder/file{n}")
+
+
+class FolderIdentifierFactory(factory.Factory):
+    class Meta:
+        model = FolderIdentifier
+
+    identifier = factory.sequence(lambda n: f"/folder{n}")
+
+
+class StudyInstanceUIDIdentifierFactory(factory.Factory):
+    class Meta:
+        model = StudyInstanceUIDIdentifier
+
+    identifier = factory.sequence(lambda n: f"123141513523{n}")
+
+
+class SourceIdentifierIterator:
+    classes = [FileSelectionIdentifierFactory,
+               FolderIdentifierFactory,
+               StudyInstanceUIDIdentifierFactory]
+
+    def __iter__(self):
+        self.class_iter = itertools.cycle(self.classes)
+        return self
+
+    def __next__(self):
+        current_class = self.class_iter.__next__()
+        return current_class()
+
+
+class SourceIdentifierParameterFactory(factory.Factory):
+    """Generates rows refer to sources. Uses different
+    subclasses of SourceIdentifier as values
+
+    """
+
+    class Meta:
+        model = SourceIdentifierParameter
+
+    value = factory.Iterator(SourceIdentifierIterator())
 
 
 class RequestMockResponse:
@@ -54,7 +115,7 @@ class RequestsMock:
         self.requests = Mock()  # for keeping track of past requests
 
     def set_response_text(self, text, status_code=200):
-        """Any call to get() or post() will yield a Response() object with the given parameters
+        """Any call to get() or post() will yield a Response() object with the given rows
 
         Parameters
         ----------

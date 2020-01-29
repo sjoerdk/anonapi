@@ -8,10 +8,10 @@ from anonapi.context import AnonAPIContext
 from anonapi.client import APIClientException
 from anonapi.decorators import pass_anonapi_context
 from anonapi.mapper import (
-    MappingListFolder,
-    MappingLoadError, AnonymizationParameters, )
-from anonapi.parameters import SourceIdentifier, PathIdentifier, \
-    FileSelectionFolderIdentifier, FileSelectionIdentifier, PACSResourceIdentifier, \
+    MappingFolder,
+    MappingLoadError)
+from anonapi.parameters import SourceIdentifier, \
+    FolderIdentifier, FileSelectionIdentifier, PACSResourceIdentifier, \
     StudyInstanceUIDIdentifier
 from anonapi.settings import JobDefaultParameters, AnonClientSettingsException
 from click.exceptions import Abort, ClickException
@@ -55,7 +55,7 @@ class CreateCommandsContext:
         self.context = context
 
     def create_job_for_element(self, element: MappingElement):
-        """Create a job for the given source and parameters
+        """Create a job for the given source and rows
 
         Parameters
         ----------
@@ -199,7 +199,7 @@ def make_absolute(elements, root_path):
 def convert_to_fileselection(elements):
     """Convert path element to make them less ambiguous.
 
-    Convert FileSelectionFolderIdentifier (refers to a whole folder, assumes actual file name is default) to
+    Convert FolderIdentifier (refers to a whole folder, assumes actual file name is default) to
     a FileSelectionIdentifier that refers explicitly to a single file. This makes it less vague what the source for
     files actually is
 
@@ -213,7 +213,7 @@ def convert_to_fileselection(elements):
     """
 
     for element in [
-        x for x in elements if type(x.source) == FileSelectionFolderIdentifier
+        x for x in elements if type(x.source) == FolderIdentifier
     ]:
         folder = FileSelectionFolder(path=element.source.identifier)
         element.source = FileSelectionIdentifier(identifier=folder.get_data_file_path())
@@ -232,7 +232,7 @@ def from_mapping(context: CreateCommandsContext, dry_run):
         click.echo("** Dry run, nothing will be sent to server **")
     parser = context.context
     try:
-        mapping = MappingListFolder(parser.current_dir).get_mapping()
+        mapping = MappingFolder(parser.current_dir).get_mapping()
     except MappingLoadError as e:
         click.echo(e)
         return
@@ -243,7 +243,6 @@ def from_mapping(context: CreateCommandsContext, dry_run):
         )
     except AnonClientSettingsException as e:
         raise ClickException(f"{e}. Please use set-defaults te set them")
-        return  # Without these parameters jobs cannot be created. Stop loop
 
     question = (
         f"This will create {len(mapping)} jobs on {parser.get_active_server().name}, for "
@@ -259,7 +258,7 @@ def from_mapping(context: CreateCommandsContext, dry_run):
     for element in elements:
         if dry_run:
             def mock_create(*args, **kwargs):
-                click.echo("create was called with parameters:")
+                click.echo("create was called with rows:")
                 click.echo("\n".join(args))
                 click.echo("\n".join(map(str, kwargs.items())))
                 return {'job_id': -1}
@@ -291,7 +290,7 @@ def set_defaults(context: CreateCommandsContext):
     """Set project name used when creating jobs"""
     job_default_parameters: JobDefaultParameters = context.context.settings.job_default_parameters
     click.echo(
-        "Please set default parameters current value shown in [brackets]. Pressing enter without input will keep"
+        "Please set default rows current value shown in [brackets]. Pressing enter without input will keep"
         "current value"
     )
     try:
@@ -331,20 +330,20 @@ for func in [from_mapping, set_defaults, show_defaults]:
     main.add_command(func)
 
 
-def assert_job_parameters(parameters: AnonymizationParameters):
-    """Make sure all fields in parameters are filled.
+def assert_job_parameters(parameters):
+    """Make sure all fields in rows are filled.
 
-    When read from disk, certain parameters might be None. Fill these.
+    When read from disk, certain rows might be None. Fill these.
 
     Parameters
     ----------
     parameters: AnonymizationParameters
-        parameters object that might have None values
+        rows object that might have None values
 
     Returns
     -------
-    parameters: AnonymizationParameters
-        parameters object where all fields are filled
+    rows: AnonymizationParameters
+        rows object where all fields are filled
     """
 
     if not parameters.patient_name:
@@ -357,7 +356,7 @@ def assert_job_parameters(parameters: AnonymizationParameters):
 
 
 def get_default_parameters(job_default_parameters: JobDefaultParameters):
-    """Make sure default parameters are all present. Raise exception if not
+    """Make sure default rows are all present. Raise exception if not
 
     Parameters
     ----------

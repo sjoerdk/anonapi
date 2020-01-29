@@ -13,8 +13,8 @@ from anonapi.cli.click_types import FileSelectionFileParam
 from anonapi.cli.select_commands import create_dicom_selection_click
 from anonapi.context import AnonAPIContext
 from anonapi.decorators import pass_anonapi_context
-from anonapi.mapper import (MappingListFolder, MappingList, AnonymizationParameters,
-                            MappingLoadError, ExampleMappingList, MapperException,
+from anonapi.mapper import (MappingFolder, JobParameterGrid,
+                            MappingLoadError, ExampleJobParameterGrid, MapperException,
                             Mapping)
 from anonapi.parameters import SourceIdentifierFactory, DestinationPath
 
@@ -24,14 +24,14 @@ class MapCommandContext:
         self.current_path = current_path
 
     def get_current_mapping_folder(self):
-        return MappingListFolder(self.current_path)
+        return MappingFolder(self.current_path)
 
     def get_current_mapping(self):
         """Load mapping from the current directory
 
         Returns
         -------
-        MappingList
+        JobParameterGrid
             Loaded from current dir
 
         Raises
@@ -72,13 +72,13 @@ def status(context: MapCommandContext):
 def init(context: MapCommandContext):
     """Save a default mapping in the current folder"""
     folder = context.get_current_mapping_folder()
-    mapping = Mapping(mapping=ExampleMappingList(),
+    mapping = Mapping(grid=ExampleJobParameterGrid(),
                       options=[DestinationPath(r'\\an\example\path')],
                       description=
                       f"Mapping created {datetime.datetime.now()} "
                       f"by {getpass.getuser()}\n")
-    folder.save_list(mapping)
-    click.echo(f"Initialised example mapping in {mapping.mapping.DEFAULT_FILENAME}")
+    folder.save_mapping(mapping)
+    click.echo(f"Initialised example mapping in {mapping.grid.DEFAULT_FILENAME}")
 
 
 @click.command()
@@ -86,10 +86,10 @@ def init(context: MapCommandContext):
 def delete(context: MapCommandContext):
     """delete mapping in current folder"""
     folder = context.get_current_mapping_folder()
-    if not folder.has_mapping_list():
+    if not folder.has_mapping():
         raise ClickException("No mapping defined in current folder")
         return
-    folder.delete_list()
+    folder.delete_mapping()
     click.echo(f"Removed mapping in current dir")
 
 
@@ -121,7 +121,7 @@ def add_study_folder(context: MapCommandContext, path):
         patient_name=patient_name, patient_id=patient_id, description=description
     )
 
-    context.get_current_mapping_folder().save_list(mapping)
+    context.get_current_mapping_folder().save_mapping(mapping)
     click.echo(f"Done. Added '{path}' to mapping")
 
 
@@ -149,7 +149,7 @@ def add_selection(context: MapCommandContext, selection):
         patient_name=patient_name, patient_id=patient_id, description=description
     )
 
-    context.get_current_mapping_folder().save_list(mapping)
+    context.get_current_mapping_folder().save_mapping(mapping)
     click.echo(f"Done. Added '{identifier}' to mapping")
 
 
@@ -159,7 +159,7 @@ def edit(context: MapCommandContext):
     """Edit the current mapping in OS default editor
     """
     mapping_folder = context.get_current_mapping_folder()
-    if mapping_folder.has_mapping_list():
+    if mapping_folder.has_mapping():
         click.launch(str(mapping_folder.full_path()))
     else:
         click.echo("No mapping file defined in current folder")

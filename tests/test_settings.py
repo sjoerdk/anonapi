@@ -40,7 +40,7 @@ def test_settings_file(test_settings_folder):
 @pytest.fixture
 def test_settings_file_old(test_settings_folder):
     """Copy of a correctly formatted settings file before adding job_default_
-    parameters param"""
+    rows param"""
     return test_settings_folder / "settings_old.yml"
 
 

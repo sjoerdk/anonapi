@@ -4,7 +4,7 @@ import pytest
 
 from anonapi.batch import BatchFolder
 from anonapi.cli.create_commands import main
-from anonapi.mapper import MappingListFolder
+from anonapi.mapper import MappingFolder
 from anonapi.settings import JobDefaultParameters
 from tests.factories import RequestsMockResponseExamples
 
@@ -20,7 +20,7 @@ def mock_main_runner_with_mapping(mock_main_runner, a_folder_with_mapping):
 def mock_from_mapping_runner(mock_main_runner_with_mapping):
     """Mock runner that has everything to make a call to from-mapping work:
     * Mapping defined in current dir
-    * Default job parameters are non-empty"""
+    * Default job rows are non-empty"""
 
     parameters = (
         mock_main_runner_with_mapping.get_context().settings.job_default_parameters
@@ -159,8 +159,8 @@ def test_create_from_mapping_relative_path(
 
     current_dir = str(mock_from_mapping_runner.mock_context.current_dir)
     batch_folder = BatchFolder(current_dir)
-    mapping_folder = MappingListFolder(current_dir)
-    paths_in_mapping = map(str, list(mapping_folder.load_list().keys()))
+    mapping_folder = MappingFolder(current_dir)
+    paths_in_mapping = map(str, list(mapping_folder.load_mapping().keys()))
     # in mapping there should be no mention of the current dir
     assert not any([current_dir in x for x in paths_in_mapping])
     # But in the created jobs the current dir should have been added

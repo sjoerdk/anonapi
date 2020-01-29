@@ -8,112 +8,48 @@ Excel, maybe notepad
 import csv
 import os
 
+from tabulate import tabulate
+
 from anonapi.exceptions import AnonAPIException
-from anonapi.parameters import PatientID, PatientName, Description, PIMSKey, \
-    DestinationPath, FileSelectionFolderIdentifier, FileSelectionIdentifier, \
+from anonapi.parameters import FolderIdentifier, FileSelectionIdentifier, \
     StudyInstanceUIDIdentifier, AccessionNumberIdentifier, SourceIdentifierFactory, \
-    SourceIdentifierParameter, ParameterFactory
+    SourceIdentifierParameter, ParameterFactory, PatientName, PatientID, Description, \
+    ALL_PARAMETERS, ParameterParsingError
 from collections import UserDict, defaultdict
 from io import StringIO
 from pathlib import Path
 from os import path
 
 
-class AnonymizationParameters:
-    """Settings that can be set when creating a job
-
-    Collecting these together in an object why again?
-
-    """
-    # parameter classes
-    PATIENT_ID = PatientID
-    PATIENT_NAME = PatientName
-    DESCRIPTION = Description
-    PIMS_KEY = PIMSKey
-    DESTINATION_PATH = DestinationPath
-
-    parameters = [PATIENT_ID, PATIENT_NAME, DESCRIPTION, PIMS_KEY, DESTINATION_PATH]
-    field_names = [x.field_name for x in parameters]
-
-    def __init__(
-        self, patient_id=None, patient_name=None, description=None, pims_key=None,
-            output_path=None, destination_path=None
-    ):
-        self.patient_id = patient_id
-        self.patient_name = patient_name
-        self.description = description
-        self.pims_key = pims_key
-        self.destination_path = destination_path
-
-    def as_parameters(self):
-        """This object as a list of instantiated Parameter objects.
-
-        Returns
-        -------
-        List[Parameter]
-        """
-        return [self.PATIENT_ID(self.patient_id),
-                self.PATIENT_NAME(self.patient_name),
-                self.DESCRIPTION(self.description),
-                self.PIMS_KEY(self.pims_key),
-                self.DESTINATION_PATH(self.destination_path)]
-
-
-    def as_dict(self, parameters_to_include=None):
-        """
-
-        Parameters
-        ----------
-        parameters_to_include: List[Parameter], optional
-            List of Parameter objects to write. Defaults
-            to all parameters
-
-        Returns
-        -------
-
-        """
-        params = self.as_parameters()
-        if parameters_to_include:
-            params = [x for x in params if type(x) in parameters_to_include]
-        as_dict = {}
-
-        for param in params:
-            value = param.value
-            if not value:
-                value = ""
-            as_dict[param.field_name] = value
-
-        return as_dict
-
-        return params
-
-
 class Mapping:
     """Everything needed for creating anonymization jobs
 
-    Wrapper around MappingList that adds description and mapping-wide settings
+    Wrapper around JobParameterGrid that adds description and mapping-wide settings
     such as output dir
     """
 
     # Headers used in between sections in csv file
     DESCRIPTION_HEADER = "## Description ##"
     OPTIONS_HEADER = "## Options ##"
-    MAPPING_HEADER = "## Mapping ##"
-    ALL_HEADERS = [DESCRIPTION_HEADER, OPTIONS_HEADER, MAPPING_HEADER]
+    GRID_HEADER = "## Mapping ##"
+    ALL_HEADERS = [DESCRIPTION_HEADER, OPTIONS_HEADER, GRID_HEADER]
 
-    def __init__(self, mapping, options, description=None):
+    def __init__(self, grid, options=None, description=""):
         """
 
         Parameters
         ----------
-        mapping: MappingList
-            The per-job mapping table
-        options: List[Parameter]
-            List of parameters that have been set for the entire mapping
+        grid: JobParameterGrid
+            The per-job table of parameters
+        options: List[Parameter], optional
+            List of rows that have been set for the entire mapping. Defaults to empty
         description: str, optional
-            Human readable description of this mapping. Can contain newline chars
+            Human readable description of this mapping. Can contain newline chars.
+            Defaults to empty string
         """
-        self.mapping = mapping
+        self.grid = grid
+        if options is None:
+            options = []
         self.options = options
         self.description = description
 
@@ -130,9 +66,9 @@ class Mapping:
         f.write(os.linesep)
 
         # write mapping
-        f.write(self.MAPPING_HEADER + os.linesep)
+        f.write(self.GRID_HEADER + os.linesep)
         mapping_content = StringIO()
-        self.mapping.save(mapping_content)
+        self.grid.save(mapping_content)
         mapping_content.seek(0)
         f.write(mapping_content.read())
 
@@ -151,9 +87,9 @@ class Mapping:
         option_lines = [x for x in option_lines if x]  # remove empty lines
         options = [ParameterFactory.parse_from_string(line) for line in option_lines]
 
-        mapping_content = StringIO("".join(sections[cls.MAPPING_HEADER]))
-        mapping = MappingList.load(mapping_content)
-        return cls(mapping=mapping,
+        grid_content = StringIO("".join(sections[cls.GRID_HEADER]))
+        grid = JobParameterGrid.load(grid_content)
+        return cls(grid=grid,
                    options=options,
                    description=description)
 
@@ -199,56 +135,66 @@ class Mapping:
 
         return collected
 
+    def rows(self):
+        """All parameters for each row. This includes the parameters in the
+        grid as well as the mapping-wide parameters in the options section.
 
-class MappingList(UserDict):
-    """List of mappings that can be read from and saved to disk
+        Grid parameters overrule mapping-wide parameters
+
+        Returns
+        -------
+        generator
+            yielding List[Parameter] for each row in grid
+        """
+        rows = []
+        for grid_row in self.grid.rows:
+            row_dict = {type(x): x for x in self.options}
+            row_dict.update({type(x): x for x in grid_row})
+            rows.append(list(row_dict.values()))
+        return rows
+
+
+class JobParameterGrid:
+    """A persistable 2D grid of job rows. Each row belongs to one job
 
     """
 
-    DEFAULT_FILENAME = "anon_mapping.csv"
-
-    def __init__(self, mapping):
+    def __init__(self, rows):
         """
 
         Parameters
         ----------
-        mapping: Dict[SourceIdentifier, AnonymizationParameters]
-            Initialize mapping with these dicts
-
+        rows: List[List[Parameter]]
         """
-        self.data = mapping
 
-    def save(self, f, parameters_to_write=AnonymizationParameters.parameters):
-        """
+        self.rows = rows
+
+    def save(self, f):
+        """Write rows as CSV. Will omit columns where each value is none
 
         Parameters
         ----------
         f: stream
             Write to this
-        parameters_to_write: List[str], optional
-            List of strings from AnonymizationParameters.field_names.
-            Defaults to all parameters
 
         """
+        # Which parameter types are there?
+        params = self.parameter_types()
 
         writer = csv.DictWriter(
             f,
             delimiter=",",
             quotechar='"',
             quoting=csv.QUOTE_MINIMAL,
-            fieldnames=[x.field_name for x in ([SourceIdentifierParameter] + parameters_to_write)],
+            fieldnames=[x.field_name for x in params],
         )
         writer.writeheader()
-        for identifier, parameters in self.data.items():
-            fields = {
-                "source": str(identifier),
-                **parameters.as_dict(parameters_to_include=parameters_to_write),
-            }
-            writer.writerow(fields)
+        for row in self.rows:
+            writer.writerow({x.field_name: x.value for x in row})
 
     @classmethod
     def load(cls, f):
-        """Load a MappingList instance from open file handle
+        """Load a  instance from open file handle
 
         Parameters
         ----------
@@ -257,7 +203,7 @@ class MappingList(UserDict):
 
         Returns
         -------
-        MappingList
+        JobParameterGrid
             Loaded from data in f
 
         Raises
@@ -267,22 +213,33 @@ class MappingList(UserDict):
 
         """
         reader = csv.DictReader(f)
-        id_factory = SourceIdentifierFactory()
-        mapping = {}
-        for row in reader:
-            try:
-                source = id_factory.get_source_identifier_for_key(row["source"])
-            except KeyError as e:
-                raise MappingLoadError(
-                    f"Could not find column with header 'source'. This is required."
-                )
-            # Read in parameters. If they are missing from input set them to None
-            parameters = {
-                x: row.get(x, None) for x in AnonymizationParameters.field_names
-            }
+        parameters = []
+        try:
+            for row in reader:
+                parameters.append([ParameterFactory.parse_from_key_value(key, val)
+                                   for key, val in row.items()])
 
-            mapping[source] = AnonymizationParameters(**parameters)
-        return cls(mapping)
+        except ParameterParsingError as e:
+            raise MappingLoadError(
+                f"Problem parsing '{row}': {e}"
+            )
+
+        return cls(parameters)
+
+    def parameter_types(self):
+        """Sorted list of all classes of Parameter found in this list
+
+        Useful if you want to make a nice table for example
+
+        Returns
+        -------
+        List[class]
+            Each distinct class of Parameter, ordered in the same order as
+            rows.ALL_PARAMETERS
+
+        """
+        types = set(type(param) for row in self.rows for param in row)
+        return [x for x in ALL_PARAMETERS if x in types]
 
     def to_table_string(self):
         """A source - patient_id table with a small header
@@ -290,28 +247,31 @@ class MappingList(UserDict):
         Returns
         -------
         str:
-            Nice string representation of this list, 80 chars wide, truncated if needed
+            Nice string representation of this list, 80 chars wide, truncated if
+            needed
 
         """
+        # remember parameter list can be sparse
+        table = defaultdict(list)
+        types = [SourceIdentifierParameter, PatientID]
 
-        header = (
-            f"Mapping with {len(self)} entries\n"
-            "source                                             patient_id\n"
-            "--------------------------------------------------------------------------------"
-        )
-        info_string = header
+        for row in self.rows:
+            typed_row = {type(x): x for x in row}
+            for param_type in types:
+                try:
+                    instance = typed_row[param_type]
+                except KeyError:
+                    instance = param_type()
+                table[param_type.field_name].append(instance.value)
+        output = f"Parameter grid with {len(self.rows)} rows:\n\n"
+        output += tabulate(table, headers='keys', tablefmt='simple')
+        return output
 
-        for x, y in self.items():
-            info_line = f"{str(x)[-40:]:<50} {y.patient_id[-40:]:<30} "
-            info_string += "\n" + info_line
 
-        return info_string
+class MappingFolder:
+    """Folder that might contain a mapping.
 
-
-class MappingListFolder:
-    """Folder that might contain a mapping list.
-
-    Uses a single default filename that it expects mapping list to be saved under.
+    Uses a single default filename that it expects mapping to be saved under.
 
     """
 
@@ -379,25 +339,26 @@ class MappingListFolder:
             raise MapperException("Cannot make absolute path absolute")
         return self.folder_path / Path(path)
 
-    def has_mapping_list(self):
-        """Is there a default mapping list defined in this folder?"""
+    def has_mapping(self):
+        """Is there a mapping file in this folder?"""
         return self.full_path().exists()
 
-    def save_list(self, mapping_list):
+    def save_mapping(self, mapping_list):
         with open(self.full_path(), "w") as f:
             mapping_list.save(f)
 
-    def load_list(self):
-        """
+    def load_mapping(self):
+        """Load Mapping from default location in this folder
 
         Returns
         -------
+        Mapping
 
         """
         with open(self.full_path(), "r") as f:
-            return MappingList.load(f)
+            return Mapping.load(f)
 
-    def delete_list(self):
+    def delete_mapping(self):
         os.remove(self.full_path())
 
     def get_mapping(self):
@@ -405,7 +366,7 @@ class MappingListFolder:
 
         Returns
         -------
-        MappingList
+        JobParameterGrid
             Loaded from current dir
 
         Raises
@@ -417,68 +378,46 @@ class MappingListFolder:
 
         try:
             with open(self.full_path(), "r") as f:
-                return MappingList.load(f)
+                return Mapping.load(f)
         except FileNotFoundError:
             raise MappingLoadError("No mapping defined in current directory")
         except MapperException as e:
             raise MappingLoadError(f"Error loading mapping: {e}")
 
 
-def get_example_mapping_list():
-    mapping = {
-        FileSelectionFolderIdentifier(
-            identifier=path.sep.join(["example", "folder1"])
-        ): AnonymizationParameters(
-            patient_name="Patient1",
-            patient_id="12345",
-            description="An optional description for patient 1",
-        ),
-        FileSelectionFolderIdentifier(
-            identifier=path.sep.join(["example", "folder2"])
-        ): AnonymizationParameters(
-            patient_name="Patient2",
-            patient_id="23456",
-            description="An optional description for patient 2",
-        ),
-    }
-    return MappingList(mapping=mapping)
-
-
-class ExampleMappingList(MappingList):
+class ExampleJobParameterGrid(JobParameterGrid):
     """A mapping list with some example content. Gives an overview of possible
      identifiers
 
     """
 
     def __init__(self):
-        mapping = {
-            FileSelectionFolderIdentifier(
-                identifier=path.sep.join(["example", "folder1"])
-            ): AnonymizationParameters(
-                patient_name="Patient1",
-                patient_id="001",
-                description="All files from folder1",
-            ),
-            StudyInstanceUIDIdentifier(
-                "123.12121212.12345678"
-            ): AnonymizationParameters(
-                patient_name="Patient2",
-                patient_id="002",
-                description="A study which should be retrieved from PACS, "
-                            "identified by StudyInstanceUID",
-            ),
-            AccessionNumberIdentifier("12345678.1234567"): AnonymizationParameters(
-                patient_name="Patient3",
-                patient_id="003",
-                description="A study which should be retrieved from PACS, "
-                            "identified by AccessionNumber",
-            ),
-            FileSelectionIdentifier(
-                Path("folder2/fileselection.txt")): AnonymizationParameters(
-                    patient_name="Patient4", patient_id="004",
-                    description="A selection of files in folder2")
-        }
-        super().__init__(mapping=mapping)
+        grid = [
+            [SourceIdentifierParameter(
+                FolderIdentifier(identifier=path.sep.join(["example", "folder1"]))),
+             PatientName("Patient1"),
+             PatientID("001"),
+             Description("All files from folder1")],
+
+            [SourceIdentifierParameter(
+                StudyInstanceUIDIdentifier("123.12121212.12345678")),
+             PatientName("Patient2"), PatientID("002"),
+             Description("A study which should be retrieved from PACS, "
+                       "identified by StudyInstanceUID")],
+
+            [SourceIdentifierParameter(AccessionNumberIdentifier("12345678.1234567")),
+             PatientName("Patient3"),
+             PatientID("003"),
+             Description("A study which should be retrieved from PACS, "
+                         "identified by AccessionNumber")],
+
+            [SourceIdentifierParameter(
+                FileSelectionIdentifier(Path("folder2/fileselection.txt"))),
+                PatientName("Patient4"), PatientID("004"),
+                Description("A selection of files in folder2")]
+            ]
+
+        super().__init__(grid=grid)
 
 
 class MapperException(AnonAPIException):
