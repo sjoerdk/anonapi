@@ -42,7 +42,8 @@ def test_cli_map_add_selection(map_command_runner_mapping_dir,
 
 
 def test_cli_map(mock_main_runner, mock_cli_base_context, tmpdir):
-    result = mock_main_runner.invoke(entrypoint.cli, "map init", catch_exceptions=False)
+    result = mock_main_runner.invoke(entrypoint.cli, "map init",
+                                     catch_exceptions=False)
     with open(Path(tmpdir) / 'anon_mapping.csv', 'r') as f:
         content = f.read()
 

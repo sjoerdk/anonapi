@@ -78,7 +78,7 @@ def init(context: MapCommandContext):
                       f"Mapping created {datetime.datetime.now()} "
                       f"by {getpass.getuser()}\n")
     folder.save_mapping(mapping)
-    click.echo(f"Initialised example mapping in {mapping.grid.DEFAULT_FILENAME}")
+    click.echo(f"Initialised example mapping in {folder.DEFAULT_FILENAME}")
 
 
 @click.command()

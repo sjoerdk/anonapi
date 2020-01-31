@@ -392,7 +392,7 @@ class ExampleJobParameterGrid(JobParameterGrid):
     """
 
     def __init__(self):
-        grid = [
+        rows = [
             [SourceIdentifierParameter(
                 FolderIdentifier(identifier=path.sep.join(["example", "folder1"]))),
              PatientName("Patient1"),
@@ -417,7 +417,7 @@ class ExampleJobParameterGrid(JobParameterGrid):
                 Description("A selection of files in folder2")]
             ]
 
-        super().__init__(grid=grid)
+        super().__init__(rows=rows)
 
 
 class MapperException(AnonAPIException):

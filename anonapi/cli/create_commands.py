@@ -46,8 +46,8 @@ class MappingElement:
 
 
 class CreateCommandsContext:
-    """Passed to all methods in the create group. Contains some additional methods over
-     general context instance
+    """Passed to all methods in the create group. Contains some additional methods
+    over general context instance
 
     """
 
@@ -199,9 +199,9 @@ def make_absolute(elements, root_path):
 def convert_to_fileselection(elements):
     """Convert path element to make them less ambiguous.
 
-    Convert FolderIdentifier (refers to a whole folder, assumes actual file name is default) to
-    a FileSelectionIdentifier that refers explicitly to a single file. This makes it less vague what the source for
-    files actually is
+    Convert FolderIdentifier (refers to a whole folder, assumes actual file name
+    is default) to a FileSelectionIdentifier that refers explicitly to a single
+    file. This makes it less vague what the source for files actually is
 
     Parameters
     ----------
