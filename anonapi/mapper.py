@@ -53,6 +53,9 @@ class Mapping:
         self.options = options
         self.description = description
 
+    def __len__(self):
+        return len(self.grid)
+
     def save(self, f):
         # write description
         f.write(self.DESCRIPTION_HEADER + os.linesep)
@@ -143,8 +146,7 @@ class Mapping:
 
         Returns
         -------
-        generator
-            yielding List[Parameter] for each row in grid
+            List[Parameter] for each row in grid
         """
         rows = []
         for grid_row in self.grid.rows:
@@ -152,6 +154,17 @@ class Mapping:
             row_dict.update({type(x): x for x in grid_row})
             rows.append(list(row_dict.values()))
         return rows
+
+    def add_row(self, parameters):
+        """Add the given parameters in a new row in this mapping
+
+        Parameters
+        ----------
+        parameters: List[Parameter]
+            The parameters to create one job
+
+        """
+        self.grid.rows.append(parameters)
 
 
 class JobParameterGrid:
@@ -168,6 +181,9 @@ class JobParameterGrid:
         """
 
         self.rows = rows
+
+    def __len__(self):
+        return len(self.rows)
 
     def save(self, f):
         """Write rows as CSV. Will omit columns where each value is none

@@ -38,7 +38,8 @@ def test_cli_map_add_selection(map_command_runner_mapping_dir,
 
     mapping = map_command_runner_mapping_dir.mock_context.get_current_mapping()
     assert len(mapping) == 21
-    assert "fileselection:a_folder/a_file_selection.txt" in map(str, mapping.keys())
+    assert "fileselection:a_folder/a_file_selection.txt" in\
+           ''.join([str(x) for y in mapping.rows() for x in y])
 
 
 def test_cli_map(mock_main_runner, mock_cli_base_context, tmpdir):
