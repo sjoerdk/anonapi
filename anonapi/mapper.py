@@ -166,6 +166,17 @@ class Mapping:
         """
         self.grid.rows.append(parameters)
 
+    def to_string(self):
+        """Human readable multi-line description of this mapping
+
+        Returns
+        -------
+        str
+        """
+        output = self.description
+        output += "\n" + self.grid.to_table_string()
+        return output
+
 
 class JobParameterGrid:
     """A persistable 2D grid of job rows. Each row belongs to one job

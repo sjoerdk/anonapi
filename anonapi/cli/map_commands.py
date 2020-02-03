@@ -63,7 +63,7 @@ def status(context: MapCommandContext):
     """Show mapping in current directory"""
     try:
         mapping = context.get_current_mapping()
-        click.echo(mapping.to_table_string())
+        click.echo(mapping.to_string())
     except MappingLoadError as e:
         raise ClickException(e)
 
