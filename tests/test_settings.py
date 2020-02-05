@@ -118,5 +118,3 @@ def test_settings_load_old(test_settings_file_old):
     assert settings.job_default_parameters is not None
     assert len(settings.servers) == 2
     assert str(settings) == f"Settings at {str(test_settings_file_old)}"
-
-

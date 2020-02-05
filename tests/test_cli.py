@@ -32,8 +32,9 @@ def anonapi_mock_cli_with_batch(anonapi_mock_cli):
 @pytest.fixture
 def mock_main_runner_with_batch(mock_main_runner):
     context = mock_main_runner.get_context()
-    batch = JobBatch(job_ids=["1000", "1002", "5000", "100000"],
-                     server=context.get_active_server(), )
+    batch = JobBatch(
+        job_ids=["1000", "1002", "5000", "100000"], server=context.get_active_server(),
+    )
     context.get_batch = lambda: batch  # set current batch to mock batch
     return mock_main_runner
 
@@ -56,7 +57,9 @@ def mock_requests(monkeypatch):
 def mock_anonapi_current_dir(anonapi_mock_cli, tmpdir):
     """Anonapi instance with a tempdir current dir. So you can create,
     read files in 'current dir'"""
-    anonapi_mock_cli.current_dir = str(tmpdir)  # make mock_context thinks tmpdir is its working dir
+    anonapi_mock_cli.current_dir = str(
+        tmpdir
+    )  # make mock_context thinks tmpdir is its working dir
     return anonapi_mock_cli
 
 
@@ -200,8 +203,9 @@ def test_command_line_tool_activate_server(mock_main_runner, mock_requests):
     runner = mock_main_runner
     context = mock_main_runner.get_context()
     assert context.get_active_server().name == "testserver"
-    result = runner.invoke(entrypoint.cli, "server activate testserver2",
-                           catch_exceptions=False)
+    result = runner.invoke(
+        entrypoint.cli, "server activate testserver2", catch_exceptions=False
+    )
     assert "Set active server to" in result.output
     assert context.get_active_server().name == "testserver2"
 
@@ -469,15 +473,15 @@ def test_cli_batch_status_extended(mock_main_runner, mock_requests):
     mock_requests.set_response_text(
         text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_EXTENDED
     )
-    result = runner.invoke(entrypoint.cli, "batch status --patient-name",
-                           catch_exceptions=False)
+    result = runner.invoke(
+        entrypoint.cli, "batch status --patient-name", catch_exceptions=False
+    )
     assert all(
         text in result.output for text in ["1982", "DONE", "1001", "1002", "1003"]
     )
 
     # without the flag this should not be shown
-    result = runner.invoke(entrypoint.cli, "batch status",
-                           catch_exceptions=False)
+    result = runner.invoke(entrypoint.cli, "batch status", catch_exceptions=False)
     assert "1982" not in result.output
 
 
@@ -532,11 +536,12 @@ def test_cli_batch_show_errors(mock_main_runner_with_batch, mock_requests):
 
     runner = mock_main_runner_with_batch
     mock_requests.set_response_text(
-        text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST_WITH_ERROR)
+        text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST_WITH_ERROR
+    )
 
     result = runner.invoke(entrypoint.cli, "batch show-error")
     assert result.exit_code == 0
-    assert 'Terrible error'in result.output
+    assert "Terrible error" in result.output
 
 
 def test_cli_batch_reset_error(mock_main_runner_with_batch, mock_requests):

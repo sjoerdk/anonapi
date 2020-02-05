@@ -7,9 +7,19 @@ from unittest.mock import Mock
 from requests.models import Response
 import factory
 
-from anonapi.parameters import PatientID, PatientName, Description, PIMSKey, \
-    SourceIdentifierParameter, FolderIdentifier, StudyInstanceUIDIdentifier, \
-    FileSelectionIdentifier, DestinationPath, RootSourcePath, Project
+from anonapi.parameters import (
+    PatientID,
+    PatientName,
+    Description,
+    PIMSKey,
+    SourceIdentifierParameter,
+    FolderIdentifier,
+    StudyInstanceUIDIdentifier,
+    FileSelectionIdentifier,
+    DestinationPath,
+    RootSourcePath,
+    Project,
+)
 
 
 class PatientIDFactory(factory.Factory):
@@ -38,7 +48,8 @@ class RootSourcePathFactory(factory.Factory):
         model = RootSourcePath
 
     value = factory.sequence(
-        lambda n: PureWindowsPath(f"\\\\server\\someshare\\folder{n}"))
+        lambda n: PureWindowsPath(f"\\\\server\\someshare\\folder{n}")
+    )
 
 
 class DescriptionFactory(factory.Factory):
@@ -59,7 +70,7 @@ class PIMSKeyFactory(factory.Factory):
     class Meta:
         model = PIMSKey
 
-    value = factory.sequence(lambda n: str(100+n))
+    value = factory.sequence(lambda n: str(100 + n))
 
 
 class FileSelectionIdentifierFactory(factory.Factory):
@@ -84,9 +95,11 @@ class StudyInstanceUIDIdentifierFactory(factory.Factory):
 
 
 class SourceIdentifierIterator:
-    classes = [FileSelectionIdentifierFactory,
-               FolderIdentifierFactory,
-               StudyInstanceUIDIdentifierFactory]
+    classes = [
+        FileSelectionIdentifierFactory,
+        FolderIdentifierFactory,
+        StudyInstanceUIDIdentifierFactory,
+    ]
 
     def __iter__(self):
         self.class_iter = itertools.cycle(self.classes)
@@ -264,7 +277,7 @@ class RequestsMockResponseExamples:
         '_type": "PATH", "source_anonymizedpatientid": "1983", "source_'
         'anonymizedpatientname": "1983", "source_pims_keyfile_id": null, '
         '"source_name": null, "source_path": "fileselection:\\\\\\\\umcsanfsclp0'
-        '1\\\\radng_ctarchive\\\\clinical_archive\\\\5187581\\\\fileselection.'
+        "1\\\\radng_ctarchive\\\\clinical_archive\\\\5187581\\\\fileselection."
         'txt", "source_protocol": 3178, "source_subject": 3178}, "1003": '
         '{"job_id": 1003, "date": "2019-11-26T16:34:08", "user_name": "z428172", '
         '"status": "DONE", "error": " ", "description": "For ticket #8941",'
@@ -277,7 +290,7 @@ class RequestsMockResponseExamples:
         '"source_status": "NEW", "source_type": "PATH", "source_anonymizedpatientid":'
         ' "1984", "source_anonymizedpatientname": "1984", "source_pims_keyfile_'
         'id": null, "source_name": null, "source_path": "fileselection:\\\\\\\\'
-        'umcsanfsclp01\\\\radng_ctarchive\\\\clinical_archive\\\\0572800\\\\'
+        "umcsanfsclp01\\\\radng_ctarchive\\\\clinical_archive\\\\0572800\\\\"
         'fileselection.txt", "source_protocol": 3178, "source_subject": 3178}}'
     )  # Response to 'get_jobs_list_extended'
 

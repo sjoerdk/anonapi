@@ -3,12 +3,25 @@ from pathlib import Path
 import pytest
 
 from anonapi.batch import BatchFolder
-from anonapi.cli.create_commands import main, JobParameterSet, \
-    ParameterMappingException, JobSetValidationError
+from anonapi.cli.create_commands import (
+    main,
+    JobParameterSet,
+    ParameterMappingException,
+    JobSetValidationError,
+)
 from anonapi.mapper import MappingFolder
-from anonapi.parameters import SourceIdentifierParameter, FolderIdentifier, \
-    Description, SourceIdentifier, Parameter, PatientID, PIMSKey, RootSourcePath, \
-    ParameterException, ParameterSet
+from anonapi.parameters import (
+    SourceIdentifierParameter,
+    FolderIdentifier,
+    Description,
+    SourceIdentifier,
+    Parameter,
+    PatientID,
+    PIMSKey,
+    RootSourcePath,
+    ParameterException,
+    ParameterSet,
+)
 from anonapi.settings import JobDefaultParameters
 from tests.factories import RequestsMockResponseExamples
 
@@ -51,13 +64,13 @@ def test_create_from_mapping_no_mapping(mock_main_runner):
     assert "No mapping" in result.output
 
 
-def test_create_from_mapping(mock_from_mapping_runner,
-                             mock_requests_for_job_creation):
+def test_create_from_mapping(mock_from_mapping_runner, mock_requests_for_job_creation):
     """Try from-mapping, creating jobs based on a mapping"""
 
     # Run and answer are you sure 'N'
-    result = mock_from_mapping_runner.invoke(main, "from-mapping", input="N",
-                                             catch_exceptions=False)
+    result = mock_from_mapping_runner.invoke(
+        main, "from-mapping", input="N", catch_exceptions=False
+    )
     assert result.exit_code == 0
     assert "Cancelled" in result.output
     assert mock_requests_for_job_creation.requests.post.call_count == 0
@@ -116,8 +129,7 @@ def test_create_from_mapping_server_error_halfway(
 
 def test_show_set_default_parameters(mock_main_runner):
     # Try to run from-mapping
-    parameters: JobDefaultParameters = \
-        mock_main_runner.get_context().settings.job_default_parameters
+    parameters: JobDefaultParameters = mock_main_runner.get_context().settings.job_default_parameters
     parameters.project_name = "test_project"
     parameters.destination_path = "test_destination"
 
@@ -145,16 +157,22 @@ def test_create_from_mapping_relative_path(
 
     def all_paths(mapping_in):
         """List[str] of all paths in mapping"""
-        return [str(x) for y in mapping_in.rows()
-                for x in y if isinstance(x, SourceIdentifierParameter)]
+        return [
+            str(x)
+            for y in mapping_in.rows()
+            for x in y
+            if isinstance(x, SourceIdentifierParameter)
+        ]
 
     # in mapping there should be no mention of the current dir
-    assert not any([current_dir in x for x in
-                    all_paths(mapping)])
-    expected_root = ParameterSet(mapping.options).get_param_by_type(RootSourcePath).value
+    assert not any([current_dir in x for x in all_paths(mapping)])
+    expected_root = (
+        ParameterSet(mapping.options).get_param_by_type(RootSourcePath).value
+    )
     # But in the created jobs the current dir should have been added
-    assert str(expected_root) in \
-           str(mock_requests_for_job_creation.requests.post.call_args[1]['data']['source_path'])
+    assert str(expected_root) in str(
+        mock_requests_for_job_creation.requests.post.call_args[1]["data"]["source_path"]
+    )
 
 
 def test_create_from_mapping_dry_run(
@@ -198,22 +216,22 @@ def test_create_from_mapping_folder_and_pacs(
 def test_job_parameter_set(all_parameters):
     """Map Parameter objects to their parameter names in job-creation functions"""
     mapped = JobParameterSet(all_parameters).as_kwargs()
-    assert mapped['anon_name'] == 'patientName0'
+    assert mapped["anon_name"] == "patientName0"
 
     # sending an unknown parameter will raise an exception
     class UnknownIdentifier(SourceIdentifier):
         pass
+
     with pytest.raises(ParameterMappingException):
         JobParameterSet(
-            all_parameters +
-            [SourceIdentifierParameter(str(UnknownIdentifier(None)))]).as_kwargs()
+            all_parameters + [SourceIdentifierParameter(str(UnknownIdentifier(None)))]
+        ).as_kwargs()
 
     class UnknownParameter(Parameter):
         pass
 
     with pytest.raises(ParameterMappingException):
-        JobParameterSet(
-            all_parameters + [UnknownParameter()]).as_kwargs()
+        JobParameterSet(all_parameters + [UnknownParameter()]).as_kwargs()
 
 
 def test_job_parameter_set_validate(all_parameters):
@@ -234,11 +252,14 @@ def test_job_parameter_set_defaults():
     """You can set defaults for a parameter set. These are only kept if not
     overwritten """
 
-    param_set = JobParameterSet([PatientID('1234'), PIMSKey('0000')],
-                                default_parameters=[Description('Default')])
-    assert param_set.get_param_by_type(Description).value == 'Default'
+    param_set = JobParameterSet(
+        [PatientID("1234"), PIMSKey("0000")],
+        default_parameters=[Description("Default")],
+    )
+    assert param_set.get_param_by_type(Description).value == "Default"
 
-    param_set2 = JobParameterSet([PatientID('1234'), Description('Overwrite!')],
-                                 default_parameters=[Description('Default')])
-    assert param_set2.get_param_by_type(Description).value == 'Overwrite!'
-
+    param_set2 = JobParameterSet(
+        [PatientID("1234"), Description("Overwrite!")],
+        default_parameters=[Description("Default")],
+    )
+    assert param_set2.get_param_by_type(Description).value == "Overwrite!"

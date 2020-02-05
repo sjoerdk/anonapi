@@ -12,9 +12,17 @@ from anonapi.client import WebAPIClient, AnonClientTool
 from anonapi.mapper import MappingFolder, ExampleJobParameterGrid
 from anonapi.objects import RemoteAnonServer
 from anonapi.settings import DefaultAnonClientSettings
-from tests.factories import RequestsMock, SourceIdentifierParameterFactory, \
-    PatientIDFactory, DescriptionFactory, PIMSKeyFactory, DestinationPathFactory, \
-    PatientNameFactory, RootSourcePathFactory, ProjectFactory
+from tests.factories import (
+    RequestsMock,
+    SourceIdentifierParameterFactory,
+    PatientIDFactory,
+    DescriptionFactory,
+    PIMSKeyFactory,
+    DestinationPathFactory,
+    PatientNameFactory,
+    RootSourcePathFactory,
+    ProjectFactory,
+)
 from tests import RESOURCE_PATH
 
 
@@ -60,7 +68,7 @@ def a_folder_with_mapping(tmpdir):
 
 @fixture
 def a_folder_with_mapping_and_fileselection(a_folder_with_mapping, a_file_selection):
-    target_path = Path(a_folder_with_mapping) / "a_folder" / 'a_file_selection.txt'
+    target_path = Path(a_folder_with_mapping) / "a_folder" / "a_file_selection.txt"
     target_path.parent.mkdir(exist_ok=True)
     shutil.copyfile(a_file_selection, target_path)
     return a_folder_with_mapping, target_path
@@ -103,12 +111,12 @@ def mock_api_context(tmpdir):
     """Context required by many anonapi commands. Will yield a temp folder as
     current_dir"""
     settings = DefaultAnonClientSettings()
-    settings.servers.append(RemoteAnonServer("testserver2",
-                                             "https://hostname_of_api2"))
-    context = AnonAPIContext(client_tool=AnonClientTool(username='test',
-                                                        token='token'),
-                             settings=settings,
-                             current_dir=Path(tmpdir))
+    settings.servers.append(RemoteAnonServer("testserver2", "https://hostname_of_api2"))
+    context = AnonAPIContext(
+        client_tool=AnonClientTool(username="test", token="token"),
+        settings=settings,
+        current_dir=Path(tmpdir),
+    )
     return context
 
 
@@ -117,8 +125,7 @@ def mock_cli_base_context(monkeypatch, mock_api_context):
     """entrypoint.cli creates a context from local settings. Stop this and return a
     mock context instead
     """
-    monkeypatch.setattr("anonapi.cli.entrypoint.get_context",
-                        lambda: mock_api_context)
+    monkeypatch.setattr("anonapi.cli.entrypoint.get_context", lambda: mock_api_context)
 
 
 @fixture
@@ -140,7 +147,7 @@ def all_parameters():
         DestinationPathFactory(),
         PatientNameFactory(),
         RootSourcePathFactory(),
-        ProjectFactory()
+        ProjectFactory(),
     ]
 
 

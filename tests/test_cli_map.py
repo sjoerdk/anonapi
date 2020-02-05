@@ -23,38 +23,40 @@ def mock_main_runner_with_mapping(mock_main_runner, a_folder_with_mapping):
 def map_command_runner_mapping_dir(a_folder_with_mapping):
     """A click CLIRunner that MapCommandContext pointing to a dir with some mapping
     """
-    return MockContextCliRunner(mock_context=MapCommandContext(
-        current_path=a_folder_with_mapping))
+    return MockContextCliRunner(
+        mock_context=MapCommandContext(current_path=a_folder_with_mapping)
+    )
 
 
-def test_cli_map_add_selection(map_command_runner_mapping_dir,
-                               a_folder_with_mapping_and_fileselection):
+def test_cli_map_add_selection(
+    map_command_runner_mapping_dir, a_folder_with_mapping_and_fileselection
+):
     """Add a file selection to a mapping."""
     mapping_folder, fileselection_path = a_folder_with_mapping_and_fileselection
 
     runner = map_command_runner_mapping_dir
-    result = runner.invoke(add_selection, str(fileselection_path),
-                           catch_exceptions=False)
+    result = runner.invoke(
+        add_selection, str(fileselection_path), catch_exceptions=False
+    )
     assert result.exit_code == 0
 
     mapping = map_command_runner_mapping_dir.mock_context.get_current_mapping()
     assert len(mapping) == 21
-    assert "fileselection:a_folder/a_file_selection.txt" in\
-           ''.join([str(x) for y in mapping.rows() for x in y])
+    assert "fileselection:a_folder/a_file_selection.txt" in "".join(
+        [str(x) for y in mapping.rows() for x in y]
+    )
 
 
 def test_cli_map(mock_main_runner, mock_cli_base_context, tmpdir):
-    result = mock_main_runner.invoke(entrypoint.cli, "map init",
-                                     catch_exceptions=False)
-    with open(Path(tmpdir) / 'anon_mapping.csv', 'r') as f:
+    result = mock_main_runner.invoke(entrypoint.cli, "map init", catch_exceptions=False)
+    with open(Path(tmpdir) / "anon_mapping.csv", "r") as f:
         content = f.read()
 
     assert result.exit_code == 0
 
 
 def test_cli_map_init(mock_main_runner, mock_cli_base_context, tmpdir):
-    result = mock_main_runner.invoke(entrypoint.cli, "map init",
-                                     catch_exceptions=False)
+    result = mock_main_runner.invoke(entrypoint.cli, "map init", catch_exceptions=False)
     assert result.exit_code == 0
     assert MappingFolder(folder_path=Path(tmpdir)).has_mapping()
     # getting this mapping should not crash
@@ -139,8 +141,9 @@ def test_cli_map_delete(mock_main_runner, a_folder_with_mapping):
     mapping_folder = MappingFolder(a_folder_with_mapping)
     assert mapping_folder.has_mapping()
 
-    result = mock_main_runner.invoke(entrypoint.cli, "map delete",
-                                     catch_exceptions=False)
+    result = mock_main_runner.invoke(
+        entrypoint.cli, "map delete", catch_exceptions=False
+    )
 
     assert result.exit_code == 0
     assert not mapping_folder.has_mapping()

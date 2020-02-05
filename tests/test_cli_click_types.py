@@ -17,11 +17,11 @@ def test_file_selection_file(test_resources):
         param.convert(value="non_existent", param=None, ctx=None)
 
     with pytest.raises(BadParameter):
-        param.convert(value=str(test_resources / "corruptfileselection.txt"),
-                      param=None, ctx=None)
+        param.convert(
+            value=str(test_resources / "corruptfileselection.txt"), param=None, ctx=None
+        )
 
-    selection = param.convert(value=str(test_resources / "fileselection.txt"),
-                              param=None, ctx=None)
+    selection = param.convert(
+        value=str(test_resources / "fileselection.txt"), param=None, ctx=None
+    )
     assert len(selection.selected_paths) == 3
-
-

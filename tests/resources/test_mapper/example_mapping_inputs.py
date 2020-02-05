@@ -4,7 +4,7 @@ Used in test_mapping.
 """
 
 CAN_BE_PARSED_AS_MAPPING = [
-r"""
+    r"""
 ## Description ##
 some comment by some person        
 ## Options ##
@@ -14,8 +14,8 @@ pims_key,555
 source,patient_id,patient_name,description
 folder:/folder/file0,patient0,patientName0,test description        
 """,
-# Lower case titles should not matter
-r"""  
+    # Lower case titles should not matter
+    r"""  
 ## description ##
 some comment by some person        
 ## options ##
@@ -28,18 +28,17 @@ folder:/folder/file0,patient0,patientName0,test description
 ]
 
 
-
 CAN_NOT_BE_PARSED_AS_MAPPING = [
-# Missing description
-r"""## Options ##
+    # Missing description
+    r"""## Options ##
 destination_path,\\someserver\share\folder1
 pims_key,555        
 ## Mapping ##
 source,patient_id,patient_name,description
 folder:/folder/file0,patient0,patientName0,test description        
 """,
-# mistyped description
-r"""  
+    # mistyped description
+    r"""  
 ## Desc ##
 some comment by some person        
 ## options ##
@@ -48,5 +47,5 @@ pims_key,555
 ## Mapping ##
 source,patient_id,patient_name,description
 folder:/folder/file0,patient0,patientName0,test description        
-"""
+""",
 ]

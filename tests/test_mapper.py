@@ -11,10 +11,17 @@ from anonapi.mapper import (
     MapperException,
     Mapping,
 )
-from anonapi.parameters import SourceIdentifierFactory, \
-    UnknownSourceIdentifierException, PIMSKey
-from tests.factories import (SourceIdentifierParameterFactory, PatientIDFactory,
-                             DescriptionFactory, PIMSKeyFactory)
+from anonapi.parameters import (
+    SourceIdentifierFactory,
+    UnknownSourceIdentifierException,
+    PIMSKey,
+)
+from tests.factories import (
+    SourceIdentifierParameterFactory,
+    PatientIDFactory,
+    DescriptionFactory,
+    PIMSKeyFactory,
+)
 from tests import RESOURCE_PATH
 from tests.resources.test_mapper.example_mapping_inputs import (
     CAN_BE_PARSED_AS_MAPPING,
@@ -30,12 +37,13 @@ def a_grid_of_parameters():
     -------
     List[List[Parameter]]
     """
+
     def paramlist():
         return [
             SourceIdentifierParameterFactory(),
             PatientIDFactory(),
             DescriptionFactory(),
-            PIMSKeyFactory(value="")
+            PIMSKeyFactory(value=""),
         ]
 
     return [paramlist() for _ in range(15)]
@@ -79,8 +87,9 @@ def test_mapping_load_save():
     # saved and loaded again should be the same as original
     assert mapping.description == loaded.description
     assert [str(x) for x in mapping.options] == [str(x) for x in loaded.options]
-    assert [str(param) for row in mapping.rows() for param in row] ==\
-           [str(param) for row in loaded.rows() for param in row]
+    assert [str(param) for row in mapping.rows() for param in row] == [
+        str(param) for row in loaded.rows() for param in row
+    ]
 
 
 @pytest.mark.parametrize("content", CAN_BE_PARSED_AS_MAPPING)
@@ -127,16 +136,17 @@ def test_mapping_add_options():
     grid"""
 
     # two rows, one containing a pims key parameter
-    a_grid = [[SourceIdentifierFactory(), PatientIDFactory(), PIMSKey('important!')],
-              [SourceIdentifierFactory(), PatientIDFactory()]]
+    a_grid = [
+        [SourceIdentifierFactory(), PatientIDFactory(), PIMSKey("important!")],
+        [SourceIdentifierFactory(), PatientIDFactory()],
+    ]
 
     # mapping also defines a pims key as option
-    mapping = Mapping(grid=JobParameterGrid(a_grid),
-                      options=[PIMSKey('GeneralKey')])
+    mapping = Mapping(grid=JobParameterGrid(a_grid), options=[PIMSKey("GeneralKey")])
 
     rows = mapping.rows()
-    assert rows[0][0].value == 'important!'
-    assert rows[1][0].value == 'GeneralKey'
+    assert rows[0][0].value == "important!"
+    assert rows[1][0].value == "GeneralKey"
 
 
 def test_source_identifier_factory():
@@ -185,8 +195,7 @@ def test_mapping_list_folder_path_funcs():
     path = RESOURCE_PATH / "test_mapper" / "mapping_list_folder" / "with_mapping"
     assert str(MappingFolder(path).make_relative(path / "foo/bar")) == "foo/bar"
     assert (
-        str(MappingFolder(path).make_relative("already/relative"))
-        == "already/relative"
+        str(MappingFolder(path).make_relative("already/relative")) == "already/relative"
     )
 
     with pytest.raises(MapperException):
@@ -208,8 +217,9 @@ def test_mapping_folder_read_write(tmpdir, a_grid_of_parameters):
     assert mapping_folder.has_mapping()
 
     loaded = mapping_folder.load_mapping()
-    assert [str(x) for row in loaded.rows() for x in row] ==\
-           [str(x) for row in mapping.rows() for x in row]
+    assert [str(x) for row in loaded.rows() for x in row] == [
+        str(x) for row in mapping.rows() for x in row
+    ]
     assert mapping_folder.has_mapping()
 
     mapping_folder.delete_mapping()
