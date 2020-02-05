@@ -10,10 +10,21 @@ from anonapi.client import APIClientException
 from anonapi.decorators import pass_anonapi_context
 from anonapi.exceptions import AnonAPIException
 from anonapi.mapper import MappingFolder, MappingLoadError
-from anonapi.parameters import (SourceIdentifier, StudyInstanceUIDIdentifier,
-                                Parameter, DestinationPath, PatientID, PatientName,
-                                Project, Description, SourceIdentifierParameter,
-                                PIMSKey, ParameterSet, RootSourcePath, PathParameter)
+from anonapi.parameters import (
+    SourceIdentifier,
+    StudyInstanceUIDIdentifier,
+    Parameter,
+    DestinationPath,
+    PatientID,
+    PatientName,
+    Project,
+    Description,
+    SourceIdentifierParameter,
+    PIMSKey,
+    ParameterSet,
+    RootSourcePath,
+    PathParameter,
+)
 from anonapi.settings import JobDefaultParameters, AnonClientSettingsException
 from click.exceptions import Abort, ClickException
 
@@ -84,7 +95,9 @@ class JobParameterSet(ParameterSet):
                     )
             else:
                 try:
-                    dict_out[self.PARAMETER_KEYWORDS[type(parameter)]] = str(parameter.value)
+                    dict_out[self.PARAMETER_KEYWORDS[type(parameter)]] = str(
+                        parameter.value
+                    )
                 except KeyError:
                     raise ParameterMappingException(f"Unknown parameter '{parameter}'")
 
@@ -104,24 +117,28 @@ class JobParameterSet(ParameterSet):
                 raise JobSetValidationError(f"Missing required parameter {required}")
 
         # make sure that all relative paths can be resolved
-        relative_paths = \
-            [x for x in self.get_params_by_type(PathParameter) if x.is_relative()]
+        relative_paths = [
+            x for x in self.get_params_by_type(PathParameter) if x.is_relative()
+        ]
 
         if relative_paths:
             # there are relative paths. Is there a non-relative root root_path?
             root_path: RootSourcePath = self.get_param_by_type(RootSourcePath)
             if not root_path:
-                msg = \
-                    f"Ambiguous relative paths: " \
-                    f"'{[str(x) for x in relative_paths]}'. No source " \
-                    f"root root_path was defined. It is not possible to know where " \
+                msg = (
+                    f"Ambiguous relative paths: "
+                    f"'{[str(x) for x in relative_paths]}'. No source "
+                    f"root root_path was defined. It is not possible to know where "
                     f"this data is on disk"
+                )
                 raise JobSetValidationError(msg)
             elif root_path.is_relative():
-                msg = f"Ambiguous relative paths: " \
-                      f"'{[str(x) for x in relative_paths]}'. Source " \
-                      f"root root_path {root_path} is relative. It is not possible" \
-                      f" to know where this data is on disk"
+                msg = (
+                    f"Ambiguous relative paths: "
+                    f"'{[str(x) for x in relative_paths]}'. Source "
+                    f"root root_path {root_path} is relative. It is not possible"
+                    f" to know where this data is on disk"
+                )
             else:
                 # all OK.
                 pass
@@ -144,7 +161,9 @@ class JobParameterSet(ParameterSet):
         if not root_path:
             raise NoAbsoluteRootPathException("No absolute root root_path defined")
         elif not root_path.is_absolute():
-            raise NoAbsoluteRootPathException(f"Root root_path {root_path} is not absolute")
+            raise NoAbsoluteRootPathException(
+                f"Root root_path {root_path} is not absolute"
+            )
         else:
             return root_path
 
@@ -321,6 +340,7 @@ def from_mapping(context: CreateCommandsContext, dry_run):
     created_job_ids = []
     for job_set in job_sets:
         if dry_run:
+
             def mock_create(*args, **kwargs):
                 click.echo("create was called with rows:")
                 click.echo("\n".join(args))
@@ -401,8 +421,10 @@ class JobCreationException(APIClientException):
 class ParameterMappingException(AnonAPIException):
     pass
 
+
 class NoAbsoluteRootPathException(ParameterMappingException):
     pass
+
 
 class JobSetValidationError(AnonAPIException):
     pass

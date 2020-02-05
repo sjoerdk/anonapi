@@ -11,10 +11,20 @@ import os
 from tabulate import tabulate
 
 from anonapi.exceptions import AnonAPIException
-from anonapi.parameters import FolderIdentifier, FileSelectionIdentifier, \
-    StudyInstanceUIDIdentifier, AccessionNumberIdentifier, SourceIdentifierFactory, \
-    SourceIdentifierParameter, ParameterFactory, PatientName, PatientID, Description, \
-    ALL_PARAMETERS, ParameterParsingError
+from anonapi.parameters import (
+    FolderIdentifier,
+    FileSelectionIdentifier,
+    StudyInstanceUIDIdentifier,
+    AccessionNumberIdentifier,
+    SourceIdentifierFactory,
+    SourceIdentifierParameter,
+    ParameterFactory,
+    PatientName,
+    PatientID,
+    Description,
+    ALL_PARAMETERS,
+    ParameterParsingError,
+)
 from collections import UserDict, defaultdict
 from io import StringIO
 from pathlib import Path
@@ -82,19 +92,23 @@ class Mapping:
 
         sections = cls.parse_sections(f)
 
-        description = "".join([x for x in sections[cls.DESCRIPTION_HEADER]
-                               if x is not '\n' and x is not '\r\n'])
+        description = "".join(
+            [
+                x
+                for x in sections[cls.DESCRIPTION_HEADER]
+                if x is not "\n" and x is not "\r\n"
+            ]
+        )
 
-        option_lines = [x.replace('\r', '').replace('\n', '') for x in
-                        sections[cls.OPTIONS_HEADER]]
+        option_lines = [
+            x.replace("\r", "").replace("\n", "") for x in sections[cls.OPTIONS_HEADER]
+        ]
         option_lines = [x for x in option_lines if x]  # remove empty lines
         options = [ParameterFactory.parse_from_string(line) for line in option_lines]
 
         grid_content = StringIO("".join(sections[cls.GRID_HEADER]))
         grid = JobParameterGrid.load(grid_content)
-        return cls(grid=grid,
-                   options=options,
-                   description=description)
+        return cls(grid=grid, options=options, description=description)
 
     @classmethod
     def parse_sections(cls, f):
@@ -134,7 +148,8 @@ class Mapping:
         # check the results do we have all headers?
         if headers_to_find:
             raise MappingLoadError(
-                f'Could not find required headers "{headers_to_find}"')
+                f'Could not find required headers "{headers_to_find}"'
+            )
 
         return collected
 
@@ -243,13 +258,15 @@ class JobParameterGrid:
         parameters = []
         try:
             for row in reader:
-                parameters.append([ParameterFactory.parse_from_key_value(key, val)
-                                   for key, val in row.items()])
+                parameters.append(
+                    [
+                        ParameterFactory.parse_from_key_value(key, val)
+                        for key, val in row.items()
+                    ]
+                )
 
         except ParameterParsingError as e:
-            raise MappingLoadError(
-                f"Problem parsing '{row}': {e}"
-            )
+            raise MappingLoadError(f"Problem parsing '{row}': {e}")
 
         return cls(parameters)
 
@@ -291,7 +308,7 @@ class JobParameterGrid:
                     instance = param_type()
                 table[param_type.field_name].append(instance.value)
         output = f"Parameter grid with {len(self.rows)} rows:\n\n"
-        output += tabulate(table, headers='keys', tablefmt='simple')
+        output += tabulate(table, headers="keys", tablefmt="simple")
         return output
 
 
@@ -420,29 +437,45 @@ class ExampleJobParameterGrid(JobParameterGrid):
 
     def __init__(self):
         rows = [
-            [SourceIdentifierParameter(
-                FolderIdentifier(identifier=path.sep.join(["example", "folder1"]))),
-             PatientName("Patient1"),
-             PatientID("001"),
-             Description("All files from folder1")],
-
-            [SourceIdentifierParameter(
-                StudyInstanceUIDIdentifier("123.12121212.12345678")),
-             PatientName("Patient2"), PatientID("002"),
-             Description("A study which should be retrieved from PACS, "
-                       "identified by StudyInstanceUID")],
-
-            [SourceIdentifierParameter(AccessionNumberIdentifier("12345678.1234567")),
-             PatientName("Patient3"),
-             PatientID("003"),
-             Description("A study which should be retrieved from PACS, "
-                         "identified by AccessionNumber")],
-
-            [SourceIdentifierParameter(
-                FileSelectionIdentifier(Path("folder2/fileselection.txt"))),
-                PatientName("Patient4"), PatientID("004"),
-                Description("A selection of files in folder2")]
-            ]
+            [
+                SourceIdentifierParameter(
+                    FolderIdentifier(identifier=path.sep.join(["example", "folder1"]))
+                ),
+                PatientName("Patient1"),
+                PatientID("001"),
+                Description("All files from folder1"),
+            ],
+            [
+                SourceIdentifierParameter(
+                    StudyInstanceUIDIdentifier("123.12121212.12345678")
+                ),
+                PatientName("Patient2"),
+                PatientID("002"),
+                Description(
+                    "A study which should be retrieved from PACS, "
+                    "identified by StudyInstanceUID"
+                ),
+            ],
+            [
+                SourceIdentifierParameter(
+                    AccessionNumberIdentifier("12345678.1234567")
+                ),
+                PatientName("Patient3"),
+                PatientID("003"),
+                Description(
+                    "A study which should be retrieved from PACS, "
+                    "identified by AccessionNumber"
+                ),
+            ],
+            [
+                SourceIdentifierParameter(
+                    FileSelectionIdentifier(Path("folder2/fileselection.txt"))
+                ),
+                PatientName("Patient4"),
+                PatientID("004"),
+                Description("A selection of files in folder2"),
+            ],
+        ]
 
         super().__init__(rows=rows)
 

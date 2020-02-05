@@ -13,8 +13,12 @@ class AnonAPIContext:
 
     """
 
-    def __init__(self, client_tool: AnonClientTool, settings: AnonClientSettings,
-                 current_dir: Path = None):
+    def __init__(
+        self,
+        client_tool: AnonClientTool,
+        settings: AnonClientSettings,
+        current_dir: Path = None,
+    ):
         """Create a anonapi command line mock_context
 
         Parameters

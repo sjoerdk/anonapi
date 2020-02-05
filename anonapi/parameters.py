@@ -54,7 +54,6 @@ class SourceIdentifier:
 
 
 class PathIdentifier(SourceIdentifier):
-
     def is_absolute(self):
         return Path(self.identifier).is_absolute()
 
@@ -93,7 +92,7 @@ class FileSelectionIdentifier(PathIdentifier):
             When the fileselection file cannot be found on local disk
 
         """
-        with open(self.identifier, 'r') as f:
+        with open(self.identifier, "r") as f:
             return FileSelectionFile.load(f, datafile=self.identifier)
 
 
@@ -128,7 +127,7 @@ class SourceIdentifierFactory:
         FolderIdentifier,
         StudyInstanceUIDIdentifier,
         AccessionNumberIdentifier,
-        FileSelectionIdentifier
+        FileSelectionIdentifier,
     ]
 
     def get_source_identifier_for_key(self, key):
@@ -187,8 +186,7 @@ class SourceIdentifierFactory:
             Idenfitier for the given object
         """
         # get all indentifier types that can handle translation to and from objects
-        object_types = \
-            [x for x in self.types if hasattr(x, 'associated_object_class')]
+        object_types = [x for x in self.types if hasattr(x, "associated_object_class")]
 
         object_identifier_class = None
         for x in self.types:
@@ -200,8 +198,8 @@ class SourceIdentifierFactory:
                 continue
         if not object_identifier_class:
             raise UnknownObjectException(
-                f"Unknown object: {object_in}. I can't create an"
-                f"identifier for this")
+                f"Unknown object: {object_in}. I can't create an" f"identifier for this"
+            )
 
         return object_identifier_class.from_object(object_in)
 
@@ -215,7 +213,7 @@ class Parameter:
     """
 
     value_type = str
-    field_name = 'parameter'
+    field_name = "parameter"
 
     def __init__(self, value=None):
         if not value:
@@ -235,27 +233,28 @@ class Parameter:
 
 
 class PatientID(Parameter):
-    field_name = 'patient_id'
+    field_name = "patient_id"
 
 
 class PatientName(Parameter):
-    field_name = 'patient_name'
+    field_name = "patient_name"
 
 
 class Description(Parameter):
-    field_name = 'description'
+    field_name = "description"
 
 
 class PIMSKey(Parameter):
-    field_name = 'pims_key'
+    field_name = "pims_key"
 
 
 class Project(Parameter):
-    field_name = 'project'
+    field_name = "project"
 
 
 class PathParameter(Parameter):
     """A parameter that can refer to a root_path on disk or share"""
+
     value_type = PureWindowsPath
 
     def is_absolute(self):
@@ -270,24 +269,24 @@ class PathParameter(Parameter):
             try:
                 self.value.relative_to(root_path)
             except ValueError as e:
-                raise ParameterException(
-                    f"Cannot make this absolute '{e}'")
+                raise ParameterException(f"Cannot make this absolute '{e}'")
         else:
             return type(self)(root_path / self.value)
 
 
 class DestinationPath(PathParameter):
-    field_name = 'destination_path'
+    field_name = "destination_path"
 
 
 class RootSourcePath(PathParameter):
-    field_name = 'root_source_path'
+    field_name = "root_source_path"
 
 
 class SourceIdentifierParameter(PathParameter):
     """Reference to the source of the data"""
+
     value_type = SourceIdentifier
-    field_name = 'source'
+    field_name = "source"
 
     def __init__(self, value: str):
         """
@@ -317,8 +316,7 @@ class SourceIdentifierParameter(PathParameter):
             try:
                 self.value.identifier.relative_to(root_path)
             except ValueError as e:
-                raise ParameterException(
-                    f"Cannot make this absolute '{e}'")
+                raise ParameterException(f"Cannot make this absolute '{e}'")
         else:
             a_copy = SourceIdentifierParameter(value=copy(self.value))
             a_copy.value.identifier = root_path / a_copy.value.identifier
@@ -354,7 +352,8 @@ class ParameterFactory:
         except ValueError:
             raise ParameterParsingError(
                 f"Could split '{string}' into key and value. There should be a "
-                f"comma somewhere.")
+                f"comma somewhere."
+            )
         return cls.parse_from_key_value(key=key, value=value)
 
     @classmethod
@@ -364,11 +363,11 @@ class ParameterFactory:
                 try:
                     return param_type(value)
                 except UnknownSourceIdentifierException as e:
-                    raise ParameterParsingError(
-                        f"Error parsing source identifier:{e}")
+                    raise ParameterParsingError(f"Error parsing source identifier:{e}")
         raise ParameterParsingError(
             f"Could not parse key={key}, value={value} to any known parameter. "
-            f"Tried {[x.field_name for x in ALL_PARAMETERS]}")
+            f"Tried {[x.field_name for x in ALL_PARAMETERS]}"
+        )
 
 
 class ParameterSet:
@@ -377,8 +376,9 @@ class ParameterSet:
 
     """
 
-    def __init__(self, parameters: List[Parameter],
-                 default_parameters: List[Parameter] = None):
+    def __init__(
+        self, parameters: List[Parameter], default_parameters: List[Parameter] = None
+    ):
         """
 
         Parameters
@@ -397,9 +397,7 @@ class ParameterSet:
     def get_param_by_type(self, type_in) -> Optional[Parameter]:
         """Return the first Parameter instance that is (or derives from) type
          or None"""
-        return next(
-            (x for x in self.parameters if isinstance(x, type_in)),
-            None)
+        return next((x for x in self.parameters if isinstance(x, type_in)), None)
 
     def get_params_by_type(self, type_in) -> List[Parameter]:
         """Return all parameters that are type or subtype, or empty list"""
@@ -424,8 +422,7 @@ class ParameterSet:
         return isinstance(parameter.value, PACSResourceIdentifier)
 
 
-COMMON_JOB_PARAMETERS = [SourceIdentifierParameter, PatientID, PatientName,
-                         Description]
+COMMON_JOB_PARAMETERS = [SourceIdentifierParameter, PatientID, PatientName, Description]
 COMMON_GLOBAL_PARAMETERS = [PIMSKey, DestinationPath, RootSourcePath]
 
 ALL_PARAMETERS = COMMON_JOB_PARAMETERS + COMMON_GLOBAL_PARAMETERS
@@ -445,4 +442,3 @@ class UnknownSourceIdentifierException(ParameterException):
 
 class UnknownObjectException(ParameterException):
     pass
-

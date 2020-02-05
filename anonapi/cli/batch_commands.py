@@ -230,6 +230,16 @@ def show_error(parser: AnonAPIContext):
         click.echo("There are no jobs with error status in this batch")
 
 
-for func in [info, status, reset, init, delete, add, remove, cancel, reset_error,
-             show_error]:
+for func in [
+    info,
+    status,
+    reset,
+    init,
+    delete,
+    add,
+    remove,
+    cancel,
+    reset_error,
+    show_error,
+]:
     main.add_command(func)

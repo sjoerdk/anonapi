@@ -7,9 +7,13 @@ import json
 
 from anonapi.exceptions import AnonAPIException
 from anonapi.objects import RemoteAnonServer
-from anonapi.responses import (JobsInfoList, parse_job_infos_response,
-                               APIParseResponseException, format_job_info_list,
-                               JobInfo)
+from anonapi.responses import (
+    JobsInfoList,
+    parse_job_infos_response,
+    APIParseResponseException,
+    format_job_info_list,
+    JobInfo,
+)
 
 
 class WebAPIClient:
@@ -330,8 +334,9 @@ class AnonClientTool:
             info_string = f"Error getting job info from {server}:\n{str(e)}"
         return info_string
 
-    def get_job_info_list(self, server: RemoteAnonServer, job_ids,
-                          get_extended_info=False):
+    def get_job_info_list(
+        self, server: RemoteAnonServer, job_ids, get_extended_info=False
+    ):
         """Get a list of info on the given job ids.
 
         Parameters
@@ -363,8 +368,10 @@ class AnonClientTool:
             api_function_name = "get_jobs_list"
         try:
             return JobsInfoList(
-                [JobInfo(x) for x in client.get(api_function_name,
-                                                job_ids=job_ids).values()]
+                [
+                    JobInfo(x)
+                    for x in client.get(api_function_name, job_ids=job_ids).values()
+                ]
             )
         except APIClientException as e:
             raise ClientToolException(f"Error getting jobs from {server}:\n{str(e)}")
@@ -454,7 +461,7 @@ class AnonClientTool:
         source_path,
         destination_path,
         description,
-        pims_keyfile_id=None
+        pims_keyfile_id=None,
     ):
         """Create a job with data coming from a network root_path
 
@@ -495,8 +502,7 @@ class AnonClientTool:
             anonymizedpatientname=anon_name,
             anonymizedpatientid=anon_id,
             description=description,
-            pims_keyfile_id=pims_keyfile_id
-
+            pims_keyfile_id=pims_keyfile_id,
         )
 
         return info
@@ -510,7 +516,7 @@ class AnonClientTool:
         project_name,
         destination_path,
         description,
-        pims_keyfile_id=None
+        pims_keyfile_id=None,
     ):
         """Create a job with data from a PACS system
 
@@ -551,7 +557,7 @@ class AnonClientTool:
             anonymizedpatientname=anon_name,
             anonymizedpatientid=anon_id,
             description=description,
-            pims_keyfile_id=pims_keyfile_id
+            pims_keyfile_id=pims_keyfile_id,
         )
 
         return info

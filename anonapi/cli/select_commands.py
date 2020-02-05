@@ -108,8 +108,7 @@ def delete(context: SelectCommandContext):
     multiple=True,
     help="Exclude any filepath matching this. * is wildcard.",
 )
-def add(context: SelectCommandContext, pattern, recurse, check_dicom,
-        exclude_pattern):
+def add(context: SelectCommandContext, pattern, recurse, check_dicom, exclude_pattern):
     """Add all files matching given pattern to the selection in the current folder.
 
     Excludes 'fileselection.txt'
