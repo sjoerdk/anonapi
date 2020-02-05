@@ -12,7 +12,9 @@ from anonapi.client import WebAPIClient, AnonClientTool
 from anonapi.mapper import MappingFolder, ExampleJobParameterGrid
 from anonapi.objects import RemoteAnonServer
 from anonapi.settings import DefaultAnonClientSettings
-from tests.factories import RequestsMock
+from tests.factories import RequestsMock, SourceIdentifierParameterFactory, \
+    PatientIDFactory, DescriptionFactory, PIMSKeyFactory, DestinationPathFactory, \
+    PatientNameFactory, RootSourcePathFactory, ProjectFactory
 from tests import RESOURCE_PATH
 
 
@@ -125,6 +127,21 @@ def mock_main_runner(mock_api_context, mock_cli_base_context):
     making sure any operations on current dir are done in a temp folder"""
     runner = AnonAPIContextRunner(mock_context=mock_api_context)
     return runner
+
+
+@fixture
+def all_parameters():
+    """A list containing one instance of each type of parameter"""
+    return [
+        SourceIdentifierParameterFactory(),
+        PatientIDFactory(),
+        DescriptionFactory(),
+        PIMSKeyFactory(),
+        DestinationPathFactory(),
+        PatientNameFactory(),
+        RootSourcePathFactory(),
+        ProjectFactory()
+    ]
 
 
 class MockContextCliRunner(CliRunner):

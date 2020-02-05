@@ -1,6 +1,7 @@
 """ Shared classes used in other tests. For generating test data """
 import itertools
 from itertools import cycle
+from pathlib import Path
 from typing import List
 from unittest.mock import Mock
 from requests.models import Response
@@ -8,7 +9,7 @@ import factory
 
 from anonapi.parameters import PatientID, PatientName, Description, PIMSKey, \
     SourceIdentifierParameter, FolderIdentifier, StudyInstanceUIDIdentifier, \
-    FileSelectionIdentifier
+    FileSelectionIdentifier, DestinationPath, RootSourcePath, Project
 
 
 class PatientIDFactory(factory.Factory):
@@ -25,11 +26,32 @@ class PatientNameFactory(factory.Factory):
     value = factory.sequence(lambda n: f"patientName{n}")
 
 
+class ProjectFactory(factory.Factory):
+    class Meta:
+        model = Project
+
+    value = factory.sequence(lambda n: f"project{n}")
+
+
+class RootSourcePathFactory(factory.Factory):
+    class Meta:
+        model = RootSourcePath
+
+    value = factory.sequence(lambda n: Path(f"/root/folder{n}"))
+
+
 class DescriptionFactory(factory.Factory):
     class Meta:
         model = Description
 
     value = factory.sequence(lambda n: f"A description, number {n}")
+
+
+class DestinationPathFactory(factory.Factory):
+    class Meta:
+        model = DestinationPath
+
+    value = factory.sequence(lambda n: f"/path{n}")
 
 
 class PIMSKeyFactory(factory.Factory):
@@ -43,14 +65,14 @@ class FileSelectionIdentifierFactory(factory.Factory):
     class Meta:
         model = FileSelectionIdentifier
 
-    identifier = factory.sequence(lambda n: f"/folder/file{n}")
+    identifier = factory.sequence(lambda n: f"folder/file{n}")
 
 
 class FolderIdentifierFactory(factory.Factory):
     class Meta:
         model = FolderIdentifier
 
-    identifier = factory.sequence(lambda n: f"/folder{n}")
+    identifier = factory.sequence(lambda n: f"folder{n}")
 
 
 class StudyInstanceUIDIdentifierFactory(factory.Factory):

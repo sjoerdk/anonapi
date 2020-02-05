@@ -135,11 +135,9 @@ class BatchFolder:
 
         Returns
         -------
-        JobBatch
+        Optional(JobBatch)
             If there is a batch defined in this folder
 
-        None
-            If not
         """
         if not self.has_batch():
             return None

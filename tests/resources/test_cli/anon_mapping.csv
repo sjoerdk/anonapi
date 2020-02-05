@@ -5,7 +5,7 @@ another comment
 ## Options ##
 destination_path,\\someserver\share\folder1
 pims_key,555
-
+root_source_path,\\default_source_path
 
 ## Mapping ##
 source,patient_id,patient_name,description

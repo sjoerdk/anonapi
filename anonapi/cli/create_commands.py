@@ -1,72 +1,162 @@
 """Click group and commands for the 'create' subcommand
 """
-import json
+from typing import List, Optional
+
 import click
 
 from anonapi.batch import BatchFolder, JobBatch
 from anonapi.context import AnonAPIContext
 from anonapi.client import APIClientException
 from anonapi.decorators import pass_anonapi_context
-from anonapi.mapper import (
-    MappingFolder,
-    MappingLoadError)
-from anonapi.parameters import SourceIdentifier, \
-    FolderIdentifier, FileSelectionIdentifier, PACSResourceIdentifier, \
-    StudyInstanceUIDIdentifier
+from anonapi.exceptions import AnonAPIException
+from anonapi.mapper import MappingFolder, MappingLoadError
+from anonapi.parameters import (SourceIdentifier, StudyInstanceUIDIdentifier,
+                                Parameter, DestinationPath, PatientID, PatientName,
+                                Project, Description, SourceIdentifierParameter,
+                                PIMSKey, ParameterSet, RootSourcePath, PathParameter)
 from anonapi.settings import JobDefaultParameters, AnonClientSettingsException
 from click.exceptions import Abort, ClickException
-from fileselection.fileselection import FileSelectionFolder
+
 from pathlib import Path
 
 
-class MappingElement:
-    """A single line in a mapping
+class JobParameterSet(ParameterSet):
+    """A collection of parameters that should create one job.
 
-    Notes
-    -----
-    A mapping is a dictionary, but its annoying to pass around key+value"""
+    Offers validation and mapping to job-creation function keywords
+    """
 
-    def __init__(self, source, parameters):
+    # keywords to use for each Parameter.
+    PARAMETER_KEYWORDS = {
+        DestinationPath: "destination_path",
+        PatientID: "anon_id",
+        PatientName: "anon_name",
+        Project: "project_name",
+        Description: "description",
+        PIMSKey: "pims_keyfile_id",
+    }
+
+    # these types of parameters are never sent to a function directly. They
+    # should be ignored when casting to kwargs
+    NON_KEYWORD_PARAMETERS = [RootSourcePath]
+
+    @classmethod
+    def is_non_keyword(cls, parameter):
+        """Is this parameter of a type that is never sent as a parameter directly?"""
+        return any(isinstance(parameter, x) for x in cls.NON_KEYWORD_PARAMETERS)
+
+    def get_source(self) -> Optional[SourceIdentifierParameter]:
+        """Get the parameter indicating the source of the data"""
+        return self.get_param_by_type(SourceIdentifierParameter)
+
+    def as_kwargs(self):
+        """Parameters as keyword arguments
+
+        Raises
+        ------
+        ParameterMappingException
+            If not all parameters can be mapped
+
+        Returns
+        -------
+        Dict[str: Parameter]
+            Job creation function parameter: Parameter dict
+            This can be put into a creation function with **as_kwargs(params)
+
+        """
+        dict_out = {}
+        for parameter in self.parameters:
+            if self.is_non_keyword(parameter):
+                # This parameter should not be included in kwargs. Skip
+                continue
+            elif self.is_source_identifier(parameter):
+                if self.is_pacs_type(parameter):
+                    dict_out["source_instance_id"] = parameter.value.identifier
+                elif self.is_path_type(parameter):
+                    dict_out["source_path"] = parameter.value.identifier
+                else:
+                    raise ParameterMappingException(
+                        f"Unknown source parameter '{parameter}'"
+                    )
+            else:
+                try:
+                    dict_out[self.PARAMETER_KEYWORDS[type(parameter)]] = parameter.value
+                except KeyError:
+                    raise ParameterMappingException(f"Unknown parameter '{parameter}'")
+
+        return dict_out
+
+    def validate(self):
+        """Assert that this set can be used to create a job
+
+        Raises
+        ------
+        JobSetValidationError
+            If this set has problems or is missing required values
         """
 
-        Parameters
-        ----------
-        source: anonapi.parameters.SourceIdentifier
-        parameters: AnonymizationParameters
-        """
-        self.source = source
-        self.parameters = parameters
+        for required in [SourceIdentifierParameter, DestinationPath, Project]:
+            if not self.get_param_by_type(required):
+                raise JobSetValidationError(f"Missing required parameter {required}")
 
-    def as_dict(self):
-        return {**{"source": str(self.source)}, **self.parameters.as_dict()}
+        # make sure that all relative paths can be resolved
+        relative_paths = \
+            [x for x in self.get_params_by_type(PathParameter) if x.is_relative()]
 
-    def get_description(self):
-        """Human readable description of this element"""
-        return json.dumps(self.as_dict(), indent=2)
+        if relative_paths:
+            # there are relative paths. Is there a non-relative root path?
+            root_path: RootSourcePath = self.get_param_by_type(RootSourcePath)
+            if not root_path:
+                msg = \
+                    f"Ambiguous relative paths: " \
+                    f"'{[str(x) for x in relative_paths]}'. No source " \
+                    f"root path was defined. It is not possible to know where " \
+                    f"this data is on disk"
+                raise JobSetValidationError(msg)
+            elif root_path.is_relative():
+                msg = f"Ambiguous relative paths: " \
+                      f"'{[str(x) for x in relative_paths]}'. Source " \
+                      f"root path {root_path} is relative. It is not possible" \
+                      f" to know where this data is on disk"
+            else:
+                # all OK.
+                pass
 
 
-class CreateCommandsContext:
+class CreateCommandsContext(AnonAPIContext):
     """Passed to all methods in the create group. Contains some additional methods
     over general context instance
 
     """
 
     def __init__(self, context: AnonAPIContext):
-        self.context = context
+        super(CreateCommandsContext, self).__init__(
+            client_tool=context.client_tool,
+            settings=context.settings,
+            current_dir=context.current_dir,
+        )
 
-    def create_job_for_element(self, element: MappingElement):
-        """Create a job for the given source and rows
+    def default_parameters(self) -> List[Parameter]:
+        """Default parameters from settings
+        """
+        defaults: JobDefaultParameters = self.settings.job_default_parameters
+        return [
+            DestinationPath(defaults.destination_path),
+            Project(defaults.project_name),
+        ]
+
+    def create_job_for_element(self, parameters: List[Parameter]):
+        """Create a job for the given parameters
 
         Parameters
         ----------
-        element: MappingElement
+        parameters: List[Parameter]
+            The parameters to use
 
         Raises
         ------
-        AnonClientSettingsException
-            If job creation fails due to missing settings
         JobCreationException
-            If creating jobs fails for any other reason
+            If creating jobs fails for any reason
 
         Returns
         -------
@@ -74,48 +164,28 @@ class CreateCommandsContext:
             job id created
         """
 
-        project_name, destination_path = get_default_parameters(
-            self.context.settings.job_default_parameters
-        )
-
-        if issubclass(type(element.source), PathIdentifier):
-            try:
-                parameters = assert_job_parameters(element.parameters)
-                response = self.context.client_tool.create_path_job(
-                    anon_id=parameters.patient_id,
-                    server=self.context.get_active_server(),
-                    anon_name=parameters.patient_name,
-                    project_name=project_name,
-                    source_path=str(element.source),
-                    destination_path=str(destination_path),
-                    description=parameters.description,
-                )
-            except (APIClientException, AnonClientSettingsException) as e:
-                raise JobCreationException(
-                    f"Error creating job for source {element.source}: {e}"
-                )
-        elif issubclass(type(element.source), PACSResourceIdentifier):
-            try:
-                parameters = assert_job_parameters(element.parameters)
-                response = self.context.client_tool.create_pacs_job(
-                    anon_id=parameters.patient_id,
-                    server=self.context.get_active_server(),
-                    anon_name=parameters.patient_name,
-                    project_name=project_name,
-                    source_instance_id=self.get_source_instance_id_value(
-                        element.source
-                    ),
-                    destination_path=str(destination_path),
-                    description=parameters.description,
-                )
-            except (APIClientException, AnonClientSettingsException) as e:
-                raise JobCreationException(
-                    f"Error creating job for source {element.source}: {e}"
-                )
-        else:
+        row = JobParameterSet(parameters)
+        source = row.get_source()
+        if not source:
             raise JobCreationException(
-                f"Cannot create job for source type {type(element.source)}"
+                "No source identifier found. I can't create a job without knowing"
+                " where to get the data"
             )
+
+        try:
+            if row.is_pacs_type(source):
+                response = self.client_tool.create_pacs_job(
+                    server=self.get_active_server(), **row.as_kwargs()
+                )
+            elif row.is_path_type(source):
+                response = self.client_tool.create_path_job(
+                    server=self.get_active_server(), **row.as_kwargs()
+                )
+            else:
+                raise JobCreationException(f"Unknown source '{source}'")
+
+        except (APIClientException, AnonClientSettingsException) as e:
+            raise JobCreationException(f"Error creating job for source {source}: {e}")
 
         return response["job_id"]
 
@@ -147,13 +217,12 @@ class CreateCommandsContext:
 
     def add_to_batch(self, created_job_ids):
         """Add job ids as batch in current dir. If batch does not exist, create"""
-        parser = self.context
-        batch_folder = BatchFolder(path=parser.current_dir)
+        batch_folder = BatchFolder(path=self.current_dir)
         if batch_folder.has_batch():
             batch: JobBatch = batch_folder.load()
         else:
-            batch = JobBatch(job_ids=[], server=parser.get_active_server())
-        if batch.server.url != parser.get_active_server().url:
+            batch = JobBatch(job_ids=[], server=self.get_active_server())
+        if batch.server.url != self.get_active_server().url:
             click.echo(
                 "A batch exists in this folder, but for a different server. Not saving job ids in batch"
             )
@@ -163,6 +232,12 @@ class CreateCommandsContext:
                 list(set(batch.job_ids) | set(created_job_ids))
             )  # add only unique new ids
             batch_folder.save(batch)
+
+    def get_mapping(self):
+        try:
+            return MappingFolder(self.current_dir).get_mapping()
+        except MappingLoadError as e:
+            raise ClickException(e)
 
 
 pass_create_commands_context = click.make_pass_decorator(CreateCommandsContext)
@@ -196,31 +271,6 @@ def make_absolute(elements, root_path):
     return elements
 
 
-def convert_to_fileselection(elements):
-    """Convert path element to make them less ambiguous.
-
-    Convert FolderIdentifier (refers to a whole folder, assumes actual file name
-    is default) to a FileSelectionIdentifier that refers explicitly to a single
-    file. This makes it less vague what the source for files actually is
-
-    Parameters
-    ----------
-    elements: List[MappingElement]
-
-    Returns
-    -------
-    List[MappingElement]
-    """
-
-    for element in [
-        x for x in elements if type(x.source) == FolderIdentifier
-    ]:
-        folder = FileSelectionFolder(path=element.source.identifier)
-        element.source = FileSelectionIdentifier(identifier=folder.get_data_file_path())
-
-    return elements
-
-
 @click.command()
 @pass_create_commands_context
 @click.option(
@@ -230,44 +280,50 @@ def from_mapping(context: CreateCommandsContext, dry_run):
     """Create jobs from mapping in current folder"""
     if dry_run:
         click.echo("** Dry run, nothing will be sent to server **")
-    parser = context.context
-    try:
-        mapping = MappingFolder(parser.current_dir).get_mapping()
-    except MappingLoadError as e:
-        click.echo(e)
-        return
 
-    try:
-        project_name, destination_path = get_default_parameters(
-            parser.settings.job_default_parameters
-        )
-    except AnonClientSettingsException as e:
-        raise ClickException(f"{e}. Please use set-defaults te set them")
+    mapping = context.get_mapping()
+
+    # add defaults to each row
+    job_sets = [
+        JobParameterSet(row, default_parameters=context.default_parameters())
+        for row in mapping.rows()
+    ]
+    # validate each job set
+    for job_set in job_sets:
+        try:
+            job_set.validate()
+        except JobSetValidationError as e:
+            raise ClickException(f"Error validating parameters: {e}")
+
+    # inspect project name and destination to present the next question to the user
+    project_names = set()
+    destination_paths = set()
+    for job_set in job_sets:
+        project_names.add(job_set.get_param_by_type(Project).value)
+        destination_paths.add(job_set.get_param_by_type(DestinationPath).value)
 
     question = (
-        f"This will create {len(mapping)} jobs on {parser.get_active_server().name}, for "
-        f'project "{project_name}", writing data to "{destination_path}". Are you sure?'
+        f"This will create {len(mapping)} jobs on {context.get_active_server().name},"
+        f" for projects '{list(project_names)}', writing data to "
+        f"'{list(destination_paths)}'. Are you sure?"
     )
     if not click.confirm(question):
         click.echo("Cancelled")
         return
 
     created_job_ids = []
-    elements = [MappingElement(x, y) for x, y in mapping.items()]
-    elements = convert_to_fileselection(make_absolute(elements, parser.current_dir))
-    for element in elements:
+    for job_set in job_sets:
         if dry_run:
             def mock_create(*args, **kwargs):
                 click.echo("create was called with rows:")
                 click.echo("\n".join(args))
                 click.echo("\n".join(map(str, kwargs.items())))
-                return {'job_id': -1}
+                return {"job_id": -1}
 
-            context.context.client_tool.create_path_job = mock_create
-            context.context.client_tool.create_pacs_job = mock_create
-
+            context.client_tool.create_path_job = mock_create
+            context.client_tool.create_pacs_job = mock_create
         try:
-            job_id = context.create_job_for_element(element)
+            job_id = context.create_job_for_element(job_set.parameters)
             click.echo(f"Created job with id {job_id}")
             created_job_ids.append(job_id)
         except JobCreationException as e:
@@ -322,7 +378,8 @@ def show_defaults(context: CreateCommandsContext):
     job_default_parameters: JobDefaultParameters = context.context.settings.job_default_parameters
     click.echo(f"default IDIS project name: {job_default_parameters.project_name}")
     click.echo(
-        f"default job destination directory: {job_default_parameters.destination_path}"
+        f"default job destination directory: "
+        f"{job_default_parameters.destination_path}"
     )
 
 
@@ -330,59 +387,13 @@ for func in [from_mapping, set_defaults, show_defaults]:
     main.add_command(func)
 
 
-def assert_job_parameters(parameters):
-    """Make sure all fields in rows are filled.
-
-    When read from disk, certain rows might be None. Fill these.
-
-    Parameters
-    ----------
-    parameters: AnonymizationParameters
-        rows object that might have None values
-
-    Returns
-    -------
-    rows: AnonymizationParameters
-        rows object where all fields are filled
-    """
-
-    if not parameters.patient_name:
-        parameters.patient_name = parameters.patient_id
-
-    if parameters.description is None:
-        parameters.patient_name = ""
-
-    return parameters
-
-
-def get_default_parameters(job_default_parameters: JobDefaultParameters):
-    """Make sure default rows are all present. Raise exception if not
-
-    Parameters
-    ----------
-    job_default_parameters: JobDefaultParameters
-
-    Raises
-    ------
-    AnonClientSettingsException
-        When a parameter is not found or is empty
-
-    Returns
-    -------
-    (str, Path)
-        project_name, destination_path
-
-    """
-    if not job_default_parameters.project_name:
-        raise AnonClientSettingsException(
-            "Could not find default project name in settings"
-        )
-    if not job_default_parameters.destination_path:
-        raise AnonClientSettingsException(
-            "Could not find default project name in settings"
-        )
-    return job_default_parameters.project_name, job_default_parameters.destination_path
-
-
 class JobCreationException(APIClientException):
+    pass
+
+
+class ParameterMappingException(AnonAPIException):
+    pass
+
+
+class JobSetValidationError(AnonAPIException):
     pass

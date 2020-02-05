@@ -8,15 +8,16 @@ from pytest import fixture
 from anonapi.cli import entrypoint
 from anonapi.cli.map_commands import MapCommandContext, add_selection
 from anonapi.mapper import MappingLoadError, MappingFolder
+from anonapi.parameters import ParameterSet, RootSourcePath
 from tests.conftest import MockContextCliRunner
 from tests import RESOURCE_PATH
-
 
 
 @fixture
 def mock_main_runner_with_mapping(mock_main_runner, a_folder_with_mapping):
     mock_main_runner.get_context().current_dir = a_folder_with_mapping
     return mock_main_runner
+
 
 @fixture
 def map_command_runner_mapping_dir(a_folder_with_mapping):
@@ -49,6 +50,20 @@ def test_cli_map(mock_main_runner, mock_cli_base_context, tmpdir):
         content = f.read()
 
     assert result.exit_code == 0
+
+
+def test_cli_map_init(mock_main_runner, mock_cli_base_context, tmpdir):
+    result = mock_main_runner.invoke(entrypoint.cli, "map init",
+                                     catch_exceptions=False)
+    assert result.exit_code == 0
+    assert MappingFolder(folder_path=Path(tmpdir)).has_mapping()
+    # getting this mapping should not crash
+    mapping = MappingFolder(folder_path=Path(tmpdir)).get_mapping()
+
+    # the base source should have been set to the current dir
+    param_set = ParameterSet(mapping.options)
+    root_source_path = param_set.get_param_by_type(RootSourcePath)
+    assert root_source_path.value == Path(tmpdir)
 
 
 def test_cli_map_info(mock_main_runner_with_mapping):

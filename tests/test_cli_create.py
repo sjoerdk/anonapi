@@ -3,8 +3,12 @@ from pathlib import Path
 import pytest
 
 from anonapi.batch import BatchFolder
-from anonapi.cli.create_commands import main
+from anonapi.cli.create_commands import main, JobParameterSet, \
+    ParameterMappingException, JobSetValidationError
 from anonapi.mapper import MappingFolder
+from anonapi.parameters import SourceIdentifierParameter, FolderIdentifier, \
+    Description, SourceIdentifier, Parameter, PatientID, PIMSKey, RootSourcePath, \
+    ParameterException
 from anonapi.settings import JobDefaultParameters
 from tests.factories import RequestsMockResponseExamples
 
@@ -43,7 +47,7 @@ def mock_requests_for_job_creation(mock_requests):
 def test_create_from_mapping_no_mapping(mock_main_runner):
     """Running from-mapping in a folder without mapping should not work"""
     result = mock_main_runner.invoke(main, "from-mapping")
-    assert result.exit_code == 0
+    assert result.exit_code == 1
     assert "No mapping" in result.output
 
 
@@ -147,8 +151,9 @@ def test_show_set_default_parameters(mock_main_runner):
 def test_create_from_mapping_relative_path(
     mock_from_mapping_runner, mock_requests_for_job_creation
 ):
-    """Source identifiers in mappings are usually given as relative paths. However, jobs should be created with
-    absolute, unambiguous paths. Check that this conversion works
+    """Source identifiers in mappings are usually given as relative paths. However,
+    jobs should be created with absolute, unambiguous paths. Check that this
+    conversion works
 
     """
     result = mock_from_mapping_runner.invoke(
@@ -160,9 +165,15 @@ def test_create_from_mapping_relative_path(
     current_dir = str(mock_from_mapping_runner.mock_context.current_dir)
     batch_folder = BatchFolder(current_dir)
     mapping_folder = MappingFolder(current_dir)
-    paths_in_mapping = map(str, list(mapping_folder.load_mapping().keys()))
+
+    def all_paths(mapping):
+        """List[str] of all paths in mapping"""
+        return [str(x) for y in mapping_folder.load_mapping().rows()
+                for x in y if isinstance(x, SourceIdentifierParameter)]
+
     # in mapping there should be no mention of the current dir
-    assert not any([current_dir in x for x in paths_in_mapping])
+    assert not any([current_dir in x for x in
+                    all_paths(mapping_folder.load_mapping())])
     # But in the created jobs the current dir should have been added
     assert current_dir in str(mock_requests_for_job_creation.requests.post.call_args)
 
@@ -203,3 +214,52 @@ def test_create_from_mapping_folder_and_pacs(
     assert batch_folder.load().job_ids == [
         1234
     ]  # only 1 id as mock requests returns the same job id each call
+
+
+def test_job_parameter_set(all_parameters):
+    """Map Parameter objects to their parameter names in job-creation functions"""
+    mapped = JobParameterSet(all_parameters).as_kwargs()
+    assert mapped['anon_name'] == 'patientName0'
+
+    # sending an unknown parameter will raise an exception
+    class UnknownIdentifier(SourceIdentifier):
+        pass
+    with pytest.raises(ParameterMappingException):
+        JobParameterSet(
+            all_parameters +
+            [SourceIdentifierParameter(str(UnknownIdentifier(None)))]).as_kwargs()
+
+    class UnknownParameter(Parameter):
+        pass
+
+    with pytest.raises(ParameterMappingException):
+        JobParameterSet(
+            all_parameters + [UnknownParameter()]).as_kwargs()
+
+
+def test_job_parameter_set_validate(all_parameters):
+    """Test specific problems in job parameter sets"""
+    param_set = JobParameterSet(all_parameters)
+
+    # this should not raise anything
+    param_set.validate()
+
+    # now without a root source path, it is not possible to know what the relative
+    # path parameters are referring to. Exception.
+    param_set.parameters.remove(param_set.get_param_by_type(RootSourcePath))
+    with pytest.raises(JobSetValidationError) as e:
+        param_set.validate()
+
+
+def test_job_parameter_set_defaults():
+    """You can set defaults for a parameter set. These are only kept if not
+    overwritten """
+
+    param_set = JobParameterSet([PatientID('1234'), PIMSKey('0000')],
+                                default_parameters=[Description('Default')])
+    assert param_set.get_param_by_type(Description).value == 'Default'
+
+    param_set2 = JobParameterSet([PatientID('1234'), Description('Overwrite!')],
+                                 default_parameters=[Description('Default')])
+    assert param_set2.get_param_by_type(Description).value == 'Overwrite!'
+

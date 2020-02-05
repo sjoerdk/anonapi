@@ -454,6 +454,7 @@ class AnonClientTool:
         source_path,
         destination_path,
         description,
+        pims_keyfile_id=None
     ):
         """Create a job with data coming from a network path
 
@@ -466,6 +467,8 @@ class AnonClientTool:
         source_path: path
         destination_path: path
         description: str
+        pims_keyfile_id: str, optional
+           pims keyfile to use. Defaults to no pims keyfile
 
         Raises
         ------
@@ -492,6 +495,8 @@ class AnonClientTool:
             anonymizedpatientname=anon_name,
             anonymizedpatientid=anon_id,
             description=description,
+            pims_keyfile_id=pims_keyfile_id
+
         )
 
         return info
@@ -505,6 +510,7 @@ class AnonClientTool:
         project_name,
         destination_path,
         description,
+        pims_keyfile_id=None
     ):
         """Create a job with data from a PACS system
 
@@ -517,6 +523,8 @@ class AnonClientTool:
         source_instance_id: str
         destination_path: path
         description: str
+        pims_keyfile_id: str, optional
+           pims keyfile to use. Defaults to no pims keyfile
 
         Raises
         ------
@@ -543,6 +551,7 @@ class AnonClientTool:
             anonymizedpatientname=anon_name,
             anonymizedpatientid=anon_id,
             description=description,
+            pims_keyfile_id=pims_keyfile_id
         )
 
         return info
@@ -561,7 +570,8 @@ class APIClientException(AnonAPIException):
 
 
 class APIClient404Exception(AnonAPIException):
-    """object not found. Made this into a separate function to be able to ignore it in special cases"""
+    """object not found. Made this into a separate function to be able to ignore
+    it in special cases"""
 
     pass
 

@@ -393,7 +393,7 @@ class MappingFolder:
 
         Returns
         -------
-        JobParameterGrid
+        Mapping
             Loaded from current dir
 
         Raises

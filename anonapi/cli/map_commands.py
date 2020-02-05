@@ -17,7 +17,8 @@ from anonapi.mapper import (MappingFolder, JobParameterGrid,
                             MappingLoadError, ExampleJobParameterGrid, MapperException,
                             Mapping)
 from anonapi.parameters import SourceIdentifierFactory, DestinationPath, \
-    ParameterFactory, PatientName, SourceIdentifierParameter, PatientID, Description
+    ParameterFactory, PatientName, SourceIdentifierParameter, PatientID, Description, \
+    RootSourcePath
 
 
 class MapCommandContext:
@@ -74,7 +75,8 @@ def init(context: MapCommandContext):
     """Save a default mapping in the current folder"""
     folder = context.get_current_mapping_folder()
     mapping = Mapping(grid=ExampleJobParameterGrid(),
-                      options=[DestinationPath(r'\\an\example\path')],
+                      options=[DestinationPath(r'\\an\example\path'),
+                               RootSourcePath(context.current_path)],
                       description=
                       f"Mapping created {datetime.datetime.now()} "
                       f"by {getpass.getuser()}\n")

@@ -6,6 +6,7 @@ Put these in separate module because rows appear in several guises throughout
 the job creation process and I want a unified type
 
 """
+from typing import List, Any, Optional
 
 from anonapi.exceptions import AnonAPIException
 from fileselection.fileselection import FileSelectionFile
@@ -51,14 +52,23 @@ class SourceIdentifier:
         return SourceIdentifierFactory().get_source_identifier_for_key(identifier)
 
 
-class FolderIdentifier(SourceIdentifier):
+class PathIdentifier(SourceIdentifier):
+
+    def is_absolute(self):
+        return Path(self.identifier).is_absolute()
+
+    def is_relative(self):
+        return not self.is_absolute()
+
+
+class FolderIdentifier(PathIdentifier):
     """Refers to a complete folder
     """
 
     key = "folder"
 
 
-class FileSelectionIdentifier(SourceIdentifier):
+class FileSelectionIdentifier(PathIdentifier):
     """A file selection in a specific file
     """
 
@@ -239,12 +249,37 @@ class PIMSKey(Parameter):
     field_name = 'pims_key'
 
 
-class DestinationPath(Parameter):
+class Project(Parameter):
+    field_name = 'project'
+
+
+class PathParameter(Parameter):
+    """A parameter that can refer to a path on disk or share"""
     value_type = Path
+
+    def is_absolute(self):
+        return self.value.is_absolute()
+
+    def is_relative(self):
+        return not self.value.is_absolute()
+
+    def value_based_on_path(self, path: Path):
+        if self.is_absolute():
+            raise ParameterException(
+                f"Cannot rebase path '{self.value}'. It is already absolute")
+        else:
+            return path / self.value
+
+
+class DestinationPath(PathParameter):
     field_name = 'destination_path'
 
 
-class SourceIdentifierParameter(Parameter):
+class RootSourcePath(PathParameter):
+    field_name = 'root_source_path'
+
+
+class SourceIdentifierParameter(PathParameter):
     """Reference to the source of the data"""
     value_type = SourceIdentifier
     field_name = 'source'
@@ -261,13 +296,20 @@ class SourceIdentifierParameter(Parameter):
         super(SourceIdentifierParameter, self).__init__()
         self.value = SourceIdentifier.cast_to_subtype(str(value))
 
+    def is_relative(self):
+        """Is the source identifier in this parameter a relative path?
+
+        """
+        try:
+            return self.value.is_relative()
+        except AttributeError:
+            # SourceIdentifier might not be of path type. Then it is not relative
+            return False
+
 
 class ParameterFactory:
     """Knows about all sort of rows and can convert between string and object
     representation"""
-
-    PARAMETER_TYPES = [PatientID, PatientName, Description, PIMSKey, DestinationPath,
-                       SourceIdentifierParameter]
 
     @classmethod
     def parse_from_string(cls, string):
@@ -299,7 +341,7 @@ class ParameterFactory:
 
     @classmethod
     def parse_from_key_value(cls, key, value):
-        for param_type in cls.PARAMETER_TYPES:
+        for param_type in ALL_PARAMETERS:
             if param_type.field_name == key:
                 try:
                     return param_type(value)
@@ -308,12 +350,65 @@ class ParameterFactory:
                         f"Error parsing source identifier:{e}")
         raise ParameterParsingError(
             f"Could not parse key={key}, value={value} to any known parameter. "
-            f"Tried {[x.field_name for x in cls.PARAMETER_TYPES]}")
+            f"Tried {[x.field_name for x in ALL_PARAMETERS]}")
+
+
+class ParameterSet:
+    """A collection of parameters with some convenient methods for checking
+    existence of specific parameters etc..
+
+    """
+
+    def __init__(self, parameters: List[Parameter],
+                 default_parameters: List[Parameter] = None):
+        """
+
+        Parameters
+        ----------
+        parameters: List[Parameter]
+            The parameters in this set
+        default_parameters: List[Parameter]
+            Include these parameters, unless overwritten in parameters
+        """
+        if not default_parameters:
+            default_parameters = []
+        param_dict = {type(x): x for x in default_parameters}
+        param_dict.update({type(x): x for x in parameters})
+        self.parameters = list(param_dict.values())
+
+    def get_param_by_type(self, type_in) -> Optional[Parameter]:
+        """Return the first Parameter instance that is (or derives from) type
+         or None"""
+        return next(
+            (x for x in self.parameters if isinstance(x, type_in)),
+            None)
+
+    def get_params_by_type(self, type_in) -> List[Parameter]:
+        """Return all parameters that are type or subtype, or empty list"""
+        return [x for x in self.parameters if isinstance(x, type_in)]
+
+    @staticmethod
+    def is_source_identifier(parameter):
+        """A parameter that indicates the source of the data for an anon job"""
+        return isinstance(parameter, SourceIdentifierParameter)
+
+    @staticmethod
+    def is_path_type(parameter):
+        """Refers to data coming from a share or disk"""
+        return any(
+            isinstance(parameter.value, x)
+            for x in [FolderIdentifier, FileSelectionIdentifier]
+        )
+
+    @staticmethod
+    def is_pacs_type(parameter):
+        """Refers to data coming from the PACS system"""
+        return isinstance(parameter.value, PACSResourceIdentifier)
 
 
 COMMON_JOB_PARAMETERS = [SourceIdentifierParameter, PatientID, PatientName,
                          Description]
-COMMON_GLOBAL_PARAMETERS = [PIMSKey, DestinationPath]
+COMMON_GLOBAL_PARAMETERS = [PIMSKey, DestinationPath, RootSourcePath]
 
 ALL_PARAMETERS = COMMON_JOB_PARAMETERS + COMMON_GLOBAL_PARAMETERS
 
@@ -332,3 +427,4 @@ class UnknownSourceIdentifierException(ParameterException):
 
 class UnknownObjectException(ParameterException):
     pass
+
