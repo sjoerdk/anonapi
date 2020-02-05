@@ -9,6 +9,7 @@ from anonapi.cli import entrypoint
 from anonapi.cli.map_commands import MapCommandContext, add_selection
 from anonapi.mapper import MappingLoadError, MappingFolder
 from anonapi.parameters import ParameterSet, RootSourcePath
+from anonapi.settings import  DefaultAnonClientSettings
 from tests.conftest import MockContextCliRunner
 from tests import RESOURCE_PATH
 
@@ -24,7 +25,8 @@ def map_command_runner_mapping_dir(a_folder_with_mapping):
     """A click CLIRunner that MapCommandContext pointing to a dir with some mapping
     """
     return MockContextCliRunner(
-        mock_context=MapCommandContext(current_path=a_folder_with_mapping)
+        mock_context=MapCommandContext(current_path=a_folder_with_mapping,
+                                       settings=DefaultAnonClientSettings())
     )
 
 
@@ -131,6 +133,7 @@ def test_cli_map_add_folder(mock_main_runner, folder_with_some_dicom_files):
     result = mock_main_runner.invoke(
         entrypoint.cli, f"map add-study-folder {selection_folder.path}"
     )
+    assert result.exit_code == 0
     assert selection_folder.has_file_selection()
 
 

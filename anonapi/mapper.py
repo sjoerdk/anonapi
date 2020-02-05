@@ -100,6 +100,8 @@ class Mapping:
             ]
         )
 
+        # remove linux and windows newlines, and strip trailing commas which might
+        # be introduced by the editor
         option_lines = [
             x.replace("\r", "").replace("\n", "") for x in sections[cls.OPTIONS_HEADER]
         ]

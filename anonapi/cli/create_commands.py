@@ -28,7 +28,7 @@ from anonapi.parameters import (
 from anonapi.settings import JobDefaultParameters, AnonClientSettingsException
 from click.exceptions import Abort, ClickException
 
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 
 class JobParameterSet(ParameterSet):
@@ -78,7 +78,10 @@ class JobParameterSet(ParameterSet):
         dict_out = {}
 
         # make all parameter paths absolute
-        absolute_parameters = self.with_absolute_paths()
+        try:
+            absolute_parameters = self.with_absolute_paths()
+        except NoAbsoluteRootPathException as e:
+            raise ParameterMappingException(e)
 
         for parameter in absolute_parameters:
             if self.is_non_keyword(parameter):
@@ -116,35 +119,21 @@ class JobParameterSet(ParameterSet):
             if not self.get_param_by_type(required):
                 raise JobSetValidationError(f"Missing required parameter {required}")
 
-        # make sure that all relative paths can be resolved
-        relative_paths = [
-            x for x in self.get_params_by_type(PathParameter) if x.is_relative()
-        ]
-
-        if relative_paths:
-            # there are relative paths. Is there a non-relative root root_path?
-            root_path: RootSourcePath = self.get_param_by_type(RootSourcePath)
-            if not root_path:
-                msg = (
-                    f"Ambiguous relative paths: "
-                    f"'{[str(x) for x in relative_paths]}'. No source "
-                    f"root root_path was defined. It is not possible to know where "
-                    f"this data is on disk"
-                )
-                raise JobSetValidationError(msg)
-            elif root_path.is_relative():
-                msg = (
-                    f"Ambiguous relative paths: "
-                    f"'{[str(x) for x in relative_paths]}'. Source "
-                    f"root root_path {root_path} is relative. It is not possible"
-                    f" to know where this data is on disk"
-                )
-            else:
-                # all OK.
-                pass
+        try:
+            self.with_absolute_paths()
+        except NoAbsoluteRootPathException as e:
+            raise JobSetValidationError(
+                f'Error: {e}. Source and destination need to be absolute windows'
+                f' paths.')
 
     def with_absolute_paths(self):
-        """A copy of this JobParameterSet where all paths are absolute"""
+        """A copy of this JobParameterSet where all paths are absolute
+
+        Raises
+        ------
+        NoAbsoluteRootPathException
+            If there are relative paths that cannot be resolved
+        """
         # make sure that all relative paths can be resolved
         absolute_params = []
         for param in self.parameters:
@@ -156,8 +145,8 @@ class JobParameterSet(ParameterSet):
                 absolute_params.append(param)
         return absolute_params
 
-    def get_absolute_root_path(self):
-        root_path = self.get_param_by_type(RootSourcePath).value
+    def get_absolute_root_path(self) -> PureWindowsPath:
+        root_path = self.get_param_by_type(RootSourcePath)
         if not root_path:
             raise NoAbsoluteRootPathException("No absolute root root_path defined")
         elif not root_path.is_absolute():
@@ -165,7 +154,7 @@ class JobParameterSet(ParameterSet):
                 f"Root root_path {root_path} is not absolute"
             )
         else:
-            return root_path
+            return root_path.value
 
 
 class CreateCommandsContext(AnonAPIContext):
@@ -306,7 +295,6 @@ def from_mapping(context: CreateCommandsContext, dry_run):
     """Create jobs from mapping in current folder"""
     if dry_run:
         click.echo("** Dry run, nothing will be sent to server **")
-
     mapping = context.get_mapping()
 
     # add defaults to each row

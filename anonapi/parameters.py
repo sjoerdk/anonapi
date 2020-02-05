@@ -334,7 +334,7 @@ class ParameterFactory:
         Parameters
         ----------
         string: str
-            A valid string respresentation of Parameter
+            A valid string representation of Parameter
 
         Returns
         -------
@@ -423,7 +423,7 @@ class ParameterSet:
 
 
 COMMON_JOB_PARAMETERS = [SourceIdentifierParameter, PatientID, PatientName, Description]
-COMMON_GLOBAL_PARAMETERS = [PIMSKey, DestinationPath, RootSourcePath]
+COMMON_GLOBAL_PARAMETERS = [PIMSKey, DestinationPath, RootSourcePath, Project]
 
 ALL_PARAMETERS = COMMON_JOB_PARAMETERS + COMMON_GLOBAL_PARAMETERS
 

@@ -5,7 +5,6 @@ from typing import List
 
 import click
 from click.exceptions import ClickException
-from tabulate import tabulate
 
 from anonapi.batch import JobBatch
 from anonapi.cli.click_types import JobIDRangeParamType
@@ -17,7 +16,7 @@ from anonapi.context import (
 )
 from anonapi.decorators import pass_anonapi_context
 from anonapi.responses import JobStatus, JobInfoColumns, JobInfo, format_job_info_list
-from collections import Counter, defaultdict
+from collections import Counter
 
 
 @click.group(name="batch")
