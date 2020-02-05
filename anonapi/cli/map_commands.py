@@ -112,7 +112,7 @@ def add_study_folder(context: MapCommandContext, path):
 
     mapping = get_mapping(context)
 
-    # create a selection from all dicom files in given path
+    # create a selection from all dicom files in given root_path
     create_dicom_selection_click(path)
 
     # add this selection to mapping
@@ -136,7 +136,7 @@ def add_selection(context: MapCommandContext, selection):
     """
     mapping = get_mapping(context)
     identifier = SourceIdentifierFactory().get_source_identifier_for_obj(selection)
-    # make identifier path relative to mapping
+    # make identifier root_path relative to mapping
     try:
         identifier.identifier = context.get_current_mapping_folder().\
             make_relative(identifier.identifier)

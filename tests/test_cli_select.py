@@ -21,8 +21,8 @@ def initialised_selection_folder(mock_selection_folder):
         data_file_path=mock_selection_folder.get_data_file_path(),
         description="mock_selection_for_testing",
         selected_paths=[
-            rootpath / "path" / "file1",
-            rootpath / "path" / "file2",
+            rootpath / "root_path" / "file1",
+            rootpath / "root_path" / "file2",
             rootpath / "path2" / "file1",
             rootpath / "path3" / "subdir" / "file1",
         ],

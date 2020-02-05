@@ -195,7 +195,7 @@ def test_mapping_list_folder_path_funcs():
     assert MappingFolder(path).make_absolute("foo/bar") == path / "foo/bar"
 
     with pytest.raises(MapperException):
-        MappingFolder(path).make_absolute("/absolute/path")
+        MappingFolder(path).make_absolute("/absolute/root_path")
 
 
 def test_mapping_folder_read_write(tmpdir, a_grid_of_parameters):

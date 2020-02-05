@@ -8,7 +8,7 @@ from anonapi.cli.create_commands import main, JobParameterSet, \
 from anonapi.mapper import MappingFolder
 from anonapi.parameters import SourceIdentifierParameter, FolderIdentifier, \
     Description, SourceIdentifier, Parameter, PatientID, PIMSKey, RootSourcePath, \
-    ParameterException
+    ParameterException, ParameterSet
 from anonapi.settings import JobDefaultParameters
 from tests.factories import RequestsMockResponseExamples
 
@@ -30,7 +30,7 @@ def mock_from_mapping_runner(mock_main_runner_with_mapping):
         mock_main_runner_with_mapping.get_context().settings.job_default_parameters
     )
     parameters.project_name = "test_project"
-    parameters.destination_path = Path("//test/output/path")
+    parameters.destination_path = Path("//test/output/root_path")
 
     return mock_main_runner_with_mapping
 
@@ -114,32 +114,10 @@ def test_create_from_mapping_server_error_halfway(
     assert batch_folder.load().job_ids == [1234]
 
 
-def test_create_set_default_parameters(
-    mock_main_runner_with_mapping, mock_requests_for_job_creation
-):
-    # Try to run from-mapping
-    result = mock_main_runner_with_mapping.invoke(main, "from-mapping", input="Y")
-
-    # This should not work because essential settings are missing
-    assert result.exit_code == 1
-    assert "Could not find default project name" in result.output
-    assert mock_requests_for_job_creation.requests.post.call_count == 0
-
-    # set them
-    result = mock_main_runner_with_mapping.invoke(
-        main, "set-defaults", input="some_project\n//network/test/path\n"
-    )
-    assert result.exit_code == 0
-
-    # Now this command should succeed
-    result = mock_main_runner_with_mapping.invoke(main, "from-mapping", input="Y")
-    assert result.exit_code == 0
-    assert mock_requests_for_job_creation.requests.post.call_count == 20
-
-
 def test_show_set_default_parameters(mock_main_runner):
     # Try to run from-mapping
-    parameters: JobDefaultParameters = mock_main_runner.get_context().settings.job_default_parameters
+    parameters: JobDefaultParameters = \
+        mock_main_runner.get_context().settings.job_default_parameters
     parameters.project_name = "test_project"
     parameters.destination_path = "test_destination"
 
@@ -163,19 +141,20 @@ def test_create_from_mapping_relative_path(
     assert mock_requests_for_job_creation.requests.post.call_count == 20
 
     current_dir = str(mock_from_mapping_runner.mock_context.current_dir)
-    batch_folder = BatchFolder(current_dir)
-    mapping_folder = MappingFolder(current_dir)
+    mapping = MappingFolder(current_dir).load_mapping()
 
-    def all_paths(mapping):
+    def all_paths(mapping_in):
         """List[str] of all paths in mapping"""
-        return [str(x) for y in mapping_folder.load_mapping().rows()
+        return [str(x) for y in mapping_in.rows()
                 for x in y if isinstance(x, SourceIdentifierParameter)]
 
     # in mapping there should be no mention of the current dir
     assert not any([current_dir in x for x in
-                    all_paths(mapping_folder.load_mapping())])
+                    all_paths(mapping)])
+    expected_root = ParameterSet(mapping.options).get_param_by_type(RootSourcePath).value
     # But in the created jobs the current dir should have been added
-    assert current_dir in str(mock_requests_for_job_creation.requests.post.call_args)
+    assert str(expected_root) in \
+           str(mock_requests_for_job_creation.requests.post.call_args[1]['data']['source_path'])
 
 
 def test_create_from_mapping_dry_run(
@@ -244,8 +223,8 @@ def test_job_parameter_set_validate(all_parameters):
     # this should not raise anything
     param_set.validate()
 
-    # now without a root source path, it is not possible to know what the relative
-    # path parameters are referring to. Exception.
+    # now without a root source root_path, it is not possible to know what the relative
+    # root_path parameters are referring to. Exception.
     param_set.parameters.remove(param_set.get_param_by_type(RootSourcePath))
     with pytest.raises(JobSetValidationError) as e:
         param_set.validate()

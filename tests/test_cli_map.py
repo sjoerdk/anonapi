@@ -1,4 +1,4 @@
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from unittest.mock import Mock
 
 from click.testing import CliRunner
@@ -63,7 +63,7 @@ def test_cli_map_init(mock_main_runner, mock_cli_base_context, tmpdir):
     # the base source should have been set to the current dir
     param_set = ParameterSet(mapping.options)
     root_source_path = param_set.get_param_by_type(RootSourcePath)
-    assert root_source_path.value == Path(tmpdir)
+    assert root_source_path.value == PureWindowsPath(tmpdir)
 
 
 def test_cli_map_info(mock_main_runner_with_mapping):

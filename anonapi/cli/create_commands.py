@@ -65,22 +65,26 @@ class JobParameterSet(ParameterSet):
 
         """
         dict_out = {}
-        for parameter in self.parameters:
+
+        # make all parameter paths absolute
+        absolute_parameters = self.with_absolute_paths()
+
+        for parameter in absolute_parameters:
             if self.is_non_keyword(parameter):
                 # This parameter should not be included in kwargs. Skip
                 continue
             elif self.is_source_identifier(parameter):
                 if self.is_pacs_type(parameter):
-                    dict_out["source_instance_id"] = parameter.value.identifier
+                    dict_out["source_instance_id"] = str(parameter.value.identifier)
                 elif self.is_path_type(parameter):
-                    dict_out["source_path"] = parameter.value.identifier
+                    dict_out["source_path"] = str(parameter.value.identifier)
                 else:
                     raise ParameterMappingException(
                         f"Unknown source parameter '{parameter}'"
                     )
             else:
                 try:
-                    dict_out[self.PARAMETER_KEYWORDS[type(parameter)]] = parameter.value
+                    dict_out[self.PARAMETER_KEYWORDS[type(parameter)]] = str(parameter.value)
                 except KeyError:
                     raise ParameterMappingException(f"Unknown parameter '{parameter}'")
 
@@ -104,23 +108,45 @@ class JobParameterSet(ParameterSet):
             [x for x in self.get_params_by_type(PathParameter) if x.is_relative()]
 
         if relative_paths:
-            # there are relative paths. Is there a non-relative root path?
+            # there are relative paths. Is there a non-relative root root_path?
             root_path: RootSourcePath = self.get_param_by_type(RootSourcePath)
             if not root_path:
                 msg = \
                     f"Ambiguous relative paths: " \
                     f"'{[str(x) for x in relative_paths]}'. No source " \
-                    f"root path was defined. It is not possible to know where " \
+                    f"root root_path was defined. It is not possible to know where " \
                     f"this data is on disk"
                 raise JobSetValidationError(msg)
             elif root_path.is_relative():
                 msg = f"Ambiguous relative paths: " \
                       f"'{[str(x) for x in relative_paths]}'. Source " \
-                      f"root path {root_path} is relative. It is not possible" \
+                      f"root root_path {root_path} is relative. It is not possible" \
                       f" to know where this data is on disk"
             else:
                 # all OK.
                 pass
+
+    def with_absolute_paths(self):
+        """A copy of this JobParameterSet where all paths are absolute"""
+        # make sure that all relative paths can be resolved
+        absolute_params = []
+        for param in self.parameters:
+            if isinstance(param, PathParameter) and param.is_relative():
+                root_path = self.get_absolute_root_path()
+                absolute_params.append(param.as_absolute(root_path))
+
+            else:
+                absolute_params.append(param)
+        return absolute_params
+
+    def get_absolute_root_path(self):
+        root_path = self.get_param_by_type(RootSourcePath).value
+        if not root_path:
+            raise NoAbsoluteRootPathException("No absolute root root_path defined")
+        elif not root_path.is_absolute():
+            raise NoAbsoluteRootPathException(f"Root root_path {root_path} is not absolute")
+        else:
+            return root_path
 
 
 class CreateCommandsContext(AnonAPIContext):
@@ -224,7 +250,8 @@ class CreateCommandsContext(AnonAPIContext):
             batch = JobBatch(job_ids=[], server=self.get_active_server())
         if batch.server.url != self.get_active_server().url:
             click.echo(
-                "A batch exists in this folder, but for a different server. Not saving job ids in batch"
+                "A batch exists in this folder, but for a different server. "
+                "Not saving job ids in batch"
             )
         else:
             click.echo("Saving job ids in batch in current folder")
@@ -249,26 +276,6 @@ pass_create_commands_context = click.make_pass_decorator(CreateCommandsContext)
 def main(context: AnonAPIContext, ctx):
     """create jobs"""
     ctx.obj = CreateCommandsContext(context=context)
-
-
-def make_absolute(elements, root_path):
-    """Make sure path elements that are relative are made absolute by prepending root_path.
-
-    Parameters
-    ----------
-    elements: List[MappingElement]
-    root_path: Path
-
-    Returns
-    -------
-    List[MappingElement]
-    """
-
-    path_elements = [x for x in elements if issubclass(type(x.source), PathIdentifier)]
-    for x in path_elements:
-        x.source.identifier = root_path / x.source.identifier
-
-    return elements
 
 
 @click.command()
@@ -305,7 +312,7 @@ def from_mapping(context: CreateCommandsContext, dry_run):
     question = (
         f"This will create {len(mapping)} jobs on {context.get_active_server().name},"
         f" for projects '{list(project_names)}', writing data to "
-        f"'{list(destination_paths)}'. Are you sure?"
+        f"'{[str(x) for x in destination_paths]}'. Are you sure?"
     )
     if not click.confirm(question):
         click.echo("Cancelled")
@@ -344,10 +351,10 @@ def from_mapping(context: CreateCommandsContext, dry_run):
 @pass_create_commands_context
 def set_defaults(context: CreateCommandsContext):
     """Set project name used when creating jobs"""
-    job_default_parameters: JobDefaultParameters = context.context.settings.job_default_parameters
+    job_default_parameters: JobDefaultParameters = context.settings.job_default_parameters
     click.echo(
-        "Please set default rows current value shown in [brackets]. Pressing enter without input will keep"
-        "current value"
+        "Please set default rows current value shown in [brackets]. Pressing enter"
+        " without input will keep current value"
     )
     try:
         project_name = click.prompt(
@@ -366,7 +373,7 @@ def set_defaults(context: CreateCommandsContext):
 
     job_default_parameters.project_name = project_name
     job_default_parameters.destination_path = destination_path
-    context.context.settings.save()
+    context.settings.save()
     click.echo("Saved")
 
 
@@ -375,7 +382,7 @@ def set_defaults(context: CreateCommandsContext):
 def show_defaults(context: CreateCommandsContext):
     """show project name used when creating jobs"""
 
-    job_default_parameters: JobDefaultParameters = context.context.settings.job_default_parameters
+    job_default_parameters: JobDefaultParameters = context.settings.job_default_parameters
     click.echo(f"default IDIS project name: {job_default_parameters.project_name}")
     click.echo(
         f"default job destination directory: "
@@ -394,6 +401,8 @@ class JobCreationException(APIClientException):
 class ParameterMappingException(AnonAPIException):
     pass
 
+class NoAbsoluteRootPathException(ParameterMappingException):
+    pass
 
 class JobSetValidationError(AnonAPIException):
     pass

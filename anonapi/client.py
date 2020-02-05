@@ -456,7 +456,7 @@ class AnonClientTool:
         description,
         pims_keyfile_id=None
     ):
-        """Create a job with data coming from a network path
+        """Create a job with data coming from a network root_path
 
         Parameters
         ----------
@@ -464,8 +464,8 @@ class AnonClientTool:
         anon_name: str
         anon_id: str
         project_name: str
-        source_path: path
-        destination_path: path
+        source_path: root_path
+        destination_path: root_path
         description: str
         pims_keyfile_id: str, optional
            pims keyfile to use. Defaults to no pims keyfile
@@ -521,7 +521,7 @@ class AnonClientTool:
         anon_id: str
         project_name: str
         source_instance_id: str
-        destination_path: path
+        destination_path: root_path
         description: str
         pims_keyfile_id: str, optional
            pims keyfile to use. Defaults to no pims keyfile

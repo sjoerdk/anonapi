@@ -24,7 +24,7 @@ class AnonAPIContext:
         settings: AnonClientSettings
             Settings object to use for reading and writing settings.
         current_dir: Path, optional
-            Full path to the directory that anonapi is being called from. Defaults
+            Full root_path to the directory that anonapi is being called from. Defaults
             to None
 
         """
@@ -95,7 +95,7 @@ class AnonAPIContext:
         return server
 
     def current_dir(self):
-        """Return full path to the folder this command line mock_context is
+        """Return full root_path to the folder this command line mock_context is
         called from"""
         return self.current_dir
 

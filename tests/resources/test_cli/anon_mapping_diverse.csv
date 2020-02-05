@@ -3,6 +3,7 @@ Another comment
 
 ## Options ##
 destination_path,\\someserver\share\folder2
+root_source_path,\\server2\myshare\thing
 
 
 ## Mapping ##

@@ -23,7 +23,7 @@ def test_settings_folder(tmp_path):
     Returns
     -------
     str
-        path to folder
+        root_path to folder
 
     """
     template_folder = Path(RESOURCE_PATH) / "test_settings"

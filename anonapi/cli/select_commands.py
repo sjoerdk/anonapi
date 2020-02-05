@@ -158,7 +158,7 @@ def edit(context: SelectCommandContext):
 
 # TODO: replace this function
 def create_dicom_selection_click(path):
-    """Find all DICOM files path (recursive) and save them a FileSelectionFile.
+    """Find all DICOM files root_path (recursive) and save them a FileSelectionFile.
 
     Meant to be included directly inside click commands. Uses a lot of click.echo()
 

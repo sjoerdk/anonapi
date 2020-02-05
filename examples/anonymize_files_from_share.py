@@ -12,8 +12,8 @@ def anonymize_files_from_share():
         token="token",
     )
 
-    # Create a job that takes data from a source on a network path, and writes the anonymized data to a destination
-    # that is also a network path. Note that the network path should be accessible for the anonymization server for
+    # Create a job that takes data from a source on a network root_path, and writes the anonymized data to a destination
+    # that is also a network root_path. Note that the network root_path should be accessible for the anonymization server for
     # this to work.
     anon_name = "TEST_NAME_01"
     anon_id = "01"
@@ -28,7 +28,7 @@ def anonymize_files_from_share():
         destination_path=destination_path,
         anonymizedpatientname=anon_name,
         anonymizedpatientid=anon_id,
-        description=f"A test path job",
+        description=f"A test root_path job",
     )
     # new_job_info response contains extended info on the new job that has just been created
     print(f"Succesfully created a job in {client}, job_id={network_job_info['job_id']}")

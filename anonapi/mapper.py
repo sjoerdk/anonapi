@@ -309,8 +309,8 @@ class MappingFolder:
 
         Parameters
         ----------
-        path: Pathlike
-            path to this folder
+        root_path: Pathlike
+            root_path to this folder
         """
         self.folder_path = Path(folder_path)
 
@@ -318,7 +318,7 @@ class MappingFolder:
         return self.folder_path / self.DEFAULT_FILENAME
 
     def make_relative(self, path):
-        """Make the given path relative to this mapping folder
+        """Make the given root_path relative to this mapping folder
 
         Parameters
         ----------
@@ -332,7 +332,7 @@ class MappingFolder:
         Raises
         ------
         MapperException
-            When path cannot be made relative
+            When root_path cannot be made relative
 
         """
         path = Path(path)
@@ -341,10 +341,10 @@ class MappingFolder:
         try:
             return path.relative_to(self.folder_path)
         except ValueError as e:
-            raise MapperException(f"Error making path relative: {e}")
+            raise MapperException(f"Error making root_path relative: {e}")
 
     def make_absolute(self, path):
-        """Get absolute path to the given path, assuming it is in this mapping folder
+        """Get absolute root_path to the given root_path, assuming it is in this mapping folder
 
         Parameters
         ----------
@@ -353,17 +353,17 @@ class MappingFolder:
         Returns
         -------
         Path
-            Absolute path, assuming mapping folder as base folder
+            Absolute root_path, assuming mapping folder as base folder
 
         Raises
         ------
         MapperException
-            When given path is already absolute
+            When given root_path is already absolute
 
         """
         path = Path(path)
         if path.is_absolute():
-            raise MapperException("Cannot make absolute path absolute")
+            raise MapperException("Cannot make absolute root_path absolute")
         return self.folder_path / Path(path)
 
     def has_mapping(self):

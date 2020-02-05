@@ -1,7 +1,7 @@
 """ Shared classes used in other tests. For generating test data """
 import itertools
 from itertools import cycle
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import List
 from unittest.mock import Mock
 from requests.models import Response
@@ -37,7 +37,8 @@ class RootSourcePathFactory(factory.Factory):
     class Meta:
         model = RootSourcePath
 
-    value = factory.sequence(lambda n: Path(f"/root/folder{n}"))
+    value = factory.sequence(
+        lambda n: PureWindowsPath(f"\\\\server\\someshare\\folder{n}"))
 
 
 class DescriptionFactory(factory.Factory):
@@ -51,7 +52,7 @@ class DestinationPathFactory(factory.Factory):
     class Meta:
         model = DestinationPath
 
-    value = factory.sequence(lambda n: f"/path{n}")
+    value = factory.sequence(lambda n: f"/root_path{n}")
 
 
 class PIMSKeyFactory(factory.Factory):
@@ -304,7 +305,7 @@ class RequestsMockResponseExamples:
 
     JOB_CREATED_RESPONSE = RequestMockResponse(
         r'{"job_id": 1234, "date": "2019-09-04T14:12:43", "user_name": "z123sandbox", '
-        r'"status": "ACTIVE", "error": null, "description": "A test path job", '
+        r'"status": "ACTIVE", "error": null, "description": "A test root_path job", '
         r'"project_name": "Wetenschap-Algemeen", "priority": 0, "files_downloaded": null, '
         r'"files_processed": null, "destination_id": 44806, "destination_name": null,'
         r' "destination_path": "\\\\umcsanfsclp01\\radng_imaging\\temptest_output",'

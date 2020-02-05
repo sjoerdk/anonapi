@@ -119,7 +119,7 @@ class BatchFolder:
         Parameters
         ----------
         path: Pathlike
-            path to this folder
+            root_path to this folder
         """
         self.path = Path(path)
 

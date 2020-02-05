@@ -6,11 +6,12 @@ Put these in separate module because rows appear in several guises throughout
 the job creation process and I want a unified type
 
 """
-from typing import List, Any, Optional
+from copy import copy
+from typing import List, Optional
 
 from anonapi.exceptions import AnonAPIException
 from fileselection.fileselection import FileSelectionFile
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 
 class SourceIdentifier:
@@ -22,7 +23,7 @@ class SourceIdentifier:
         Class level attribute to identify this class of identifiers
     identifier: str
         Instance level attribute giving the actual value for this identifier.
-        For example a specific path or UID
+        For example a specific root_path or UID
     """
 
     key = "base"  # key with which this class is identified
@@ -41,7 +42,7 @@ class SourceIdentifier:
         Parameters
         ----------
         identifier, str
-            Valid source identifier, like 'path:/tmp/'
+            Valid source identifier, like 'root_path:/tmp/'
 
         Raises
         ------
@@ -228,7 +229,7 @@ class Parameter:
         else:
             value = self.value
         return f"{self.field_name},{value}"
-    
+
     def has_value(self):
         return bool(self.value)
 
@@ -254,8 +255,8 @@ class Project(Parameter):
 
 
 class PathParameter(Parameter):
-    """A parameter that can refer to a path on disk or share"""
-    value_type = Path
+    """A parameter that can refer to a root_path on disk or share"""
+    value_type = PureWindowsPath
 
     def is_absolute(self):
         return self.value.is_absolute()
@@ -263,12 +264,16 @@ class PathParameter(Parameter):
     def is_relative(self):
         return not self.value.is_absolute()
 
-    def value_based_on_path(self, path: Path):
+    def as_absolute(self, root_path: Path):
+        """A copy of this parameter but with an absolute root path"""
         if self.is_absolute():
-            raise ParameterException(
-                f"Cannot rebase path '{self.value}'. It is already absolute")
+            try:
+                self.value.relative_to(root_path)
+            except ValueError as e:
+                raise ParameterException(
+                    f"Cannot make this absolute '{e}'")
         else:
-            return path / self.value
+            return type(self)(root_path / self.value)
 
 
 class DestinationPath(PathParameter):
@@ -297,14 +302,27 @@ class SourceIdentifierParameter(PathParameter):
         self.value = SourceIdentifier.cast_to_subtype(str(value))
 
     def is_relative(self):
-        """Is the source identifier in this parameter a relative path?
+        """Is the source identifier in this parameter a relative root_path?
 
         """
         try:
             return self.value.is_relative()
         except AttributeError:
-            # SourceIdentifier might not be of path type. Then it is not relative
+            # SourceIdentifier might not be of root_path type. Then it is not relative
             return False
+
+    def as_absolute(self, root_path: Path):
+        """A copy of this parameter but with an absolute oot path"""
+        if self.is_absolute():
+            try:
+                self.value.identifier.relative_to(root_path)
+            except ValueError as e:
+                raise ParameterException(
+                    f"Cannot make this absolute '{e}'")
+        else:
+            a_copy = SourceIdentifierParameter(value=copy(self.value))
+            a_copy.value.identifier = root_path / a_copy.value.identifier
+            return a_copy
 
 
 class ParameterFactory:
