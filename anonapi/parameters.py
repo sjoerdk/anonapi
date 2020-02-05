@@ -351,7 +351,7 @@ class ParameterFactory:
             key, value = string.split(",", maxsplit=1)
         except ValueError:
             raise ParameterParsingError(
-                f"Could split '{string}' into key and value. There should be a "
+                f"Could not split '{string}' into key and value. There should be a "
                 f"comma somewhere."
             )
         return cls.parse_from_key_value(key=key, value=value)

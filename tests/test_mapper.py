@@ -224,3 +224,10 @@ def test_mapping_folder_read_write(tmpdir, a_grid_of_parameters):
 
     mapping_folder.delete_mapping()
     assert not mapping_folder.has_mapping()
+
+
+def test_os_error():
+    with open(RESOURCE_PATH / 'test_mapper' / 'anon_mapping_os_error.csv', 'r') as f:
+        mapping = Mapping.load(f)
+
+    test = 1

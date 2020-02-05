@@ -92,30 +92,19 @@ class Mapping:
 
         sections = cls.parse_sections(f)
 
-        description = "".join(
-            [
-                x
-                for x in sections[cls.DESCRIPTION_HEADER]
-                if x is not "\n" and x is not "\r\n"
-            ]
-        )
+        description = "".join(sections[cls.DESCRIPTION_HEADER])
 
-        # remove linux and windows newlines, and strip trailing commas which might
-        # be introduced by the editor
-        option_lines = [
-            x.replace("\r", "").replace("\n", "") for x in sections[cls.OPTIONS_HEADER]
-        ]
-        option_lines = [x for x in option_lines if x]  # remove empty lines
-        options = [ParameterFactory.parse_from_string(line) for line in option_lines]
+        options = [ParameterFactory.parse_from_string(line)
+                   for line in sections[cls.OPTIONS_HEADER]]
 
-        grid_content = StringIO("".join(sections[cls.GRID_HEADER]))
+        grid_content = StringIO(os.linesep.join(sections[cls.GRID_HEADER]))
         grid = JobParameterGrid.load(grid_content)
         return cls(grid=grid, options=options, description=description)
 
     @classmethod
     def parse_sections(cls, f):
         """A mapping csv file consists of three sections devided by headers.
-         Try to parse each one
+         Try to parse each one. Also cleans each line
 
         Parameters
         ----------
@@ -125,6 +114,8 @@ class Mapping:
         -------
         Dict
             A dict with all lines under each of the headers in cls.ALL_HEADERS
+            Line endings and trailing commas have been stripped. empty lines
+            have been removed
 
         Raises
         ------
@@ -137,6 +128,9 @@ class Mapping:
         header_to_find = headers_to_find.pop(0)
         current_header = None
         for line in f.readlines():
+            line = line.replace("\r", "").replace("\n", "").rstrip(",")
+            if not line:  # skip empty lines
+                continue
             if header_to_find.lower() in line.lower():
                 # this is our header, start recording
                 current_header = header_to_find
