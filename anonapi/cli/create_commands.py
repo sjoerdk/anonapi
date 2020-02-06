@@ -91,7 +91,7 @@ class JobParameterSet(ParameterSet):
                 if self.is_pacs_type(parameter):
                     dict_out["source_instance_id"] = str(parameter.value.identifier)
                 elif self.is_path_type(parameter):
-                    dict_out["source_path"] = str(parameter.value.identifier)
+                    dict_out["source_path"] = str(parameter.value)
                 else:
                     raise ParameterMappingException(
                         f"Unknown source parameter '{parameter}'"
