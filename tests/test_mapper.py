@@ -65,7 +65,7 @@ def test_write(tmpdir, a_grid_of_parameters):
 
 def test_job_parameter_grid_load():
     mapping_file = RESOURCE_PATH / "test_mapper" / "example_mapping.csv"
-    with open(mapping_file, "r") as f:
+    with open(mapping_file, "r", newline="") as f:
         grid = JobParameterGrid.load(f)
     assert len(grid.rows) == 20
 
@@ -79,7 +79,7 @@ def test_mapping_load_save():
     assert len(mapping.rows()) == 20
     assert len(mapping.options) == 2
 
-    output_file = StringIO()
+    output_file = StringIO(newline="")
     mapping.save(output_file)
     output_file.seek(0)
     loaded = Mapping.load(output_file)

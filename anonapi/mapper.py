@@ -385,7 +385,7 @@ class MappingFolder:
         return self.full_path().exists()
 
     def save_mapping(self, mapping_list):
-        with open(self.full_path(), "w") as f:
+        with open(self.full_path(), "w", newline="") as f:
             mapping_list.save(f)
 
     def load_mapping(self):
@@ -396,7 +396,7 @@ class MappingFolder:
         Mapping
 
         """
-        with open(self.full_path(), "r") as f:
+        with open(self.full_path(), "r", newline="") as f:
             return Mapping.load(f)
 
     def delete_mapping(self):
@@ -418,7 +418,7 @@ class MappingFolder:
         """
 
         try:
-            with open(self.full_path(), "r") as f:
+            with open(self.full_path(), "r", newline="") as f:
                 return Mapping.load(f)
         except FileNotFoundError:
             raise MappingLoadError("No mapping defined in current directory")
