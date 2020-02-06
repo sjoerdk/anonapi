@@ -71,6 +71,7 @@ class Mapping:
         f.write(self.DESCRIPTION_HEADER + os.linesep)
         f.write(self.description)
         f.write(os.linesep)
+        f.write(os.linesep)
 
         # write options
         f.write(self.OPTIONS_HEADER + os.linesep)
