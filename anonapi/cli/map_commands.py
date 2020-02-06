@@ -16,18 +16,16 @@ from anonapi.context import AnonAPIContext
 from anonapi.decorators import pass_anonapi_context
 from anonapi.mapper import (
     MappingFolder,
-    JobParameterGrid,
     MappingLoadError,
     ExampleJobParameterGrid,
     MapperException,
     Mapping,
 )
 from anonapi.parameters import (SourceIdentifierFactory, DestinationPath,
-                                ParameterFactory, PatientName,
-                                SourceIdentifierParameter, PatientID, Description,
-                                RootSourcePath, Project, Parameter,
+                                PatientName, SourceIdentifierParameter, PatientID,
+                                Description, RootSourcePath, Project, Parameter,
                                 FileSelectionIdentifier)
-from anonapi.settings import AnonClientSettings, JobDefaultParameters
+from anonapi.settings import AnonClientSettings
 
 
 class MapCommandContext:
