@@ -10,21 +10,11 @@ from anonapi.client import APIClientException
 from anonapi.decorators import pass_anonapi_context
 from anonapi.exceptions import AnonAPIException
 from anonapi.mapper import MappingFolder, MappingLoadError
-from anonapi.parameters import (
-    SourceIdentifier,
-    StudyInstanceUIDIdentifier,
-    Parameter,
-    DestinationPath,
-    PatientID,
-    PatientName,
-    Project,
-    Description,
-    SourceIdentifierParameter,
-    PIMSKey,
-    ParameterSet,
-    RootSourcePath,
-    PathParameter,
-)
+from anonapi.parameters import (SourceIdentifier, StudyInstanceUIDIdentifier,
+                                Parameter, DestinationPath, PatientID, PatientName,
+                                Project, Description, SourceIdentifierParameter,
+                                PIMSKey, ParameterSet, RootSourcePath, PathParameter,
+                                is_unc_path)
 from anonapi.settings import JobDefaultParameters, AnonClientSettingsException
 from click.exceptions import Abort, ClickException
 
@@ -121,7 +111,7 @@ class JobParameterSet(ParameterSet):
 
         try:
             self.with_unc_paths()
-        except NoAbsoluteRootPathException as e:
+        except ParameterMappingException as e:
             raise JobSetValidationError(
                 f'Error: {e}. Source and destination need to be absolute windows'
                 f' paths.')
@@ -132,20 +122,22 @@ class JobParameterSet(ParameterSet):
 
         Raises
         ------
-        NoAbsoluteRootPathException
-            If there are relative paths that cannot be resolved
+        ParameterMappingException
+            If there are relative paths that cannot be resolved or are not unc
         """
         # make sure that all relative paths can be resolved
         absolute_params = []
         for param in self.parameters:
-            #if not param.is_unc():
-            #    raise
-            if isinstance(param, PathParameter) and param.is_relative():
-                root_path = self.get_absolute_root_path()
-                absolute_params.append(param.as_absolute(root_path))
+            if hasattr(param, 'path') and param.path:
+                # there is a path, try to make absolute and check unc
+                if not param.path.is_absolute():
+                    param = param.as_absolute(self.get_absolute_root_path())
+                if not is_unc_path(param.path):
+                    raise ParameterMappingException(
+                        f"{param} is not a unc path. It will not be clear where this "
+                        f"path is outside the current computer")
+            absolute_params.append(param)
 
-            else:
-                absolute_params.append(param)
         return absolute_params
 
     def get_absolute_root_path(self) -> PureWindowsPath:
@@ -160,7 +152,7 @@ class JobParameterSet(ParameterSet):
         root_path = self.get_param_by_type(RootSourcePath)
         if not root_path:
             raise NoAbsoluteRootPathException("No absolute root root_path defined")
-        elif not root_path.is_absolute():
+        elif not root_path.path.is_absolute():
             raise NoAbsoluteRootPathException(
                 f"Root root_path {root_path} is not absolute"
             )

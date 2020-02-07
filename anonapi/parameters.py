@@ -55,14 +55,13 @@ class SourceIdentifier:
 
 class PathIdentifier(SourceIdentifier):
 
-    def get_path(self) -> Path:
+    @property
+    def path(self) -> Path:
         return self.identifier
 
-    def is_absolute(self):
-        return Path(self.identifier).is_absolute()
-
-    def is_relative(self):
-        return not self.is_absolute()
+    @path.setter
+    def path(self, value):
+        self.identifier = value
 
 
 class FolderIdentifier(PathIdentifier):
@@ -215,25 +214,15 @@ class Parameter:
     Made this because the mapping csv file contains rows in different
     forms. I still want to treat them the same
     """
-
-    value_type = str
     field_name = "parameter"
 
-    def __init__(self, value=None):
+    def __init__(self, value: str = None):
         if not value:
-            self.value = None  # rows can be empty, regardless of the type
-        else:
-            self.value = self.value_type(value)
+            value = ""
+        self.value = str(value)
 
     def __str__(self):
-        if not self.value:
-            value = ""
-        else:
-            value = self.value
-        return f"{self.field_name},{value}"
-
-    def has_value(self):
-        return bool(self.value)
+        return f"{self.field_name},{self.value}"
 
 
 class PatientID(Parameter):
@@ -257,28 +246,31 @@ class Project(Parameter):
 
 
 class PathParameter(Parameter):
-    """A parameter that can refer to a root_path on disk or share"""
+    """A parameter that can refer to a root_path on disk or share
 
-    value_type = PureWindowsPath
+    Always has a 'path' property that can get and set the path part
+    """
 
-    def is_absolute(self):
-        return self.value.is_absolute()
+    def __init__(self, value:  PureWindowsPath = None):
+        super(PathParameter, self).__init__()
+        if value:
+            self.value = PureWindowsPath(value)
+        else:
+            self.value = PureWindowsPath()
 
-    def is_relative(self):
-        return not self.value.is_absolute()
-
-    def is_unc(self):
-        return self.value.is_unc()
+    @property
+    def path(self) -> PureWindowsPath:
+        return self.value
 
     def as_absolute(self, root_path: Path):
         """A copy of this parameter but with an absolute root path"""
-        if self.is_absolute():
+        if self.path.is_absolute():
             try:
-                self.value.relative_to(root_path)
+                self.path.relative_to(root_path)
             except ValueError as e:
                 raise ParameterException(f"Cannot make this absolute '{e}'")
         else:
-            return type(self)(root_path / self.value)
+            return type(self)(root_path / self.path)
 
 
 class DestinationPath(PathParameter):
@@ -292,7 +284,6 @@ class RootSourcePath(PathParameter):
 class SourceIdentifierParameter(PathParameter):
     """Reference to the source of the data"""
 
-    value_type = SourceIdentifier
     field_name = "source"
 
     def __init__(self, value: str):
@@ -305,29 +296,38 @@ class SourceIdentifierParameter(PathParameter):
 
         """
         super(SourceIdentifierParameter, self).__init__()
-        self.value = SourceIdentifier.cast_to_subtype(str(value))
+        self.value = SourceIdentifierFactory().get_source_identifier_for_key(str(value))
 
-    def is_relative(self):
-        """Is the source identifier in this parameter a relative root_path?
-
-        """
+    @property
+    def path(self) -> Optional[Path]:
+        """Return the path part of this identifier. """
         try:
-            return self.value.is_relative()
-        except AttributeError:
-            # SourceIdentifier might not be of root_path type. Then it is not relative
-            return False
+            return Path(self.value.path)
+        except AttributeError:  # identifier might be non-path, like a PACS uid
+            return None
+
+    @path.setter
+    def path(self, value):
+        if hasattr(self.value, 'path'):
+            self.value.path = value
+        else:
+            raise AttributeError(f"{self.value} has no attribute 'Path'")
 
     def as_absolute(self, root_path: Path):
         """A copy of this parameter but with an absolute oot path"""
-        if self.is_absolute():
-            try:
-                self.value.identifier.relative_to(root_path)
-            except ValueError as e:
-                raise ParameterException(f"Cannot make this absolute '{e}'")
+        if not self.path:
+            # no path to do anything to. just return a copy
+            return SourceIdentifierParameter(copy(self.value))
         else:
-            a_copy = SourceIdentifierParameter(value=copy(self.value))
-            a_copy.value.identifier = root_path / a_copy.value.identifier
-            return a_copy
+            if self.path.is_absolute():
+                try:
+                    self.path.relative_to(root_path)
+                except ValueError as e:
+                    raise ParameterException(f"Cannot make this absolute '{e}'")
+            else:
+                identifier_copy = copy(self.value)
+                identifier_copy.path = root_path / identifier_copy.path
+                return SourceIdentifierParameter(identifier_copy)
 
 
 class ParameterFactory:
@@ -430,14 +430,9 @@ class ParameterSet:
 
 
 def is_unc_path(path: Path):
-    """Got this from http://regexlib.com/REDetails.aspx?regexp_id=2285"""
-    unc_regex = "^((\\\\[a-zA-Z0-9-]+\\[a-zA-Z0-9`~!@#$%^&(){}'._-]+([ ]+" \
-                "[a-zA-Z0-9`~!@#$%^&(){}'._-]+)*)|([a-zA-Z]:))(\\[^ \\/:*?""" \
-                "<>|]+([ ]+[^ \\/:*?""<>|]+)*)*\\?$"
+    """Is this a unc path like \\server\share\things? """
 
-    test = 1
-    return True
-
+    return PureWindowsPath(path).anchor.startswith(r"\\")
 
 
 COMMON_JOB_PARAMETERS = [SourceIdentifierParameter, PatientID, PatientName, Description]
