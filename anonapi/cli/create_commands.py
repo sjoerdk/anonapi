@@ -79,7 +79,7 @@ class JobParameterSet(ParameterSet):
 
         # make all parameter paths absolute
         try:
-            absolute_parameters = self.with_absolute_paths()
+            absolute_parameters = self.with_unc_paths()
         except NoAbsoluteRootPathException as e:
             raise ParameterMappingException(e)
 
@@ -120,14 +120,15 @@ class JobParameterSet(ParameterSet):
                 raise JobSetValidationError(f"Missing required parameter {required}")
 
         try:
-            self.with_absolute_paths()
+            self.with_unc_paths()
         except NoAbsoluteRootPathException as e:
             raise JobSetValidationError(
                 f'Error: {e}. Source and destination need to be absolute windows'
                 f' paths.')
 
-    def with_absolute_paths(self):
-        """A copy of this JobParameterSet where all paths are absolute
+    def with_unc_paths(self):
+        """A copy of this JobParameterSet where all paths are absolute UNC
+        paths. No relative paths, no mapped drive letters
 
         Raises
         ------
@@ -137,6 +138,8 @@ class JobParameterSet(ParameterSet):
         # make sure that all relative paths can be resolved
         absolute_params = []
         for param in self.parameters:
+            #if not param.is_unc():
+            #    raise
             if isinstance(param, PathParameter) and param.is_relative():
                 root_path = self.get_absolute_root_path()
                 absolute_params.append(param.as_absolute(root_path))
@@ -146,6 +149,14 @@ class JobParameterSet(ParameterSet):
         return absolute_params
 
     def get_absolute_root_path(self) -> PureWindowsPath:
+        """From this set, get the root path
+
+        Raises
+        ------
+        NoAbsoluteRootPathException
+            If there are relative paths that cannot be resolved
+
+        """
         root_path = self.get_param_by_type(RootSourcePath)
         if not root_path:
             raise NoAbsoluteRootPathException("No absolute root root_path defined")

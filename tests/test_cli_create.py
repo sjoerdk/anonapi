@@ -1,4 +1,4 @@
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import pytest
 
@@ -246,6 +246,20 @@ def test_job_parameter_set_validate(all_parameters):
     param_set.parameters.remove(param_set.get_param_by_type(RootSourcePath))
     with pytest.raises(JobSetValidationError) as e:
         param_set.validate()
+
+
+def test_job_parameter_set_validate_non_unc_paths(all_parameters):
+    """Windows maps drive letters, makes then unaccessible to normal
+     python code and then forbids using anything BUT drive letters in windows cmd
+      A very annoying combination which makes it hard to determine what a path is
+      in windows. Just make sure no jobs can be created with drive letters any paths"""
+    param_set = JobParameterSet(all_parameters)
+    root_source = param_set.get_param_by_type(RootSourcePath)
+    root_source.value = PureWindowsPath(r"Z:\folder1")
+    with pytest.raises(JobSetValidationError) as e:
+        param_set.validate()
+
+    test = 1
 
 
 def test_job_parameter_set_defaults():

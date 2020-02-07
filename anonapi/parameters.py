@@ -54,6 +54,10 @@ class SourceIdentifier:
 
 
 class PathIdentifier(SourceIdentifier):
+
+    def get_path(self) -> Path:
+        return self.identifier
+
     def is_absolute(self):
         return Path(self.identifier).is_absolute()
 
@@ -263,6 +267,9 @@ class PathParameter(Parameter):
     def is_relative(self):
         return not self.value.is_absolute()
 
+    def is_unc(self):
+        return self.value.is_unc()
+
     def as_absolute(self, root_path: Path):
         """A copy of this parameter but with an absolute root path"""
         if self.is_absolute():
@@ -420,6 +427,17 @@ class ParameterSet:
     def is_pacs_type(parameter):
         """Refers to data coming from the PACS system"""
         return isinstance(parameter.value, PACSResourceIdentifier)
+
+
+def is_unc_path(path: Path):
+    """Got this from http://regexlib.com/REDetails.aspx?regexp_id=2285"""
+    unc_regex = "^((\\\\[a-zA-Z0-9-]+\\[a-zA-Z0-9`~!@#$%^&(){}'._-]+([ ]+" \
+                "[a-zA-Z0-9`~!@#$%^&(){}'._-]+)*)|([a-zA-Z]:))(\\[^ \\/:*?""" \
+                "<>|]+([ ]+[^ \\/:*?""<>|]+)*)*\\?$"
+
+    test = 1
+    return True
+
 
 
 COMMON_JOB_PARAMETERS = [SourceIdentifierParameter, PatientID, PatientName, Description]
