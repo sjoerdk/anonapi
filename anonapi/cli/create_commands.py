@@ -9,16 +9,16 @@ from anonapi.context import AnonAPIContext
 from anonapi.client import APIClientException
 from anonapi.decorators import pass_anonapi_context
 from anonapi.exceptions import AnonAPIException
-from anonapi.mapper import MappingFolder, MappingLoadError
+from anonapi.mapper import MappingFolder, MapperException
 from anonapi.parameters import (SourceIdentifier, StudyInstanceUIDIdentifier,
                                 Parameter, DestinationPath, PatientID, PatientName,
                                 Project, Description, SourceIdentifierParameter,
-                                PIMSKey, ParameterSet, RootSourcePath, PathParameter,
+                                PIMSKey, ParameterSet, RootSourcePath,
                                 is_unc_path)
 from anonapi.settings import JobDefaultParameters, AnonClientSettingsException
 from click.exceptions import Abort, ClickException
 
-from pathlib import Path, PureWindowsPath
+from pathlib import PureWindowsPath
 
 
 class JobParameterSet(ParameterSet):
@@ -274,7 +274,7 @@ class CreateCommandsContext(AnonAPIContext):
     def get_mapping(self):
         try:
             return MappingFolder(self.current_dir).get_mapping()
-        except MappingLoadError as e:
+        except MapperException as e:
             raise ClickException(e)
 
 

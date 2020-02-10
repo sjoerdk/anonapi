@@ -6,7 +6,8 @@ from pytest import fixture
 
 
 from anonapi.cli import entrypoint
-from anonapi.cli.map_commands import MapCommandContext, add_selection
+from anonapi.cli.map_commands import MapCommandContext, add_selection, \
+    add_all_study_folders, add_path_to_mapping_click
 from anonapi.mapper import MappingLoadError, MappingFolder
 from anonapi.parameters import ParameterSet, RootSourcePath
 from anonapi.settings import  DefaultAnonClientSettings
@@ -112,7 +113,7 @@ def test_cli_map_info_load_exception(mock_main_runner, monkeypatch):
 
 
 def test_cli_map_add_folder(mock_main_runner, folder_with_some_dicom_files):
-    """Add a folder with some dicom files to a mapping."""
+    """Add all dicom files in this folder to mapping"""
     selection_folder = folder_with_some_dicom_files
 
     # Add this folder to mapping
@@ -123,7 +124,7 @@ def test_cli_map_add_folder(mock_main_runner, folder_with_some_dicom_files):
     )
 
     # oh no! no mapping yet!
-    assert "No mapping in current" in result.output
+    assert "No mapping defined in current" in result.output
 
     # make one
     mock_main_runner.invoke(entrypoint.cli, f"map init")
@@ -135,6 +136,53 @@ def test_cli_map_add_folder(mock_main_runner, folder_with_some_dicom_files):
     )
     assert result.exit_code == 0
     assert selection_folder.has_file_selection()
+
+
+@fixture
+def add_path_to_mapping_click_recorder(monkeypatch):
+    """Add a decorator around the function that adds paths to mapping. Function
+    will still works as normal, but calls are recorded"""
+
+    recorder = Mock()
+
+    def add_path_to_mapping_click_recorded(*args, **kwargs):
+        """Run the original function, but track calls"""
+        recorder(*args, **kwargs)
+        return add_path_to_mapping_click(*args, **kwargs)
+
+    monkeypatch.setattr('anonapi.cli.map_commands.add_path_to_mapping_click',
+                        add_path_to_mapping_click_recorded)
+    return recorder
+
+
+def test_cli_map_add_all_study_folders(map_command_runner_mapping_dir,
+                                       folder_with_mapping_and_some_dicom_files,
+                                       add_path_to_mapping_click_recorder,
+                                       monkeypatch):
+    """Add multiple study folders"""
+    context: MapCommandContext = map_command_runner_mapping_dir.mock_context
+    context.current_path = folder_with_mapping_and_some_dicom_files.path
+    monkeypatch.setattr("os.getcwd",
+                         lambda: str(folder_with_mapping_and_some_dicom_files.path))
+
+    # Add this folder to mapping, but cancel
+    result = map_command_runner_mapping_dir.invoke(
+        add_all_study_folders,
+        f"{'*'}", input='No',
+        catch_exceptions=False,
+    )
+    # nothing should have been done
+    assert result.exit_code == 0
+    assert 'Cancelled' in result.output
+    assert not add_path_to_mapping_click_recorder.called
+
+    # now repeat and do not cancel
+    result = map_command_runner_mapping_dir.invoke(
+        add_all_study_folders, f"{'*'}",
+        input='Yes',
+        catch_exceptions=False, )
+
+    assert add_path_to_mapping_click_recorder.call_count == 2
 
 
 def test_cli_map_delete(mock_main_runner, a_folder_with_mapping):

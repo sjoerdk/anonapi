@@ -1,5 +1,6 @@
 from io import StringIO
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 from fileselection.fileselection import FileSelectionFile
@@ -228,6 +229,27 @@ def test_mapping_folder_read_write(tmpdir, a_grid_of_parameters):
 
 def test_os_error():
     with open(RESOURCE_PATH / 'test_mapper' / 'anon_mapping_os_error.csv', 'r') as f:
-        mapping = Mapping.load(f)
+        _ = Mapping.load(f)
 
-    test = 1
+
+def test_open_file():
+    """Editors like openoffice and excel will lock open csv files. When combined
+    with working on shares directly, the error messages can be quite confusing.
+    No nice 'This file is opened in another application'. Make this slightly less
+    confusing
+    """
+
+    mapping_file = RESOURCE_PATH / "test_mapper" / "with_mapping_wide_settings.csv"
+    with open(mapping_file, "r") as f:
+        f.readlines = Mock(side_effect=OSError(
+            "raw readinto() returned invalid length 4294967283 "
+            "(should have been between 0 and 8192)"))
+        with pytest.raises(MappingLoadError) as e:
+
+            _ = Mapping.load(f)
+
+        assert "opened in any editor?" in str(e)
+
+
+
+

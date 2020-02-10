@@ -90,7 +90,16 @@ class Mapping:
         """ Load a mapping from a csv file stream """
         # split content into three sections
 
-        sections = cls.parse_sections(f)
+        try:
+            sections = cls.parse_sections(f)
+        except OSError as e:
+            if 'raw readinto() returned invalid length' in str(e):
+                raise MappingLoadError(
+                        f"Cannot load mapping. Is the mapping file opened in any"
+                        f" editor?. Original error: {e}")
+            else:
+                # Unsure which error this is. Can't handle this here.
+                raise
 
         description = "".join(sections[cls.DESCRIPTION_HEADER])
 
@@ -411,7 +420,7 @@ class MappingFolder:
 
         Raises
         ------
-        MappingLoadError
+        MapperException
             When no mapping could be loaded from current directory
 
         """
@@ -420,9 +429,9 @@ class MappingFolder:
             with open(self.full_path(), "r", newline="") as f:
                 return Mapping.load(f)
         except FileNotFoundError:
-            raise MappingLoadError("No mapping defined in current directory")
+            raise NoMappingFoundError("No mapping defined in current directory")
         except MapperException as e:
-            raise MappingLoadError(f"Error loading mapping: {e}")
+            raise MappingLoadError(e)
 
 
 class ExampleJobParameterGrid(JobParameterGrid):
@@ -477,6 +486,10 @@ class ExampleJobParameterGrid(JobParameterGrid):
 
 
 class MapperException(AnonAPIException):
+    pass
+
+
+class NoMappingFoundError(MapperException):
     pass
 
 

@@ -27,28 +27,6 @@ from tests.factories import RequestsMockResponseExamples
 
 
 @pytest.fixture()
-def mock_main_runner_with_mapping(mock_main_runner, a_folder_with_mapping):
-    """Mock runner where a mapping is defined in current dir"""
-    mock_main_runner.set_mock_current_dir(a_folder_with_mapping)
-    return mock_main_runner
-
-
-@pytest.fixture()
-def mock_from_mapping_runner(mock_main_runner_with_mapping):
-    """Mock runner that has everything to make a call to from-mapping work:
-    * Mapping defined in current dir
-    * Default job rows are non-empty"""
-
-    parameters = (
-        mock_main_runner_with_mapping.get_context().settings.job_default_parameters
-    )
-    parameters.project_name = "test_project"
-    parameters.destination_path = Path("//test/output/root_path")
-
-    return mock_main_runner_with_mapping
-
-
-@pytest.fixture()
 def mock_requests_for_job_creation(mock_requests):
     """Mock requests library so that every call to it will return a standard
     anonapi Job created response
@@ -260,8 +238,6 @@ def test_job_parameter_set_validate_non_unc_paths(all_parameters):
     root_source.value = PureWindowsPath(r"Z:\folder1")
     with pytest.raises(JobSetValidationError) as e:
         param_set.validate()
-
-    test = 1
 
 
 def test_job_parameter_set_defaults():

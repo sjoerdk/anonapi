@@ -101,6 +101,14 @@ def folder_with_some_dicom_files(tmpdir):
 
 
 @fixture
+def folder_with_mapping_and_some_dicom_files(tmpdir):
+    """Mapping and some dicom folders to add."""
+    a_folder = tmpdir / "a_folder"
+    shutil.copytree(RESOURCE_PATH / "test_cli", a_folder)
+    return FileSelectionFolder(path=a_folder)
+
+
+@fixture
 def a_file_selection(tmpdir):
     """A file with a valid file selection """
     return RESOURCE_PATH / "test_cli" / "selection" / "fileselection.txt"
@@ -149,6 +157,28 @@ def all_parameters():
         RootSourcePathFactory(),
         ProjectFactory(),
     ]
+
+
+@fixture()
+def mock_main_runner_with_mapping(mock_main_runner, a_folder_with_mapping):
+    """Mock runner where a mapping is defined in current dir"""
+    mock_main_runner.set_mock_current_dir(a_folder_with_mapping)
+    return mock_main_runner
+
+
+@fixture()
+def mock_from_mapping_runner(mock_main_runner_with_mapping):
+    """Mock runner that has everything to make a call to from-mapping work:
+    * Mapping defined in current dir
+    * Default job rows are non-empty"""
+
+    parameters = (
+        mock_main_runner_with_mapping.get_context().settings.job_default_parameters
+    )
+    parameters.project_name = "test_project"
+    parameters.destination_path = Path("//test/output/root_path")
+
+    return mock_main_runner_with_mapping
 
 
 class MockContextCliRunner(CliRunner):
