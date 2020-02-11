@@ -1,50 +1,70 @@
 .. _command_reference:
 
+=================
 Command reference
 =================
 
-Overview of all CLI functions. For more information, type 'anon <function>' and press enter in the CLI itself
+Information on specific anonapi CLI functions. For more general information on how to achieve specific goals, see :doc:`usage`
 
+
+.. note::
+    Detailed help on commands is often available directly from the command line by adding ``--help`` to any command. See :ref:`getting_info_on_commands`
+
+======
 status
-------
+======
+
 Display information on the command line tool itself. Which API servers it knows about, current active server
 
-.. code-block:: console
-
-    $ anon status   # list all commands
 
 .. _server_commands:
 
+======
 server
-------
+======
 Work with Anonymization server API servers. Add, remove servers, set active server
 
-.. code-block:: console
+Overview of server functions:
 
-    $ anon server   # list all commands
+======== ========================================================================
+Command  Description                                                             
+======== ========================================================================
+activate Set given server as activate server, meaning subsequent operations will 
+add      Add a server to the list of servers in settings                         
+jobs     List latest 100 jobs for active server, or given server                 
+list     show all servers in settings                                            
+remove   Remove a server from list in settings                                   
+status   Check whether active server is online and responding like an anonymizati
+======== ========================================================================
 
+
+===
 job
----
+===
 Work with single jobs. Get extended info, reset, restart a job
 
-.. code-block:: console
+Overview of job functions:
 
-    $ anon job   # list all commands
+======= =========================================================================
+Command Description                                                              
+======= =========================================================================
+cancel  set job status to inactive                                               
+info    print job info                                                           
+list    list info for multiple jobs                                              
+reset   reset job, process again                                                 
+======= =========================================================================
 
-
+========
 settings
---------
-Local settings for this anonapi instance. Credentials that are used to communicate with the API, path mapping etc.
-
-.. code-block:: console
-
-    $ anon settings user   # list all commands
+========
+Local settings for this anonapi instance. Credentials that are used to communicate with the API.
 
 
 .. _batch:
 
+=====
 batch
------
+=====
 Work with lists of jobs on a certain server. Anonymization jobs often occur in sets. With batches you can group
 jobs together an do batch processing on them. A batch lives in a single folder. To work with a batch you have to be in
 that folder. For example:
@@ -83,19 +103,20 @@ that folder. For example:
 
 batch command overview:
 
-============        ====================================================
-Command             Description
-============        ====================================================
-info                print overview of all jobs in current folder
-status              get_status for entire batch
-reset               reset every job in this batch
-init                Create empty batch in current folder
-delete              Delete batch in current folder
-add                 Add job ids to batch
-remove              Remove job ids from batch
-cancel              Cancel all jobs in this batch
-reset_error         Reset all jobs with error status in current batch
-============        ====================================================
+=========== =====================================================================
+Command     Description                                                          
+=========== =====================================================================
+add         Add ids to current batch. Will not add already existing. Space separa
+cancel      Cancel every job in the current batch                                
+delete      delete batch in current folder                                       
+info        Show batch in current directory                                      
+init        Save an empty batch in the current folder, for current server        
+remove      Remove ids from current batch. Space separated, ranges like 1-40 allo
+reset       Reset every job in the current batch                                 
+reset-error Reset all jobs with error status in the current batch                
+show-error  Show full error message for all error jobs in batch                  
+status      Print status overview for all jobs in batch                          
+=========== =====================================================================
 
 
 For convenience, it is possible to pass job ids for batch add and batch remove as ranges:
@@ -115,3 +136,67 @@ For convenience, it is possible to pass job ids for batch add and batch remove a
         server:
           name: p01
           url: https://apiservers/p01
+
+
+.. _map:
+
+===
+map
+===
+Create a mapping between data and anonymization parameters. This mapping contains everything needed to create
+anonymization jobs
+
+Overview of map functions:
+
+===================== ===========================================================
+Command               Description                                                
+===================== ===========================================================
+add-all-study-folders Add all folders matching pattern to mapping                
+add-selection         Add selection file to mapping                              
+add-study-folder      Add all dicom files in given folder to map                 
+delete                delete mapping in current folder                           
+edit                  Edit the current mapping in OS default editor              
+init                  Save a default mapping in the current folder               
+status                Show mapping in current directory                          
+===================== ===========================================================
+
+
+.. _select:
+
+
+======
+select
+======
+select files for a single anonymization job
+
+
+Overview of select functions:
+
+======= =========================================================================
+Command Description                                                              
+======= =========================================================================
+add     Add all files matching given pattern to the selection in the current fold
+delete  Show selection in current directory                                      
+edit    initialise a selection for the current directory, add all DICOM files    
+status  Show selection in current directory                                      
+======= =========================================================================
+
+
+.. _create:
+
+
+======
+create
+======
+create jobs
+
+
+Overview of create functions:
+
+============= ===================================================================
+Command       Description                                                        
+============= ===================================================================
+from-mapping  Create jobs from mapping in current folder                         
+set-defaults  Set project name used when creating jobs                           
+show-defaults show project name used when creating jobs                          
+============= ===================================================================
