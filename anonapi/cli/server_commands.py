@@ -52,8 +52,7 @@ def remove(parser: AnonAPIContext, short_name):
 @click.command()
 @pass_anonapi_context
 def status(parser: AnonAPIContext):
-    """Check whether active server is online and responding like an anonymization web API, optionaly check given
-    server instead of active
+    """Check whether active server is online and responding
     """
     response = parser.client_tool.get_server_status(parser.get_active_server())
     click.echo(response)
@@ -62,7 +61,7 @@ def status(parser: AnonAPIContext):
 @click.command()
 @pass_anonapi_context
 def jobs(parser: AnonAPIContext):
-    """List latest 100 jobs for active server, or given server
+    """List latest 100 jobs for active server
     """
     response = parser.client_tool.get_jobs(parser.get_active_server())
     click.echo(response)
@@ -72,7 +71,7 @@ def jobs(parser: AnonAPIContext):
 @pass_anonapi_context
 @click.argument("short_name", metavar="SHORT_NAME", type=AnonServerKeyParamType())
 def activate(parser: AnonAPIContext, short_name):
-    """Set given server as activate server, meaning subsequent operations will use this server.
+    """Commands will use given server by default
     """
     server = parser.get_server_by_name(short_name)
     parser.settings.active_server = server

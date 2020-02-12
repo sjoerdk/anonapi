@@ -64,8 +64,7 @@ def delete(parser: AnonAPIContext):
 @pass_anonapi_context
 @click.argument("job_ids", type=JobIDRangeParamType(), nargs=-1)
 def add(parser: AnonAPIContext, job_ids):
-    """Add ids to current batch. Will not add already existing. Space separated, ranges like 1-40
-    allowed
+    """Add ids to current batch. Space-separated (1 2 3) or range (1-40)
     """
     job_ids = [x for x in itertools.chain(*job_ids)]  # make into one list
     batch_folder = parser.get_batch_folder()
@@ -79,7 +78,7 @@ def add(parser: AnonAPIContext, job_ids):
 @pass_anonapi_context
 @click.argument("job_ids", type=JobIDRangeParamType(), nargs=-1)
 def remove(parser: AnonAPIContext, job_ids):
-    """Remove ids from current batch. Space separated, ranges like 1-40 allowed
+    """Remove ids from current batch. Space-separated (1 2 3) or range (1-40)
     """
     job_ids = [x for x in itertools.chain(*job_ids)]  # make into one list
     batch_folder = parser.get_batch_folder()

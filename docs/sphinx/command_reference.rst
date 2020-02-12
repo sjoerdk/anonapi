@@ -27,12 +27,12 @@ Overview of server functions:
 ======== ========================================================================
 Command  Description                                                             
 ======== ========================================================================
-activate Set given server as activate server, meaning subsequent operations will 
+activate Commands will use given server by default                               
 add      Add a server to the list of servers in settings                         
-jobs     List latest 100 jobs for active server, or given server                 
+jobs     List latest 100 jobs for active server                                  
 list     show all servers in settings                                            
 remove   Remove a server from list in settings                                   
-status   Check whether active server is online and responding like an anonymizati
+status   Check whether active server is online and responding                    
 ======== ========================================================================
 
 .. _job:
@@ -55,8 +55,18 @@ reset   reset job, process again
 
 settings
 ========
-Local settings for this anonapi instance. Credentials that are used to communicate with the API.
+View and edit local settings for this anonapi instance. Credentials that are used to communicate with the API. See
+:ref:`configure_credentials`.
 
+============ ====================================================================
+Command      Description                                                         
+============ ====================================================================
+get-token    Obtain a security token                                             
+info         show current credentials                                            
+set-username Set the given username in settings                                  
+============ ====================================================================
+
+Settings are stored in the users home directory in a file called `AnonWebAPIClientSettings.yml`
 
 .. _batch:
 
@@ -104,12 +114,12 @@ batch command overview:
 =========== =====================================================================
 Command     Description                                                          
 =========== =====================================================================
-add         Add ids to current batch. Will not add already existing. Space separa
+add         Add ids to current batch. Space-separated (1 2 3) or range (1-40)    
 cancel      Cancel every job in the current batch                                
 delete      delete batch in current folder                                       
 info        Show batch in current directory                                      
 init        Save an empty batch in the current folder, for current server        
-remove      Remove ids from current batch. Space separated, ranges like 1-40 allo
+remove      Remove ids from current batch. Space-separated (1 2 3) or range (1-40
 reset       Reset every job in the current batch                                 
 reset-error Reset all jobs with error status in the current batch                
 show-error  Show full error message for all error jobs in batch                  
@@ -157,11 +167,44 @@ init                  Save a default mapping in the current folder
 status                Show mapping in current directory                          
 ===================== ===========================================================
 
+.. _map_add_study_folder:
+
+add-study-folder
+----------------
+
+Add the given folder to :ref:`mapping <concepts_mapping>`. This is done by finding all dicom files in the folder and any folders below it, adding
+those to a :ref:`file selection <concepts_selection>`, and then adding the file selection to the mapping.
+
+Example:
+
+.. code-block:: console
+
+    $ anon map add-study-folder folder1/
+    > Adding 'folder1' to mapping
+    > Finding all files in folder1
+    > 1it [12:01, 145.41it/s]
+    > Found 1512 files. Finding out which ones are DICOM
+    > 100%|██████████████████████████████████████████████| 1420/1512 [00:00<00:00, 10.51it/s]
+    > Found 1420 DICOM files
+
+
+To find out which files are DICOM, each file is opened as DICOM. If this succeeds the file is added. This makes
+sure that only valid DICOM is sent to the anonymization server.
+
+Running the command ``anon map add-study-folder <folder>`` is equivalent to running ``anon select add <folder>`` and then
+``anon map add-selection-file <folder>/fileselection.txt``
+
+
+.. note::
+
+    For folders with many files, add-study-folder might take several seconds up to a minute to complete.
+
+
 add-all-study-folders
 ---------------------
 
-Add all folders that match a pattern to mapping. The pattern can include ``*`` to match part of a file or folder,
-and ``**`` to match any combination of folders and filenames.
+Runs :ref:`add-study-folder <map_add_study_folder>` on all folders that match pattern. The pattern can include ``*``
+to match part of a file or folder and ``**`` to match any combination of folders and filenames.
 
 For example, given the following folder structure::
 
@@ -205,7 +248,8 @@ The following paths would be selected:
     > patient2/test/raw
     > patient2/raw
 
-    # tip: On linux terminals, the pattern currently needs to be quoted to avoid automatic expansion
+    # tip: On linux bash terminals, the pattern needs to be
+    #      quoted to avoid automatic expansion
 
 .. note::
 
@@ -213,23 +257,78 @@ The following paths would be selected:
     to each path.
 
 
+.. _map_add_selection_file:
+
+add-selection-file
+------------------
+
+Add the given :ref:`file selection <concepts_selection>` file to :ref:`mapping <concepts_mapping>`. This will create
+a new row in the mapping
+
+
 .. _select:
 
 select
 ======
-select files for a single anonymization job
-
+select files for a single anonymization job. The selection is saved in a :ref:`file selection <concepts_selection>` file.
 
 Overview of select functions:
 
 ======= =========================================================================
 Command Description                                                              
 ======= =========================================================================
-add     Add all files matching given pattern to the selection in the current fold
-delete  Show selection in current directory                                      
-edit    initialise a selection for the current directory, add all DICOM files    
+add     Add all files matching pattern to selection in the current directory.Excl
+delete  Remove selection file in current directory                               
+edit    Open selection file in default editor                                    
 status  Show selection in current directory                                      
 ======= =========================================================================
+
+.. _select_add:
+
+Add
+---
+Add all files matching pattern paths to a :ref:`file selection <concepts_selection>` in the current folder. Pattern can use
+``*`` to match any part of a name. Excludes files called `fileselection.txt`
+
+There are several modifiers available:
+
+--check-dicom
+    Only add files that are valid DICOM file. For many files, this might take some time. This if off by default.
+
+--exclude-pattern (or -e)
+    When adding, exclude any file matching the given pattern. The pattern can use ``*`` to match any part of a name.
+    --exclude-pattern can be used multiple times, to exclude multiple patterns
+
+--recurse/--no-recurse
+    Search for files to add in subfolders. This is the default. If --no-recurse is given, only search for files in the
+    current directory
+
+Examples of different selections. Given the following folder structure::
+
+        patient1
+        |--study1
+        |   |--file1.dcm             (valid DICOM file)
+        |   |--bigfile.raw           (valid DICOM file)
+        |--study2
+        |   |-123.1224.5354.543.4    (valid DICOM file)
+        |   |-123.1224.2534.34.2     (valid DICOM file)
+        |--fileselection.txt
+        |--screenshots
+        |   |--shot1.jpg
+
+
+You can select files like this:
+
+.. code-block:: console
+
+    $ anon select add *                 # adds all files in the folder except 'fileselection.txt'
+    $ anon select add --check-dicom *   # adds both files in study1 and both in study2
+    $ anon select add study2/*          # adds both files in study2
+    $ anon select add *.dcm             # adds only study1/file1.dcm
+
+    $ anon select add * --exclude-pattern *.raw  # all DICOM except study1/bigfile.raw
+
+    $ anon select add * --exclude-pattern *.raw --exclude-pattern *.dcm  # only files in study2
 
 
 .. _create:

@@ -24,6 +24,8 @@ from jinja2 import Template
 from pathlib import Path
 from typing import List
 
+from anonapi.parameters import ALL_PARAMETERS
+
 
 def make_h1(text):
     bar = '='*len(text)
@@ -147,15 +149,31 @@ class ClickCommandJinjaContext:
         return table
 
 
-context = ClickCommandJinjaContext(root=entrypoint.cli)
+class AnonApiContext():
+    """Info about the anonapi lib to pass to jinja"""
+
+    @property
+    def all_parameters(self) -> str:
+        """Valid sphinx output listing all parameters"""
+        return "\n\n".join(["* " + x.field_name for x in ALL_PARAMETERS])
 
 
-template_path = Path('templates/command_reference_base.rst')
-output_path = Path('command_reference.rst')
-with open(template_path, 'r') as f:
-    output = Template(f.read()).render(context=context)
+click_context = ClickCommandJinjaContext(root=entrypoint.cli)
+anonapi_context = AnonApiContext()
 
-with open(output_path, 'w') as f:
-    f.write(output)
-print(context)
-print(f'done. Wrote to {output_path.absolute()}')
+# render these templates to these locations
+template_mapping = \
+    {Path('templates/command_reference_base.rst'): Path('../sphinx/command_reference.rst'),
+     Path('templates/concepts_base.rst'): Path('../sphinx/concepts.rst')
+     }
+
+for template_path, output_path in template_mapping.items():
+    with open(template_path, 'r') as f:
+        output = Template(f.read()).render(context={'click': click_context,
+                                                    'anonapi': anonapi_context})
+
+    with open(output_path, 'w') as f:
+        f.write(output)
+    print(f'Rendered {template_path} to {output_path.absolute()}')
+
+print('Done')

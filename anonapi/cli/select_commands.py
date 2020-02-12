@@ -83,7 +83,7 @@ def status(context: SelectCommandContext):
 @click.command()
 @pass_select_command_context
 def delete(context: SelectCommandContext):
-    """Show selection in current directory"""
+    """Remove selection file in current directory"""
 
     selection_folder = context.get_current_selection_folder()
     if selection_folder.has_file_selection():
@@ -109,7 +109,7 @@ def delete(context: SelectCommandContext):
     help="Exclude any filepath matching this. * is wildcard.",
 )
 def add(context: SelectCommandContext, pattern, recurse, check_dicom, exclude_pattern):
-    """Add all files matching given pattern to the selection in the current folder.
+    """Add all files matching pattern to selection in the current directory.
 
     Excludes 'fileselection.txt'
     """
@@ -146,7 +146,7 @@ def add(context: SelectCommandContext, pattern, recurse, check_dicom, exclude_pa
 @click.command()
 @pass_select_command_context
 def edit(context: SelectCommandContext):
-    """initialise a selection for the current directory, add all DICOM files"""
+    """Open selection file in default editor"""
 
     selection_folder = context.get_current_selection_folder()
     if not selection_folder.has_file_selection():
@@ -155,7 +155,6 @@ def edit(context: SelectCommandContext):
         click.launch(str(selection_folder.get_data_file_path()))
 
 
-# TODO: replace this function
 def create_dicom_selection_click(path):
     """Find all DICOM files path (recursive) and save them a FileSelectionFile.
 

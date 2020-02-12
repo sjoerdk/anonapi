@@ -33,35 +33,35 @@ Anonymize from IDC
 ------------------
 IDC is the hospital medical image server
 
-.. literalinclude:: ../examples/anonymize_files_from_idc.py
+.. literalinclude:: ../../examples/anonymize_files_from_idc.py
 
 
 Anonymize from network share
 ----------------------------
 
-.. literalinclude:: ../examples/anonymize_files_from_share.py
+.. literalinclude:: ../../examples/anonymize_files_from_share.py
 
 
 Filter on SOPClass
 ------------------
 SOPClassUID is the DICOM 'image type'
 
-.. literalinclude:: ../examples/anonymize_files_sop_class_filter.py
+.. literalinclude:: ../../examples/anonymize_files_sop_class_filter.py
 
 
 Cancel job
 ----------
 
-.. literalinclude:: ../examples/cancel_job.py
+.. literalinclude:: ../../examples/cancel_job.py
 
 
 Get job status
 --------------
 
-.. literalinclude:: ../examples/get_job_status.py
+.. literalinclude:: ../../examples/get_job_status.py
 
 
 Modify jobs
 -----------
 
-.. literalinclude:: ../examples/modify_jobs.py
+.. literalinclude:: ../../examples/modify_jobs.py
