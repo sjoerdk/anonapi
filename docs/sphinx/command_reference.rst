@@ -10,7 +10,6 @@ Information on specific anonapi CLI functions. For more general information on h
 .. note::
     Detailed help on commands is often available directly from the command line by adding ``--help`` to any command. See :ref:`getting_info_on_commands`
 
-======
 status
 ======
 
@@ -19,7 +18,6 @@ Display information on the command line tool itself. Which API servers it knows 
 
 .. _server_commands:
 
-======
 server
 ======
 Work with Anonymization server API servers. Add, remove servers, set active server
@@ -37,8 +35,8 @@ remove   Remove a server from list in settings
 status   Check whether active server is online and responding like an anonymizati
 ======== ========================================================================
 
+.. _job:
 
-===
 job
 ===
 Work with single jobs. Get extended info, reset, restart a job
@@ -54,7 +52,7 @@ list    list info for multiple jobs
 reset   reset job, process again                                                 
 ======= =========================================================================
 
-========
+
 settings
 ========
 Local settings for this anonapi instance. Credentials that are used to communicate with the API.
@@ -62,7 +60,7 @@ Local settings for this anonapi instance. Credentials that are used to communica
 
 .. _batch:
 
-=====
+
 batch
 =====
 Work with lists of jobs on a certain server. Anonymization jobs often occur in sets. With batches you can group
@@ -140,7 +138,6 @@ For convenience, it is possible to pass job ids for batch add and batch remove a
 
 .. _map:
 
-===
 map
 ===
 Create a mapping between data and anonymization parameters. This mapping contains everything needed to create
@@ -160,11 +157,64 @@ init                  Save a default mapping in the current folder
 status                Show mapping in current directory                          
 ===================== ===========================================================
 
+add-all-study-folders
+---------------------
+
+Add all folders that match a pattern to mapping. The pattern can include ``*`` to match part of a file or folder,
+and ``**`` to match any combination of folders and filenames.
+
+For example, given the following folder structure::
+
+    root
+    |--patient1
+    |   |--notes.txt
+    |   |--raw
+    |       |--raw1.dcm
+    |       |--raw2.dcm
+    |--patient2
+    |   |--notes.txt
+    |   |--test
+    |       |--test.dcm
+    |       |--othertest.dcm
+    |       |--raw
+    |           |--test2.dcm
+    |   |--raw
+    |       |--raw1.dcm
+    |       |--raw2.dcm
+    |       |--raw3.dcm
+
+
+The following paths would be selected:
+
+.. code-block:: console
+
+    $ anon map add-all-study-folders */raw  #  match all direct subfolders named 'raw'
+    > Pattern '*/raw' matches the following paths:
+    > patient1/raw
+    > patient2/raw
+
+    $ anon map add-all-study-folders */*    #  match any direct subfolders
+    > Pattern '*/*' matches the following paths:
+    > patient1/raw
+    > patient2/test
+    > patient2/raw
+
+    $ anon map add-all-study-folders **/raw  # match any subfolder named 'raw', at any depth
+    > Pattern '*/raw' matches the following paths:
+    > patient1/raw
+    > patient2/test/raw
+    > patient2/raw
+
+    # tip: On linux terminals, the pattern currently needs to be quoted to avoid automatic expansion
+
+.. note::
+
+    Make sure that each added path contains data for only one patient. You can only map one patient name and id
+    to each path.
+
 
 .. _select:
 
-
-======
 select
 ======
 select files for a single anonymization job
@@ -184,8 +234,6 @@ status  Show selection in current directory
 
 .. _create:
 
-
-======
 create
 ======
 create jobs

@@ -16,17 +16,13 @@ want to get into creating custom directives. Its just way to convoluted, and you
 """
 
 import os
-from pathlib import Path
-from typing import Dict, Tuple, List
-
 import click
-from click.formatting import HelpFormatter
-from click.testing import CliRunner
-from collections import namedtuple, UserDict
-
-from jinja2 import Template
 
 from anonapi.cli import entrypoint
+from collections import namedtuple, UserDict
+from jinja2 import Template
+from pathlib import Path
+from typing import List
 
 
 def make_h1(text):
@@ -46,7 +42,7 @@ def make_sphinx_link(text):
 TableRow = namedtuple('TableRow', ['value', 'text'])
 
 
-class Sphinx_table:
+class SphinxTable:
     """A sphinx table with two columns. like
     ====  =========
     val   some text
@@ -111,7 +107,7 @@ class ClickCommandTableNode(UserDict):
     So  {{ foo }}  prints table foo
     And {{ foo.baz }}  prints subtable for command 'baz' """
 
-    def __init__(self, table: Sphinx_table):
+    def __init__(self, table: SphinxTable):
         super(ClickCommandTableNode, self).__init__()
         self.table = table
 
@@ -128,8 +124,6 @@ class ClickCommandJinjaContext:
     $ root = ClickCommandJinjaContext(click_group=foo)
     {{ context.tables.root.groupname }}"""
     def __init__(self, root: click.core.Group):
-        self.value = 'HENK'
-        self.tables = {'henk': 'TABLEHANK'}
         self.root = root
         self.tables = {'root': self.create_tables(root)}
 
@@ -137,7 +131,7 @@ class ClickCommandJinjaContext:
         """Create a command and group overview recursively """
 
         # list all commands/ groups and help for them
-        table = ClickCommandTableNode(Sphinx_table(
+        table = ClickCommandTableNode(SphinxTable(
             rows=[TableRow(x.name, x.help) for x in root.commands.values()],
             max_width=80))
 
@@ -156,18 +150,12 @@ class ClickCommandJinjaContext:
 context = ClickCommandJinjaContext(root=entrypoint.cli)
 
 
-template_path = Path('command_reference_base.rst')
+template_path = Path('templates/command_reference_base.rst')
 output_path = Path('command_reference.rst')
 with open(template_path, 'r') as f:
     output = Template(f.read()).render(context=context)
 
 with open(output_path, 'w') as f:
     f.write(output)
-
-print(f'done. Wrote to {output_path}')
-"""
-
-print(Template("hello {{ context.tables.root }}").render(context=context))
-
-#test()
-"""
+print(context)
+print(f'done. Wrote to {output_path.absolute()}')

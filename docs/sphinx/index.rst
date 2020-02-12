@@ -25,6 +25,7 @@ Contents
    configuration
    usage
    command_reference
+   concepts
    troubleshooting
    python_usage
    modules
