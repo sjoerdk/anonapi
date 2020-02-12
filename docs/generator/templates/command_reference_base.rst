@@ -220,6 +220,18 @@ add-selection-file
 Add the given :ref:`file selection <concepts_selection>` file to :ref:`mapping <concepts_mapping>`. This will create
 a new row in the mapping
 
+.. _map_edit:
+
+edit
+----
+Open the mapping file in current dir in the default editor for csv files. On windows this is usually excel. You can edit
+the mapping here.
+
+.. warning::
+
+    Always close the editor before running anon commands that modify the mapping like :ref:`map_add_selection`.
+    Many editors lock the file while open, making it impossible to change it by other means.
+
 
 .. _select:
 

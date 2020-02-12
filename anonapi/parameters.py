@@ -215,6 +215,7 @@ class Parameter:
     forms. I still want to treat them the same
     """
     field_name = "parameter"
+    description = "Parameter base type"
 
     def __init__(self, value: str = None):
         if not value:
@@ -227,22 +228,27 @@ class Parameter:
 
 class PatientID(Parameter):
     field_name = "patient_id"
+    description = "Patient ID to set in anonymized data"
 
 
 class PatientName(Parameter):
     field_name = "patient_name"
+    description = "Patient Name to set in anonymized data"
 
 
 class Description(Parameter):
     field_name = "description"
+    description = "Job description, free text"
 
 
 class PIMSKey(Parameter):
     field_name = "pims_key"
+    description = "Use this PIMS project to pseudonymize"
 
 
 class Project(Parameter):
     field_name = "project"
+    description = "Anonymize according to this project"
 
 
 class PathParameter(Parameter):
@@ -250,6 +256,7 @@ class PathParameter(Parameter):
 
     Always has a 'path' property that can get and set the path part
     """
+    description = "A parameter describing a path"
 
     def __init__(self, value:  PureWindowsPath = None):
         super(PathParameter, self).__init__()
@@ -275,16 +282,19 @@ class PathParameter(Parameter):
 
 class DestinationPath(PathParameter):
     field_name = "destination_path"
+    description = "Write data to this UNC path after anonymization"
 
 
 class RootSourcePath(PathParameter):
     field_name = "root_source_path"
+    description = "Path sources are all relative to this UNC path"
 
 
 class SourceIdentifierParameter(PathParameter):
     """Reference to the source of the data"""
 
     field_name = "source"
+    description = "Data to anonymize comes from this source"
 
     def __init__(self, value: str):
         """

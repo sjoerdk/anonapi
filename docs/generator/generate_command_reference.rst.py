@@ -24,7 +24,8 @@ from jinja2 import Template
 from pathlib import Path
 from typing import List
 
-from anonapi.parameters import ALL_PARAMETERS
+from anonapi.parameters import ALL_PARAMETERS, COMMON_GLOBAL_PARAMETERS, \
+    COMMON_JOB_PARAMETERS, Parameter
 
 
 def make_h1(text):
@@ -51,10 +52,12 @@ class SphinxTable:
     ====  =========
     """
 
-    def __init__(self, rows: List[TableRow], max_width: int):
+    def __init__(self, rows: List[TableRow], max_width: int, header=None):
         self.rows = self.sort_rows(rows)
         self.max_width = max_width
-        self.header = ['Command', 'Description']
+        if not header:
+            header = ['Command', 'Description']
+        self.header = header
 
     def __str__(self):
         return self.as_string()
@@ -86,7 +89,7 @@ class SphinxTable:
                                text="="*self.text_column_width)
 
         header = "\n".join([line,
-                            self.format_row("Command", "Description"),
+                            self.format_row(self.header[0], self.header[1]),
                             line])
         rows = "\n".join([self.format_row(x.value, x.text) for x in self.rows])
         return "\n".join([header, rows, line])
@@ -149,15 +152,29 @@ class ClickCommandJinjaContext:
         return table
 
 
-class AnonApiContext():
+class AnonApiContext:
     """Info about the anonapi lib to pass to jinja"""
 
     @property
-    def all_parameters(self) -> str:
+    def all_parameters_table(self) -> str:
         """Valid sphinx output listing all parameters"""
-        return "\n\n".join(["* " + x.field_name for x in ALL_PARAMETERS])
+        return self.to_sphinx_table(ALL_PARAMETERS).as_string()
+
+    @property
+    def common_job_parameters_table(self) -> str:
+        return self.to_sphinx_table(COMMON_JOB_PARAMETERS).as_string()
+
+    @property
+    def common_global_parameters_table(self) -> str:
+        return self.to_sphinx_table(COMMON_GLOBAL_PARAMETERS).as_string()
+
+    @staticmethod
+    def to_sphinx_table(parameters: List[Parameter]) -> SphinxTable:
+        rows = [TableRow(x.field_name, x.description) for x in parameters]
+        return SphinxTable(rows=rows, max_width=80, header=['Parameter', 'Description'])
 
 
+# create contexts that provide the info to render with jinja
 click_context = ClickCommandJinjaContext(root=entrypoint.cli)
 anonapi_context = AnonApiContext()
 

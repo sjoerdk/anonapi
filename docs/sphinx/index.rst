@@ -12,9 +12,6 @@ communicating with servers running `anonymization_server`_ code. You can use the
 
 .. _anonymization_server: https://github.com/DIAGNijmegen/anonymization_server
 
-Contents
-========
-
 .. toctree::
    :maxdepth: 2
    :caption: Contents:

@@ -37,9 +37,25 @@ A typical mapping file will look like this::
     accession_number:12345678.1234567,003,        Patient3,     An AccessionNumber from PACS
     fileselection:a/fileselection.txt,004,        Patient4,     A selection of files in a
 
-Available parameters:
 
-{{ context.anonapi.all_parameters }}
+This is a CSV (comma separated values) file that can be edited by any editor. The most convenient way to edit is probably
+the :ref:`map_edit` command.
+
+A mapping consists of three sections:
+
+Description
+    This can contain any text. A description of what this mapping is for
+
+Options
+    Parameters that are the same for each job. The following parameters can be set:
+
+    {{ context.anonapi.common_global_parameters_table | indent }}
+
+Mapping
+    Parameters that are different for each job. The following parameters can be set:
+
+    {{ context.anonapi.common_job_parameters_table | indent }}
+
 
 .. _concepts_job:
 

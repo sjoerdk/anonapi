@@ -37,23 +37,39 @@ A typical mapping file will look like this::
     accession_number:12345678.1234567,003,        Patient3,     An AccessionNumber from PACS
     fileselection:a/fileselection.txt,004,        Patient4,     A selection of files in a
 
-Available parameters:
 
-* source
+This is a CSV (comma separated values) file that can be edited by any editor. The most convenient way to edit is probably
+the :ref:`map_edit` command.
 
-* patient_id
+A mapping consists of three sections:
 
-* patient_name
+Description
+    This can contain any text. A description of what this mapping is for
 
-* description
+Options
+    Parameters that are the same for each job. The following parameters can be set:
 
-* pims_key
+    ================ ================================================================
+    Parameter        Description                                                     
+    ================ ================================================================
+    destination_path Write data to this UNC path after anonymization                 
+    pims_key         Use this PIMS project to pseudonymize                           
+    project          Anonymize according to this project                             
+    root_source_path Path sources are all relative to this UNC path                  
+    ================ ================================================================
 
-* destination_path
+Mapping
+    Parameters that are different for each job. The following parameters can be set:
 
-* root_source_path
+    ============ ====================================================================
+    Parameter    Description                                                         
+    ============ ====================================================================
+    description  Job description, free text                                          
+    patient_id   Patient ID to set in anonymized data                                
+    patient_name Patient Name to set in anonymized data                              
+    source       Data to anonymize comes from this source                            
+    ============ ====================================================================
 
-* project
 
 .. _concepts_job:
 
