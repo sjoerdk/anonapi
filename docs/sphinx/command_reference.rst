@@ -4,7 +4,7 @@
 Command reference
 =================
 
-Information on specific anonapi CLI functions. For more general information on how to achieve specific goals, see :doc:`usage`
+Information on specific anonapi CLI functions. For more how-to's on achieving specific goals, see :doc:`usage`
 
 
 .. note::
@@ -269,13 +269,15 @@ a new row in the mapping
 
 edit
 ----
-Open the mapping file in current dir in the default editor for csv files. On windows this is usually excel. You can edit
-the mapping here.
+Open the :ref:`mapping <concepts_mapping>` file in current dir in the default editor for csv files. On windows this is usually excel.
 
 .. warning::
 
-    Always close the editor before running anon commands that modify the mapping like :ref:`map_add_selection`.
+    Always close the editor before running anon commands that modify the mapping like :ref:`map_add_selection_file`.
     Many editors lock the file while open, making it impossible to change it by other means.
+
+Some editors will ask you whether you want to save the mapping file in their own file format like xlsx. Never do this as
+this will make the mapping unreadable for anonapi.
 
 
 .. _select:
@@ -297,7 +299,7 @@ status  Show selection in current directory
 
 .. _select_add:
 
-Add
+add
 ---
 Add all files matching pattern paths to a :ref:`file selection <concepts_selection>` in the current folder. Pattern can use
 ``*`` to match any part of a name. Excludes files called `fileselection.txt`

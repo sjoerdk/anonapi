@@ -18,7 +18,7 @@ Windows
     <https://helpdeskgeek.com/how-to/open-command-prompt-folder-windows-explorer/>`_
 
 Linux
-    This varies between distributions. But try Meta-T, ``Konsole`` on ubuntu, ``Terminal``. For more info see
+    This varies between distributions. Common ways are pressing Meta+t, ``Konsole`` on ubuntu, or ``Terminal``. For more info see
     `here <https://www.howtogeek.com/140679/beginner-geek-how-to-start-using-the-linux-terminal/>`_
 
 .. _getting_info_on_commands:
