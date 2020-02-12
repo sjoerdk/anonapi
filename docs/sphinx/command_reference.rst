@@ -280,6 +280,13 @@ Some editors will ask you whether you want to save the mapping file in their own
 this will make the mapping unreadable for anonapi.
 
 
+.. _map_init:
+
+init
+----
+Create a :ref:`mapping <concepts_mapping>` in the current folder containing some default content. `destination_path` and
+`project` are based on the defaults set with the :ref:`create set-defaults <create>` command
+
 .. _select:
 
 select
@@ -349,8 +356,7 @@ You can select files like this:
 
 create
 ======
-create jobs
-
+create jobs on server
 
 Overview of create functions:
 
@@ -361,3 +367,37 @@ from-mapping  Create jobs from mapping in current folder
 set-defaults  Set project name used when creating jobs                           
 show-defaults show project name used when creating jobs                          
 ============= ===================================================================
+
+.. _create_from_mapping:
+
+from-mapping
+------------
+Create a job for each row in the :ref:`concepts_mapping` in the current directory. This will do some validation and ask
+for confirmation:
+
+.. code-block:: console
+
+    $ anon create from-mapping
+    > This will create 3 jobs on p01, for projects '['Wetenschap-Algemeen']',
+    > writing data to '['\\\\server\\share\\folder']'. Are you sure? [y/N]:
+    $ Y
+    > Created job with id 1
+    > Created job with id 2
+    > Created job with id 3
+    > created 3 jobs: [1, 2, 3]
+    > Saving job ids in batch in current folder
+    > Done
+
+The command will create a :ref:`concepts_batch` in the current folder containing each created job. This means you can
+use all :ref:`batch` commands on your created jobs:
+
+.. code-block:: console
+
+    $ anon batch info
+    > job_ids:
+    > - '1'
+    > - '2'
+    > - '3'
+    > server:
+    >   name: p01
+    >   url: https://anonserver_p01/api

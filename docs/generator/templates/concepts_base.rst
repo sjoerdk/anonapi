@@ -63,16 +63,17 @@ Mapping
 
     {{ context.anonapi.common_job_parameters_table | indent }}
 
-    The value of the `source` parameter is a :ref:`concepts_source_identifier` the different types of identifiers are
+    The value of the `source` parameter is a :ref:`source identifier <concepts_source_identifier>`. The different types of identifiers are
     listed below.
 
 For an overview of map functions, see :ref:`map`.
 
 .. _concepts_source_identifier:
 
-Source Identifiers
+Source Identifier
 ==================
-These specify where the data for a job is coming from. Always of the form ``<identifier_type>:<value>`` They are the first parameter for each row in a :ref:`mapping <concepts_mapping>`. Types of identifiers:
+Used in :ref:`mapping <concepts_mapping>` to indicate where the data for a job is coming from. Always of the form
+``<identifier_type>:<value>``. Types of identifiers:
 
 Folder
     Example: ``folder:mydata/experiment1``
@@ -158,8 +159,8 @@ For example::
     \\umcfilesp01\research\folder1\file.dcm
     \\server1\share2\myfolder\
 
-UNC paths are mandatory for creating :ref:`anonymization jobs <concepts_job>` because they are unambiguous.
-In contrast, windows drive letters such as ``C:\``, mapped network drives such as ``X:\`` and
+UNC paths are mandatory for creating :ref:`anonymization jobs <concepts_job>` because they are well supported in most
+operating systems and unambiguous. In contrast, windows drive letters such as ``C:\``, mapped network drives such as ``X:\`` and
 linux mounts like ``/mnt/share1`` can refer to different locations on different computers.
 
 You can find `more information on UNC paths <https://www.lifewire.com/unc-universal-naming-convention-818230>`_ online.
