@@ -2,7 +2,7 @@
 """
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import click
 import datetime
@@ -139,16 +139,32 @@ def get_mapping(context):
 def add_study_folder(context: MapCommandContext, path):
     """Add all dicom files in given folder to map
     """
-    mapping = add_path_to_mapping_click(Path(path), get_mapping(context))
+    mapping = add_path_to_mapping_click(Path(path), get_mapping(context),
+                                        cwd=context.current_path)
     context.get_current_mapping_folder().save_mapping(mapping)
 
     click.echo(f"Done. Added '{path}' to mapping")
 
 
-def add_path_to_mapping_click(path: Path, mapping: Mapping):
+def add_path_to_mapping_click(path: Path, mapping: Mapping,
+                              cwd: Optional[Path] = None):
     """Create a fileselection in the given path and add it to the given mapping
 
     Meant to be called from a click function. Contains calls to click.echo().
+    Parameters
+    ----------
+    path: Path
+        Path to create fileselection in
+    mapping: Mapping
+        Mapping to add the fileselection to
+    cwd: Optional[Path]
+        Current working directory. If given, write to mapping relative to this
+        path
+
+    Raises
+    ------
+    ValueError
+        When path is absolute and does not start with cwd
 
     Returns
     -------
@@ -157,6 +173,12 @@ def add_path_to_mapping_click(path: Path, mapping: Mapping):
     """
     # create a selection from all dicom files in given root_path
     file_selection = create_dicom_selection_click(path)
+
+    # make path relative if requested
+    if cwd:
+        path = file_selection.data_file_path
+        if path.is_absolute():
+            file_selection.data_file_path = path.relative_to(cwd)
 
     # how to refer to this new file selection
     file_selection_identifier = FileSelectionIdentifier.from_object(file_selection)
@@ -190,7 +212,8 @@ def add_all_study_folders(context: MapCommandContext, pattern):
     else:
         mapping = get_mapping(context)
         for path in found:
-            mapping = add_path_to_mapping_click(Path(path), mapping)
+            mapping = add_path_to_mapping_click(Path(path), mapping,
+                                                cwd=context.current_path)
 
         context.get_current_mapping_folder().save_mapping(mapping)
         click.echo("Done")

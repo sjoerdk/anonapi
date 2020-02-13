@@ -417,7 +417,7 @@ def test_cli_batch(mock_main_runner):
 
     # init again should fail as there is already a batch defined
     result = runner.invoke(entrypoint.cli, "batch init")
-    assert "Cannot init" in str(result.exception)
+    assert "Cannot init" in str(result.output)
 
     runner.invoke(entrypoint.cli, "batch add 1 2 3 345")
     assert batch_dir.load().job_ids == ["1", "2", "3", "345"]

@@ -9,7 +9,7 @@ from anonapi.cli import entrypoint
 from anonapi.cli.map_commands import MapCommandContext, add_selection, \
     add_all_study_folders, add_path_to_mapping_click
 from anonapi.mapper import MappingLoadError, MappingFolder
-from anonapi.parameters import ParameterSet, RootSourcePath
+from anonapi.parameters import ParameterSet, RootSourcePath, SourceIdentifierParameter
 from anonapi.settings import  DefaultAnonClientSettings
 from tests.conftest import MockContextCliRunner
 from tests import RESOURCE_PATH
@@ -128,14 +128,26 @@ def test_cli_map_add_folder(mock_main_runner, folder_with_some_dicom_files):
 
     # make one
     mock_main_runner.invoke(entrypoint.cli, f"map init")
+    mapping_folder = MappingFolder(mock_main_runner.mock_context.current_dir)
+    assert len(mapping_folder.load_mapping().grid) == 4  # by default there are 4 example rows in mapping
 
     # dicom files should not have been selected yet currently
     assert not selection_folder.has_file_selection()
     result = mock_main_runner.invoke(
         entrypoint.cli, f"map add-study-folder {selection_folder.path}"
     )
+    # but should be now
     assert result.exit_code == 0
     assert selection_folder.has_file_selection()
+
+    # also, this selection should have been added to the mapping:
+    mapping = mapping_folder.load_mapping()  # reload from disk
+    assert len(mapping.grid) == 5
+    added = ParameterSet(mapping.grid.rows[-1])
+    identifier = added.get_param_by_type(SourceIdentifierParameter)
+    # and the identifier should be a FileSelectionIdentifier which is
+    # relative to the current path
+    assert not identifier.path.is_absolute()
 
 
 @fixture
