@@ -102,12 +102,32 @@ The general procedure for creating a jobs is as follows:
 #. based on the mapping, run the :ref:`create from-mapping <create_from_mapping>` command
 #. monitor your jobs progress with the :ref:`batch status <batch>` command
 
-Two specific cases are shown below
+Two specific cases are shown below:
 
 .. _anonymize_files_from_pacs:
 
 Anonymize files from PACS
 =========================
+In this example we want to retrieve and anonymize studies from PACS
+
+Quick example
+-------------
+
+* Create a folder for your project (will hold a record of jobs created)
+* Open a :ref:`command prompt <usage_starting_a_command_prompt>` in this folder
+* Then type the following:
+
+.. code-block:: console
+
+    $ anon map init            # create a mapping at the source of the data
+    $ anon map edit            # set correct paths, add studyUIDs or accession numbers
+    $ anon create from-mapping # create jobs on anonymization server
+    $ anon batch status        # monitor the progress of your jobs
+
+
+
+Detailed example
+----------------
 For this example we want to retrieve and anonymize the following studies from PACS:
 
 * A study with AccessionNumber 123456.1234567
@@ -140,7 +160,7 @@ Now edit the mapping until it looks like this:
     accession_number:123456.2234568,   002,        Patient2,     Test PACS project
     study_instance_uid:123.1232.23.24, 003,        Patient3,     Test PACS project
 
-Now close the editor and do:
+Now close the editor and run :ref:`anon create from-mapping <create_from_mapping>`:
 
 .. code-block:: console
 
@@ -148,16 +168,124 @@ Now close the editor and do:
     > This will create 3 jobs on p01, for projects '['Wetenschap-Algemeen']' etc..
     > Done
 
-To monitor the status of your created jobs, use:
+To monitor the status of your created jobs, use :ref:`anon batch status <batch_status>`:
 
 .. code-block:: console
 
     $ anon batch status
 
 
-
 .. _anonymize_files_from_share:
 
 Anonymize files from a share
 ============================
+In this example we will anonymize data from three folders on a share
+
+Quick example
+-------------
+
+* Create a folder for your project (will hold a record of jobs created)
+* Open a :ref:`command prompt <usage_starting_a_command_prompt>` in this folder
+* Then type the following
+
+.. code-block:: console
+
+    $ anon map init            # create a mapping at the source of the data
+    $ anon map edit            # set correct paths, remove example rows
+
+    $ anon map add-study-folder patient1/study        # add study1 to mapping
+    $ anon map add-study-folder patient2/study        # add study2
+    $ anon map add-study-folder patient3/study_fixed  # add study3
+
+    $ anon map edit            # now set the anonymized names for the added studies
+    $ anon create from-mapping # create jobs on anonymization server
+
+    $ anon batch status        # monitor the progress of your jobs
+
+
+Detailed example
+----------------
+In this example we will anonymize three studies that are on a share ``\\server1\share``. The data folder looks like this:
+
+.. code-block:: text
+
+    \\server1\share\data
+                     |--patient1
+                     |   |--raw
+                     |   |   |--raw1.dcm
+                     |   |   |--raw2.dcm
+                     |   |--study1           <- this should become 'anon1'
+                     |       |--file1
+                     |       |--file2
+                     |--patient2
+                     |   |--raw
+                     |   |   |--raw1.dcm
+                     |   |   |--raw2.dcm
+                     |   |--study1          <- this should become 'anon2'
+                     |       |--file1
+                     |       |--file2
+                     |       |--notes.txt
+                     |--patient3
+                     |   |--study1
+                     |   |   |--file1
+                     |   |   |--file2
+                     |   |--study1_fixed    <- this should become 'anon3'
+                     |       |--file1
+                     |       |--file2
+
+
+For each patient, we want to to anonymize the data from the `study` folder. Except for `patient3`, where we want to get
+the data from the `study1_fixed` folder. To do this take the following steps:
+
+.. code-block:: console
+
+    $ cd \\server\share\data   # Or use a drive letter or mount. Will be made UNC later
+    $ anon map init            # create a mapping at the source of the data
+    $ anon map edit            # opens mapping for editing
+
+
+The mapping needs to be edited in two ways:
+
+* the `root_source_path` parameter needs to be changed into a :ref:`UNC path<concepts_unc_paths>` for the anonymization
+  server to be able to find the data.
+    .. tip::
+
+        To find out the UNC path for a windows drive letter or a linux mount, see :ref:`concepts_finding_a_unc_path`
+
+* initially the mapping contains several rows with example data. These can be removed
+* The `destination_path` parameter will probably need to be changed
+
+After making these changes, the mapping file should look like this:
+
+.. code-block:: text
+
+    ## Description ##
+    Mapping created February 12 2020
+
+    ## Options ##
+    root_source_path  \\server\share\data           <= changed
+    project,          Wetenschap-Algemeen
+    destination_path, \\server\share\myoutput       <= changed
+
+    ## Mapping ##
+    source,                            patient_id, patient_name, description
+    < removed all example rows here >
+
+Now we will add each of the studies we want to anonymize. Make sure you close the editor before doing this:
+
+.. code-block:: console
+
+    $ anon map add-study-folder patient1/study
+    $ anon map add-study-folder patient2/study
+    $ anon map add-study-folder patient3/study_fixed
+
+All DICOM files in these folders have now been selected and added as rows in the mapping. Now edit the rows to suit your
+needs, setting the patient ID and name you want.
+
+.. code-block:: text
+
+    $ anon map edit                 # edit patientID, name etc. Save
+    $ anon create from-mapping      # create anonymization jobs
+
+
 

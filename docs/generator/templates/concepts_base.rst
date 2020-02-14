@@ -163,5 +163,27 @@ UNC paths are mandatory for creating :ref:`anonymization jobs <concepts_job>` be
 operating systems and unambiguous. In contrast, windows drive letters such as ``C:\``, mapped network drives such as ``X:\`` and
 linux mounts like ``/mnt/share1`` can refer to different locations on different computers.
 
-You can find `more information on UNC paths <https://www.lifewire.com/unc-universal-naming-convention-818230>`_ online.
+You can find more `unc_path_info <https://www.lifewire.com/unc-universal-naming-convention-818230>`_ online.
 
+.. _concepts_finding_a_unc_path:
+
+Finding a UNC path
+------------------
+Windows
+    In windows shares are often `mapped <https://support.microsoft.com/en-us/help/4026635/windows-map-a-network-drive>`_
+    to a drive letter such as ``H:\`` or ``X:\``. To find the UNC path for these drive letters, open windows explorer (start menu -> explorer)
+    and expand the computer icon in the lower left side:
+
+    .. image:: static/screenshot.jpg
+       :scale: 100 %
+       :alt: Finding UNC paths in windows
+
+    In this example ``(H:) radngdata$ (\\umcfs097)`` corresponds to the UNC path ``\\umcfs097\radngdata$`` note the path
+    in this case includes the final ``$``
+
+Linux
+    In linux UNC paths are mounted in fstab. Use::
+
+        $ less  /etc/fstab
+
+    To find out which UNC path is mapped to which mount point.

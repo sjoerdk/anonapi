@@ -79,13 +79,11 @@ that folder. For example:
 
     $ anon batch status  # Now you can print status for all ids in this batch
     > Job info for 3 jobs on p01: https://umcradanonp11.umcn.nl/p01:
-
-          id     date                 status   downloaded processed  user
-          ---------------------------------------------------------------
-          1      2016-08-26T15:04:44  INACTIVE 0          0          z123456
-          2      2016-08-26T15:04:44  ERROR    503        100        z123456
-          3      2016-08-26T15:04:44  DONE     1155       1155       z123456
-
+             id  date                 status      down    proc  user
+          -----  -------------------  --------  ------  ------  -------
+          1      2016-08-26T15:04:44  INACTIVE  0          0    z123456
+          2      2016-08-26T15:04:44  ERROR     503        100  z123456
+          3      2016-08-26T15:04:44  DONE      1155       1155 z123456
 
 batch command overview:
 
@@ -109,6 +107,37 @@ For convenience, it is possible to pass job ids for batch add and batch remove a
         server:
           name: p01
           url: https://apiservers/p01
+
+.. _batch_status:
+
+status
+------
+Show a table with status for all jobs in the batch in current directory.
+
+.. code-block:: console
+
+    $ anon batch status  # Now you can print status for all ids in this batch
+    > Job info for 3 jobs on p01:
+         id  date                 status      down    proc  user
+      -----  -------------------  --------  ------  ------  -------
+      1      2016-08-26T15:04:44  INACTIVE  0          0    z123456
+      2      2016-08-26T15:04:44  ERROR     503        100  z123456
+      3      2016-08-26T15:04:44  DONE      1155       1155 z123456
+
+Modifiers:
+
+--patient-name
+    With this modifier a column `anon_name` is added, which shows the anonymized name used in this job:
+
+    .. code-block:: console
+
+        $ anon batch status --patient-name
+        > Job info for 3 jobs on p01: https://umcradanonp11.umcn.nl/p01:
+             id  date                 status      down    proc  user     anon_name
+          -----  -------------------  --------  ------  ------  -------  ---------
+          1      2016-08-26T15:04:44  INACTIVE  0          0    z123456  patient34
+          2      2016-08-26T15:04:44  ERROR     503        100  z123456  patient40
+          3      2016-08-26T15:04:44  DONE      1155       1155 z123456  patient41
 
 
 .. _map:
@@ -172,10 +201,10 @@ For example, given the following folder structure::
     |--patient2
     |   |--notes.txt
     |   |--test
-    |       |--test.dcm
-    |       |--othertest.dcm
-    |       |--raw
-    |           |--test2.dcm
+    |   |   |--test.dcm
+    |   |   |--othertest.dcm
+    |   |   |--raw
+    |   |       |--test2.dcm
     |   |--raw
     |       |--raw1.dcm
     |       |--raw2.dcm
