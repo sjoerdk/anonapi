@@ -345,6 +345,7 @@ def from_mapping(context: CreateCommandsContext, dry_run):
             click.echo(f"Created job with id {job_id}")
             created_job_ids.append(job_id)
         except JobCreationException as e:
+            click.echo(str(e))
             click.echo(
                 "Error will probably keep occurring. Stopping further job creation."
             )
