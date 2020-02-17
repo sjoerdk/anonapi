@@ -7,9 +7,9 @@ Click===7.0
 pytest==5.3.4
 pytest-runner==5.2
 pydicom==1.4.1
-tqdm==4.42.0
+tqdm==4.42.1
 pydicom==1.4.1
-tqdm==4.42.0
+tqdm==4.42.1
 sphinx_rtd_theme==0.4.3
 Sphinx==2.4.1
 sphinx-autodoc-typehints==1.10.3
