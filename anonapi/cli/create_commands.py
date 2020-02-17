@@ -10,11 +10,21 @@ from anonapi.client import APIClientException
 from anonapi.decorators import pass_anonapi_context
 from anonapi.exceptions import AnonAPIException
 from anonapi.mapper import MappingFolder, MapperException
-from anonapi.parameters import (SourceIdentifier, StudyInstanceUIDIdentifier,
-                                Parameter, DestinationPath, PatientID, PatientName,
-                                Project, Description, SourceIdentifierParameter,
-                                PIMSKey, ParameterSet, RootSourcePath,
-                                is_unc_path)
+from anonapi.parameters import (
+    SourceIdentifier,
+    StudyInstanceUIDIdentifier,
+    Parameter,
+    DestinationPath,
+    PatientID,
+    PatientName,
+    Project,
+    Description,
+    SourceIdentifierParameter,
+    PIMSKey,
+    ParameterSet,
+    RootSourcePath,
+    is_unc_path,
+)
 from anonapi.settings import JobDefaultParameters, AnonClientSettingsException
 from click.exceptions import Abort, ClickException
 
@@ -113,8 +123,9 @@ class JobParameterSet(ParameterSet):
             self.with_unc_paths()
         except ParameterMappingException as e:
             raise JobSetValidationError(
-                f'Error: {e}. Source and destination need to be absolute windows'
-                f' paths.')
+                f"Error: {e}. Source and destination need to be absolute windows"
+                f" paths."
+            )
 
     def with_unc_paths(self):
         """A copy of this JobParameterSet where all paths are absolute UNC
@@ -128,14 +139,15 @@ class JobParameterSet(ParameterSet):
         # make sure that all relative paths can be resolved
         absolute_params = []
         for param in self.parameters:
-            if hasattr(param, 'path') and param.path:
+            if hasattr(param, "path") and param.path:
                 # there is a path, try to make absolute and check unc
                 if not param.path.is_absolute():
                     param = param.as_absolute(self.get_absolute_root_path())
                 if not is_unc_path(param.path):
                     raise ParameterMappingException(
                         f"{param} is not a unc path. It will not be clear where this "
-                        f"path is outside the current computer")
+                        f"path is outside the current computer"
+                    )
             absolute_params.append(param)
 
         return absolute_params

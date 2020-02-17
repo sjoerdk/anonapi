@@ -6,11 +6,15 @@ from pytest import fixture
 
 
 from anonapi.cli import entrypoint
-from anonapi.cli.map_commands import MapCommandContext, add_selection, \
-    add_all_study_folders, add_path_to_mapping_click
+from anonapi.cli.map_commands import (
+    MapCommandContext,
+    add_selection,
+    add_all_study_folders,
+    add_path_to_mapping_click,
+)
 from anonapi.mapper import MappingLoadError, MappingFolder
 from anonapi.parameters import ParameterSet, RootSourcePath, SourceIdentifierParameter
-from anonapi.settings import  DefaultAnonClientSettings
+from anonapi.settings import DefaultAnonClientSettings
 from tests.conftest import MockContextCliRunner
 from tests import RESOURCE_PATH
 
@@ -26,8 +30,9 @@ def map_command_runner_mapping_dir(a_folder_with_mapping):
     """A click CLIRunner that MapCommandContext pointing to a dir with some mapping
     """
     return MockContextCliRunner(
-        mock_context=MapCommandContext(current_path=a_folder_with_mapping,
-                                       settings=DefaultAnonClientSettings())
+        mock_context=MapCommandContext(
+            current_path=a_folder_with_mapping, settings=DefaultAnonClientSettings()
+        )
     )
 
 
@@ -129,7 +134,9 @@ def test_cli_map_add_folder(mock_main_runner, folder_with_some_dicom_files):
     # make one
     mock_main_runner.invoke(entrypoint.cli, f"map init")
     mapping_folder = MappingFolder(mock_main_runner.mock_context.current_dir)
-    assert len(mapping_folder.load_mapping().grid) == 4  # by default there are 4 example rows in mapping
+    assert (
+        len(mapping_folder.load_mapping().grid) == 4
+    )  # by default there are 4 example rows in mapping
 
     # dicom files should not have been selected yet currently
     assert not selection_folder.has_file_selection()
@@ -162,37 +169,39 @@ def add_path_to_mapping_click_recorder(monkeypatch):
         recorder(*args, **kwargs)
         return add_path_to_mapping_click(*args, **kwargs)
 
-    monkeypatch.setattr('anonapi.cli.map_commands.add_path_to_mapping_click',
-                        add_path_to_mapping_click_recorded)
+    monkeypatch.setattr(
+        "anonapi.cli.map_commands.add_path_to_mapping_click",
+        add_path_to_mapping_click_recorded,
+    )
     return recorder
 
 
-def test_cli_map_add_all_study_folders(map_command_runner_mapping_dir,
-                                       folder_with_mapping_and_some_dicom_files,
-                                       add_path_to_mapping_click_recorder,
-                                       monkeypatch):
+def test_cli_map_add_all_study_folders(
+    map_command_runner_mapping_dir,
+    folder_with_mapping_and_some_dicom_files,
+    add_path_to_mapping_click_recorder,
+    monkeypatch,
+):
     """Add multiple study folders"""
     context: MapCommandContext = map_command_runner_mapping_dir.mock_context
     context.current_path = folder_with_mapping_and_some_dicom_files.path
-    monkeypatch.setattr("os.getcwd",
-                         lambda: str(folder_with_mapping_and_some_dicom_files.path))
+    monkeypatch.setattr(
+        "os.getcwd", lambda: str(folder_with_mapping_and_some_dicom_files.path)
+    )
 
     # Add this folder to mapping, but cancel
     result = map_command_runner_mapping_dir.invoke(
-        add_all_study_folders,
-        f"{'*'}", input='No',
-        catch_exceptions=False,
+        add_all_study_folders, f"{'*'}", input="No", catch_exceptions=False,
     )
     # nothing should have been done
     assert result.exit_code == 0
-    assert 'Cancelled' in result.output
+    assert "Cancelled" in result.output
     assert not add_path_to_mapping_click_recorder.called
 
     # now repeat and do not cancel
     result = map_command_runner_mapping_dir.invoke(
-        add_all_study_folders, f"{'*'}",
-        input='Yes',
-        catch_exceptions=False, )
+        add_all_study_folders, f"{'*'}", input="Yes", catch_exceptions=False,
+    )
 
     assert add_path_to_mapping_click_recorder.call_count == 2
 

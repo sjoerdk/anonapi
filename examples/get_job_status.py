@@ -14,8 +14,9 @@ def get_job_status():
     )
 
     # get the status for 3 specific jobs
-    job_status_list = client.get("get_jobs_list_extended", job_ids=[53769, 53770,
-                                                                    53771])
+    job_status_list = client.get(
+        "get_jobs_list_extended", job_ids=[53769, 53770, 53771]
+    )
     print(f"found status for {len(job_status_list)} jobs in list:")
     print(job_status_list)
 

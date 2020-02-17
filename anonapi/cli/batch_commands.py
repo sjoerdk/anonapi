@@ -31,9 +31,7 @@ def init(parser: AnonAPIContext):
     """Save an empty batch in the current folder, for current server"""
     batch_folder = parser.get_batch_folder()
     if batch_folder.has_batch():
-        raise ClickException(
-            "Cannot init, A batch is already defined in this folder"
-        )
+        raise ClickException("Cannot init, A batch is already defined in this folder")
     else:
         server = parser.get_active_server()
         batch_folder.save(JobBatch(job_ids=[], server=server))

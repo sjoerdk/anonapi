@@ -54,7 +54,6 @@ class SourceIdentifier:
 
 
 class PathIdentifier(SourceIdentifier):
-
     @property
     def path(self) -> Path:
         return self.identifier
@@ -214,6 +213,7 @@ class Parameter:
     Made this because the mapping csv file contains rows in different
     forms. I still want to treat them the same
     """
+
     field_name = "parameter"
     description = "Parameter base type"
 
@@ -256,9 +256,10 @@ class PathParameter(Parameter):
 
     Always has a 'path' property that can get and set the path part
     """
+
     description = "A parameter describing a path"
 
-    def __init__(self, value:  PureWindowsPath = None):
+    def __init__(self, value: PureWindowsPath = None):
         super(PathParameter, self).__init__()
         if value:
             self.value = PureWindowsPath(value)
@@ -318,7 +319,7 @@ class SourceIdentifierParameter(PathParameter):
 
     @path.setter
     def path(self, value):
-        if hasattr(self.value, 'path'):
+        if hasattr(self.value, "path"):
             self.value.path = value
         else:
             raise AttributeError(f"{self.value} has no attribute 'Path'")

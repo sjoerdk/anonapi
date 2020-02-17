@@ -93,18 +93,21 @@ class Mapping:
         try:
             sections = cls.parse_sections(f)
         except OSError as e:
-            if 'raw readinto() returned invalid length' in str(e):
+            if "raw readinto() returned invalid length" in str(e):
                 raise MappingLoadError(
-                        f"Cannot load mapping. Is the mapping file opened in any"
-                        f" editor?. Original error: {e}")
+                    f"Cannot load mapping. Is the mapping file opened in any"
+                    f" editor?. Original error: {e}"
+                )
             else:
                 # Unsure which error this is. Can't handle this here.
                 raise
 
         description = "".join(sections[cls.DESCRIPTION_HEADER])
 
-        options = [ParameterFactory.parse_from_string(line)
-                   for line in sections[cls.OPTIONS_HEADER]]
+        options = [
+            ParameterFactory.parse_from_string(line)
+            for line in sections[cls.OPTIONS_HEADER]
+        ]
 
         grid_content = StringIO(os.linesep.join(sections[cls.GRID_HEADER]))
         grid = JobParameterGrid.load(grid_content)
