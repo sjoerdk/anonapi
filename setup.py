@@ -11,7 +11,7 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['pyyaml', 'click', 'tqdm', 'fileselection', 'pydicom',
+requirements = ['pyyaml', 'click', 'tqdm', 'fileselection>=0.3.2', 'pydicom',
                 'tabulate', 'requests']
 
 setup_requirements = ['pytest-runner', ]
@@ -39,7 +39,9 @@ setup(
     name='anonapi',
     packages=find_packages(include=['anonapi', 'anonapi.cli']),
     entry_points={
-        'console_scripts': [
+        'console_scripts': [0.1.0 (2019-07-29)
+-------------------
+
             'anon = anonapi.cli.entrypoint:cli'
         ]
     },
@@ -47,6 +49,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/sjoerdk/anonapi',
-    version='0.3.1',
+    version='1.0.1',
     zip_safe=False,
 )

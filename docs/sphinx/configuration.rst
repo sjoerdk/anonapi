@@ -33,6 +33,7 @@ Activate server1. All subsequent commands will use this server.
 
     $ anon server activate server1
 
+.. _configure_credentials:
 
 Configure credentials
 ---------------------

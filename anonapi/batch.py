@@ -6,6 +6,7 @@ from pathlib import Path
 
 import yaml
 
+from anonapi.exceptions import AnonAPIException
 from anonapi.objects import RemoteAnonServer
 
 
@@ -118,7 +119,7 @@ class BatchFolder:
         Parameters
         ----------
         path: Pathlike
-            path to this folder
+            root_path to this folder
         """
         self.path = Path(path)
 
@@ -134,11 +135,9 @@ class BatchFolder:
 
         Returns
         -------
-        JobBatch
+        Optional(JobBatch)
             If there is a batch defined in this folder
 
-        None
-            If not
         """
         if not self.has_batch():
             return None
@@ -172,5 +171,5 @@ class BatchFolder:
         os.remove(self.batch_file_path)
 
 
-class BatchFolderException(Exception):
+class BatchFolderException(AnonAPIException):
     pass

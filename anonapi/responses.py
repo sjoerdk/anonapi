@@ -9,6 +9,8 @@ python models on the server side and the client side. But we're not using django
 from collections import UserList
 from tabulate import tabulate
 
+from anonapi.exceptions import AnonAPIException
+
 
 class JobStatus:
     """ Job status string the API server uses
@@ -45,20 +47,20 @@ class JobInfo:
         self.files_downloaded = json_raw["files_downloaded"]
         self.files_processed = json_raw["files_processed"]
 
-        # extended parameters that might not be given
-        self.destination_path = json_raw.get('destination_path')
-        self.source_anonymizedpatientid = json_raw.get('source_anonymizedpatientid')
-        self.source_anonymizedpatientname = json_raw.get(
-            'source_anonymizedpatientname')
-        self.source_path = json_raw.get('source_path')
-        self.source_pims_keyfile_id = json_raw.get('source_pims_keyfile_id')
-        self.source_instance_id = json_raw.get('source_instance_id')
+        # extended rows that might not be given
+        self.destination_path = json_raw.get("destination_path")
+        self.source_anonymizedpatientid = json_raw.get("source_anonymizedpatientid")
+        self.source_anonymizedpatientname = json_raw.get("source_anonymizedpatientname")
+        self.source_path = json_raw.get("source_path")
+        self.source_pims_keyfile_id = json_raw.get("source_pims_keyfile_id")
+        self.source_instance_id = json_raw.get("source_instance_id")
 
         self.json_raw = json_raw
 
 
 class TableColumn:
     """A single column in a table"""
+
     def __init__(self, header, parameter_name):
         self.header = header
         self.parameter_name = parameter_name
@@ -66,16 +68,16 @@ class TableColumn:
 
 class JobInfoColumns:
     """Columns that can be used in a table of JobInfos"""
-    job_id = TableColumn(header='id', parameter_name='job_id')
-    date = TableColumn(header='date', parameter_name='date')
-    status = TableColumn(header='status', parameter_name='status')
-    files_downloaded = TableColumn(header='down',
-                                   parameter_name='files_downloaded')
-    files_processed = TableColumn(header='proc',
-                                   parameter_name='files_processed')
-    user = TableColumn(header='user', parameter_name='user_name')
-    pseudo_name = TableColumn(header='anon_name',
-                              parameter_name='source_anonymizedpatientid')
+
+    job_id = TableColumn(header="id", parameter_name="job_id")
+    date = TableColumn(header="date", parameter_name="date")
+    status = TableColumn(header="status", parameter_name="status")
+    files_downloaded = TableColumn(header="down", parameter_name="files_downloaded")
+    files_processed = TableColumn(header="proc", parameter_name="files_processed")
+    user = TableColumn(header="user", parameter_name="user_name")
+    pseudo_name = TableColumn(
+        header="anon_name", parameter_name="source_anonymizedpatientid"
+    )
 
     DEFAULT_COLUMNS = [job_id, date, status, files_downloaded, files_processed, user]
     EXTENDED_COLUMNS = DEFAULT_COLUMNS + [pseudo_name]
@@ -98,10 +100,12 @@ def format_job_info_list(job_infos, columns=JobInfoColumns.DEFAULT_COLUMNS):
         Nice string representation of this list
 
     """
-    table = {column.header: [x.json_raw.get(column.parameter_name) for x in job_infos]
-             for column in columns}
+    table = {
+        column.header: [x.json_raw.get(column.parameter_name) for x in job_infos]
+        for column in columns
+    }
 
-    return tabulate(table, headers='keys', tablefmt='simple')
+    return tabulate(table, headers="keys", tablefmt="simple")
 
 
 def parse_job_infos_response(response):
@@ -159,5 +163,5 @@ class JobsInfoList(UserList):
         return format_job_info_list(self.data, columns=columns)
 
 
-class APIParseResponseException(Exception):
+class APIParseResponseException(AnonAPIException):
     pass

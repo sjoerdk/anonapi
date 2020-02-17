@@ -29,7 +29,7 @@ class FileFolder:
         recurse: bool, optional
             Search for paths in all underlying directories. Default is True
         exclude_patterns: List[str], optional
-            Exclude any path that matches any of these patterns.
+            Exclude any root_path that matches any of these patterns.
             Patterns are unix-style: * as wildcard. See fnmatch function.
             Defaults to emtpy list meaning no exclusions
         ignore_dotfiles: bool, optional
@@ -38,7 +38,7 @@ class FileFolder:
         Returns
         -------
         generator
-            Yields Path if the path is a file, None otherwise
+            Yields Path if the root_path is a file, None otherwise
 
         """
         if not exclude_patterns:
@@ -63,7 +63,7 @@ class FileFolder:
 
 
 def open_as_dicom(path):
-    """Tries to open path as dicom
+    """Tries to open root_path as dicom
 
     Parameters
     ----------
@@ -73,9 +73,9 @@ def open_as_dicom(path):
     Returns
     -------
     pydicom.dataset
-        If path can be opened as dicom
+        If root_path can be opened as dicom
     None
-        If path cannot be opened
+        If root_path cannot be opened
     """
     # sleep(0.2)
     try:

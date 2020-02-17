@@ -67,6 +67,7 @@ class FileSelectionFileParam(ParamType):
     """A FileSelectionFile object
 
     """
+
     name = "file_selection_file"
 
     def convert(self, value, param, ctx):
@@ -74,7 +75,7 @@ class FileSelectionFileParam(ParamType):
         if not filepath.exists():
             self.fail(f"No file selection found at '{filepath}'")
         try:
-            with open(filepath, 'r') as f:
+            with open(filepath, "r") as f:
                 return FileSelectionFile.load(f, datafile=filepath)
         except FileSelectionException as e:
             self.fail(f"Error reading file selection: {e}")

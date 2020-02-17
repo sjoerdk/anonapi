@@ -5,10 +5,15 @@
 import requests
 import json
 
+from anonapi.exceptions import AnonAPIException
 from anonapi.objects import RemoteAnonServer
-from anonapi.responses import (JobsInfoList, parse_job_infos_response,
-                               APIParseResponseException, format_job_info_list,
-                               JobInfo)
+from anonapi.responses import (
+    JobsInfoList,
+    parse_job_infos_response,
+    APIParseResponseException,
+    format_job_info_list,
+    JobInfo,
+)
 
 
 class WebAPIClient:
@@ -155,12 +160,12 @@ class WebAPIClient:
         return args_in
 
     def get_documentation(self):
-        """ Query the API for info on all functions and parameters.
+        """ Query the API for info on all functions and rows.
 
         Returns
         -------
         dict
-            nested dict with info on all functions and parameters
+            nested dict with info on all functions and rows
 
         Raises
         ------
@@ -329,8 +334,9 @@ class AnonClientTool:
             info_string = f"Error getting job info from {server}:\n{str(e)}"
         return info_string
 
-    def get_job_info_list(self, server: RemoteAnonServer, job_ids,
-                          get_extended_info=False):
+    def get_job_info_list(
+        self, server: RemoteAnonServer, job_ids, get_extended_info=False
+    ):
         """Get a list of info on the given job ids.
 
         Parameters
@@ -362,8 +368,10 @@ class AnonClientTool:
             api_function_name = "get_jobs_list"
         try:
             return JobsInfoList(
-                [JobInfo(x) for x in client.get(api_function_name,
-                                                job_ids=job_ids).values()]
+                [
+                    JobInfo(x)
+                    for x in client.get(api_function_name, job_ids=job_ids).values()
+                ]
             )
         except APIClientException as e:
             raise ClientToolException(f"Error getting jobs from {server}:\n{str(e)}")
@@ -453,8 +461,9 @@ class AnonClientTool:
         source_path,
         destination_path,
         description,
+        pims_keyfile_id=None,
     ):
-        """Create a job with data coming from a network path
+        """Create a job with data coming from a network root_path
 
         Parameters
         ----------
@@ -462,9 +471,11 @@ class AnonClientTool:
         anon_name: str
         anon_id: str
         project_name: str
-        source_path: path
-        destination_path: path
+        source_path: root_path
+        destination_path: root_path
         description: str
+        pims_keyfile_id: str, optional
+           pims keyfile to use. Defaults to no pims keyfile
 
         Raises
         ------
@@ -491,6 +502,7 @@ class AnonClientTool:
             anonymizedpatientname=anon_name,
             anonymizedpatientid=anon_id,
             description=description,
+            pims_keyfile_id=pims_keyfile_id,
         )
 
         return info
@@ -504,6 +516,7 @@ class AnonClientTool:
         project_name,
         destination_path,
         description,
+        pims_keyfile_id=None,
     ):
         """Create a job with data from a PACS system
 
@@ -514,8 +527,10 @@ class AnonClientTool:
         anon_id: str
         project_name: str
         source_instance_id: str
-        destination_path: path
+        destination_path: root_path
         description: str
+        pims_keyfile_id: str, optional
+           pims keyfile to use. Defaults to no pims keyfile
 
         Raises
         ------
@@ -542,25 +557,27 @@ class AnonClientTool:
             anonymizedpatientname=anon_name,
             anonymizedpatientid=anon_id,
             description=description,
+            pims_keyfile_id=pims_keyfile_id,
         )
 
         return info
 
 
-class ClientInterfaceException(Exception):
+class ClientInterfaceException(AnonAPIException):
     """A general problem with client interface """
 
     pass
 
 
-class APIClientException(Exception):
+class APIClientException(AnonAPIException):
     """A general problem with the APIClient """
 
     pass
 
 
-class APIClient404Exception(Exception):
-    """object not found. Made this into a separate function to be able to ignore it in special cases"""
+class APIClient404Exception(AnonAPIException):
+    """object not found. Made this into a separate function to be able to ignore
+    it in special cases"""
 
     pass
 
@@ -589,5 +606,5 @@ class APIClientAPIException(APIClientException):
         self.api_errors = api_errors
 
 
-class ClientToolException(Exception):
+class ClientToolException(AnonAPIException):
     pass

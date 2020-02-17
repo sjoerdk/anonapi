@@ -1,3 +1,13 @@
+## Description ##
+some comment by some person
+another comment
+
+## Options ##
+destination_path,\\someserver\share\folder1
+pims_key,555
+root_source_path,\\otherserver\default_source_path
+
+## Mapping ##
 source,patient_id,patient_name,description
 folder:folder/file0,patient0,patientName0,test description
 folder:folder/file1,patient1,patientName1,test description

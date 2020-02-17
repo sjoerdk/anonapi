@@ -1,27 +1,125 @@
 """ Shared classes used in other tests. For generating test data """
+import itertools
 from itertools import cycle
+from pathlib import Path, PureWindowsPath
 from typing import List
 from unittest.mock import Mock
 from requests.models import Response
 import factory
 
-from anonapi.mapper import AnonymizationParameters, FileSelectionFolderIdentifier
+from anonapi.parameters import (
+    PatientID,
+    PatientName,
+    Description,
+    PIMSKey,
+    SourceIdentifierParameter,
+    FolderIdentifier,
+    StudyInstanceUIDIdentifier,
+    FileSelectionIdentifier,
+    DestinationPath,
+    RootSourcePath,
+    Project,
+)
 
 
-class AnonymizationParametersFactory(factory.Factory):
+class PatientIDFactory(factory.Factory):
     class Meta:
-        model = AnonymizationParameters
+        model = PatientID
 
-    patient_id = factory.sequence(lambda n: f"patient{n}")
-    patient_name = factory.sequence(lambda n: f"patientName{n}")
-    description = "test description"
+    value = factory.sequence(lambda n: f"patientID{n}")
+
+
+class PatientNameFactory(factory.Factory):
+    class Meta:
+        model = PatientName
+
+    value = factory.sequence(lambda n: f"patientName{n}")
+
+
+class ProjectFactory(factory.Factory):
+    class Meta:
+        model = Project
+
+    value = factory.sequence(lambda n: f"project{n}")
+
+
+class RootSourcePathFactory(factory.Factory):
+    class Meta:
+        model = RootSourcePath
+
+    value = factory.sequence(
+        lambda n: PureWindowsPath(f"\\\\server\\someshare\\folder{n}")
+    )
+
+
+class DescriptionFactory(factory.Factory):
+    class Meta:
+        model = Description
+
+    value = factory.sequence(lambda n: f"A description, number {n}")
+
+
+class DestinationPathFactory(factory.Factory):
+    class Meta:
+        model = DestinationPath
+
+    value = factory.sequence(lambda n: f"/root_path{n}")
+
+
+class PIMSKeyFactory(factory.Factory):
+    class Meta:
+        model = PIMSKey
+
+    value = factory.sequence(lambda n: str(100 + n))
 
 
 class FileSelectionIdentifierFactory(factory.Factory):
     class Meta:
-        model = FileSelectionFolderIdentifier
+        model = FileSelectionIdentifier
 
-    identifier = factory.sequence(lambda n: f"/folder/file{n}")
+    identifier = factory.sequence(lambda n: f"folder/file{n}")
+
+
+class FolderIdentifierFactory(factory.Factory):
+    class Meta:
+        model = FolderIdentifier
+
+    identifier = factory.sequence(lambda n: f"folder{n}")
+
+
+class StudyInstanceUIDIdentifierFactory(factory.Factory):
+    class Meta:
+        model = StudyInstanceUIDIdentifier
+
+    identifier = factory.sequence(lambda n: f"123141513523{n}")
+
+
+class SourceIdentifierIterator:
+    classes = [
+        FileSelectionIdentifierFactory,
+        FolderIdentifierFactory,
+        StudyInstanceUIDIdentifierFactory,
+    ]
+
+    def __iter__(self):
+        self.class_iter = itertools.cycle(self.classes)
+        return self
+
+    def __next__(self):
+        current_class = self.class_iter.__next__()
+        return current_class()
+
+
+class SourceIdentifierParameterFactory(factory.Factory):
+    """Generates rows refer to sources. Uses different
+    subclasses of SourceIdentifier as values
+
+    """
+
+    class Meta:
+        model = SourceIdentifierParameter
+
+    value = factory.Iterator(SourceIdentifierIterator())
 
 
 class RequestMockResponse:
@@ -53,7 +151,7 @@ class RequestsMock:
         self.requests = Mock()  # for keeping track of past requests
 
     def set_response_text(self, text, status_code=200):
-        """Any call to get() or post() will yield a Response() object with the given parameters
+        """Any call to get() or post() will yield a Response() object with the given rows
 
         Parameters
         ----------
@@ -179,7 +277,7 @@ class RequestsMockResponseExamples:
         '_type": "PATH", "source_anonymizedpatientid": "1983", "source_'
         'anonymizedpatientname": "1983", "source_pims_keyfile_id": null, '
         '"source_name": null, "source_path": "fileselection:\\\\\\\\umcsanfsclp0'
-        '1\\\\radng_ctarchive\\\\clinical_archive\\\\5187581\\\\fileselection.'
+        "1\\\\radng_ctarchive\\\\clinical_archive\\\\5187581\\\\fileselection."
         'txt", "source_protocol": 3178, "source_subject": 3178}, "1003": '
         '{"job_id": 1003, "date": "2019-11-26T16:34:08", "user_name": "z428172", '
         '"status": "DONE", "error": " ", "description": "For ticket #8941",'
@@ -192,7 +290,7 @@ class RequestsMockResponseExamples:
         '"source_status": "NEW", "source_type": "PATH", "source_anonymizedpatientid":'
         ' "1984", "source_anonymizedpatientname": "1984", "source_pims_keyfile_'
         'id": null, "source_name": null, "source_path": "fileselection:\\\\\\\\'
-        'umcsanfsclp01\\\\radng_ctarchive\\\\clinical_archive\\\\0572800\\\\'
+        "umcsanfsclp01\\\\radng_ctarchive\\\\clinical_archive\\\\0572800\\\\"
         'fileselection.txt", "source_protocol": 3178, "source_subject": 3178}}'
     )  # Response to 'get_jobs_list_extended'
 
@@ -220,7 +318,7 @@ class RequestsMockResponseExamples:
 
     JOB_CREATED_RESPONSE = RequestMockResponse(
         r'{"job_id": 1234, "date": "2019-09-04T14:12:43", "user_name": "z123sandbox", '
-        r'"status": "ACTIVE", "error": null, "description": "A test path job", '
+        r'"status": "ACTIVE", "error": null, "description": "A test root_path job", '
         r'"project_name": "Wetenschap-Algemeen", "priority": 0, "files_downloaded": null, '
         r'"files_processed": null, "destination_id": 44806, "destination_name": null,'
         r' "destination_path": "\\\\umcsanfsclp01\\radng_imaging\\temptest_output",'

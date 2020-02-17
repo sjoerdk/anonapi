@@ -3,6 +3,7 @@ from pathlib import Path
 
 from anonapi.batch import BatchFolder
 from anonapi.client import AnonClientTool
+from anonapi.exceptions import AnonAPIException
 from anonapi.settings import AnonClientSettings
 
 
@@ -12,8 +13,12 @@ class AnonAPIContext:
 
     """
 
-    def __init__(self, client_tool: AnonClientTool, settings: AnonClientSettings,
-                 current_dir: Path = None):
+    def __init__(
+        self,
+        client_tool: AnonClientTool,
+        settings: AnonClientSettings,
+        current_dir: Path = None,
+    ):
         """Create a anonapi command line mock_context
 
         Parameters
@@ -23,7 +28,7 @@ class AnonAPIContext:
         settings: AnonClientSettings
             Settings object to use for reading and writing settings.
         current_dir: Path, optional
-            Full path to the directory that anonapi is being called from. Defaults
+            Full root_path to the directory that anonapi is being called from. Defaults
             to None
 
         """
@@ -94,7 +99,7 @@ class AnonAPIContext:
         return server
 
     def current_dir(self):
-        """Return full path to the folder this command line mock_context is
+        """Return full root_path to the folder this command line mock_context is
         called from"""
         return self.current_dir
 
@@ -121,7 +126,7 @@ class AnonAPIContext:
         return BatchFolder(self.current_dir)
 
 
-class AnonAPIContextException(Exception):
+class AnonAPIContextException(AnonAPIException):
     pass
 
 

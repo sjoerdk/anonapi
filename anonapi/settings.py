@@ -5,6 +5,7 @@ from typing import List
 
 import yaml
 
+from anonapi.exceptions import AnonAPIException
 from anonapi.objects import RemoteAnonServer
 
 
@@ -140,7 +141,7 @@ class AnonClientSettingsFromFile(AnonClientSettings):
                 datamap.get("job_default_parameters")
             )
         else:  # if this is an old settings file 'job_default_parameters' will
-               # not exist. Just insert a default
+            # not exist. Just insert a default
             create_job_defaults_parsed = (
                 DefaultAnonClientSettings().job_default_parameters
             )
@@ -216,7 +217,7 @@ class JobDefaultParameters:
         )
 
 
-class AnonClientSettingsException(Exception):
+class AnonClientSettingsException(AnonAPIException):
     pass
 
 

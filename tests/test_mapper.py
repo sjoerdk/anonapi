@@ -1,73 +1,126 @@
+from io import StringIO
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 from fileselection.fileselection import FileSelectionFile
 
-from anonapi.mapper import (MappingList, SourceIdentifierFactory,
-                            UnknownSourceIdentifier, AnonymizationParameters,
-                            MappingLoadError, MappingListFolder, MapperException)
+from anonapi.mapper import (
+    JobParameterGrid,
+    MappingLoadError,
+    MappingFolder,
+    MapperException,
+    Mapping,
+)
+from anonapi.parameters import (
+    SourceIdentifierFactory,
+    UnknownSourceIdentifierException,
+    PIMSKey,
+)
 from tests.factories import (
-    AnonymizationParametersFactory,
-    FileSelectionIdentifierFactory,
+    SourceIdentifierParameterFactory,
+    PatientIDFactory,
+    DescriptionFactory,
+    PIMSKeyFactory,
 )
 from tests import RESOURCE_PATH
+from tests.resources.test_mapper.example_mapping_inputs import (
+    CAN_BE_PARSED_AS_MAPPING,
+    CAN_NOT_BE_PARSED_AS_MAPPING,
+)
 
 
 @pytest.fixture()
-def a_mapping():
-    return {
-        FileSelectionIdentifierFactory(): AnonymizationParametersFactory()
-        for _ in range(20)
-    }
+def a_grid_of_parameters():
+    """A grid of parameters that can be used to seed a JobParameterGrid
+
+    Returns
+    -------
+    List[List[Parameter]]
+    """
+
+    def paramlist():
+        return [
+            SourceIdentifierParameterFactory(),
+            PatientIDFactory(),
+            DescriptionFactory(),
+            PIMSKeyFactory(value=""),
+        ]
+
+    return [paramlist() for _ in range(15)]
 
 
-def test_write(tmpdir, a_mapping):
-    mapping_list = MappingList(mapping=a_mapping)
+def test_write(tmpdir, a_grid_of_parameters):
+    mapping_list = JobParameterGrid(rows=a_grid_of_parameters)
+
     with open(Path(tmpdir) / "mapping.csv", "w") as f:
         mapping_list.save(f)
 
     with open(Path(tmpdir) / "mapping.csv", "r") as f:
-        loaded_list = MappingList.load(f)
+        loaded_list = JobParameterGrid.load(f)
 
     # loaded should have the same patientIDs as the original
-    all(
-        y.patient_id in [x.patient_id for x in a_mapping.values()]
-        for y in loaded_list.values()
-    )
+    for org, load in zip(mapping_list.rows, loaded_list.rows):
+        assert [str(x) for x in org] == [str(x) for x in load]
 
 
-def test_anonymization_parameters():
-    params = AnonymizationParameters(
-        patient_id="pat1", patient_name="name1", description="desc"
-    )
-    assert params.as_dict()["patient_id"] == "pat1"
-
-    subset = params.as_dict(
-        parameters_to_include=[AnonymizationParameters.PATIENT_NAME]
-    )
-    assert "patient_id" not in subset
-    assert subset["patient_name"] == "name1"
-
-
-def test_load():
+def test_job_parameter_grid_load():
     mapping_file = RESOURCE_PATH / "test_mapper" / "example_mapping.csv"
+    with open(mapping_file, "r", newline="") as f:
+        grid = JobParameterGrid.load(f)
+    assert len(grid.rows) == 20
+
+
+def test_mapping_load_save():
+    """Load file with CSV part and general part"""
+    mapping_file = RESOURCE_PATH / "test_mapper" / "with_mapping_wide_settings.csv"
     with open(mapping_file, "r") as f:
-        mapping = MappingList.load(f)
-    assert len(mapping) == 20
+        mapping = Mapping.load(f)
+    assert "some comment" in mapping.description
+    assert len(mapping.rows()) == 20
+    assert len(mapping.options) == 2
+
+    output_file = StringIO(newline="")
+    mapping.save(output_file)
+    output_file.seek(0)
+    loaded = Mapping.load(output_file)
+
+    # saved and loaded again should be the same as original
+    assert mapping.description == loaded.description
+    assert [str(x) for x in mapping.options] == [str(x) for x in loaded.options]
+    assert [str(param) for row in mapping.rows() for param in row] == [
+        str(param) for row in loaded.rows() for param in row
+    ]
+
+
+@pytest.mark.parametrize("content", CAN_BE_PARSED_AS_MAPPING)
+def test_mapping_parse(content):
+    """Parse into sections"""
+
+    stream = StringIO(initial_value=content)
+    parsed = Mapping.parse_sections(stream)
+    assert len(parsed) == 3
+
+
+@pytest.mark.parametrize("content", CAN_NOT_BE_PARSED_AS_MAPPING)
+def test_mapping_parse_exceptions(content):
+    """For  these cases parsing should fail"""
+    stream = StringIO(initial_value=content)
+    with pytest.raises(MappingLoadError):
+        _ = Mapping.parse_sections(stream)
 
 
 def test_load_pims_only():
     mapping_file = RESOURCE_PATH / "test_mapper" / "example_pims_only_mapping.csv"
     with open(mapping_file, "r") as f:
-        mapping = MappingList.load(f)
-    test = 1
+        mapping = JobParameterGrid.load(f)
 
 
 @pytest.mark.parametrize(
     "file_to_open, expected_exception",
     [
-        ("example_corrupt_mapping.csv", UnknownSourceIdentifier),
-        ("example_unknown_source_key.csv", UnknownSourceIdentifier),
+        ("example_corrupt_mapping.csv", MappingLoadError),
+        ("example_unknown_source_key.csv", MappingLoadError),
         ("example_mapping_no_header.csv", MappingLoadError),
         ("example_mapping_random_content.csv", MappingLoadError),
     ],
@@ -76,108 +129,126 @@ def test_load_exceptions(file_to_open, expected_exception):
     mapping_file = RESOURCE_PATH / "test_mapper" / file_to_open
     with pytest.raises(expected_exception) as e:
         with open(mapping_file, "r") as f:
-            MappingList.load(f)
+            JobParameterGrid.load(f)
+
+
+def test_mapping_add_options():
+    """Options in a mapping should be added to each row, unless overwritten by
+    grid"""
+
+    # two rows, one containing a pims key parameter
+    a_grid = [
+        [SourceIdentifierFactory(), PatientIDFactory(), PIMSKey("important!")],
+        [SourceIdentifierFactory(), PatientIDFactory()],
+    ]
+
+    # mapping also defines a pims key as option
+    mapping = Mapping(grid=JobParameterGrid(a_grid), options=[PIMSKey("GeneralKey")])
+
+    rows = mapping.rows()
+    assert rows[0][0].value == "important!"
+    assert rows[1][0].value == "GeneralKey"
 
 
 def test_source_identifier_factory():
     factory = SourceIdentifierFactory()
-    assert factory.get_source_identifier_for_key("folder:/something/folder").key == "folder"
+    assert (
+        factory.get_source_identifier_for_key("folder:/something/folder").key
+        == "folder"
+    )
     assert factory.get_source_identifier_for_key("base:123234").key == "base"
 
-    for faulty_key in ["somethingelse:123234", "folder::123234", "folder123234"]:
-        with pytest.raises(UnknownSourceIdentifier):
+    for faulty_key in ["somethingelse:123234", "folder,123234", "folder123234"]:
+        with pytest.raises(UnknownSourceIdentifierException):
             factory.get_source_identifier_for_key(faulty_key)
 
 
 def test_source_identifier_factory_object_to_identifier():
     factory = SourceIdentifierFactory()
     identifier = factory.get_source_identifier_for_obj(
-        FileSelectionFile(data_file_path='testpath/folder/datafile.txt',
-                          description='test'))
-
-    assert str(identifier) == 'fileselection:testpath/folder/datafile.txt'
-
-
-def test_write_subset(tmpdir, a_mapping):
-    """Write only certain anonymization parameters. This makes the generated csv simpler
-    """
-    mapping_list = MappingList(mapping=a_mapping)
-
-    mapfile = Path(tmpdir) / "mapping.csv"
-    with open(mapfile, "w") as f:
-        mapping_list.save(
-            f, parameters_to_write=[AnonymizationParameters.PATIENT_ID_NAME]
+        FileSelectionFile(
+            data_file_path="testpath/folder/datafile.txt", description="test"
         )
+    )
 
-    # when loading this file again, the parameters that were not written should be missing
-    with open(mapfile, "r") as f:
-        loaded = MappingList.load(f)
-
-    for identifier, parameters in loaded.items():
-        assert str(identifier) in map(
-            str, a_mapping.keys()
-        )  # all original values should have been saved
-        assert loaded[identifier].patient_id is not None
-        assert loaded[identifier].patient_name is None
-        assert loaded[identifier].description is None
+    assert str(identifier) == "fileselection:testpath/folder/datafile.txt"
 
 
-def test_write_subset_unknown_parameter(tmpdir, a_mapping):
-    """Try to constrain to a parameter that is not a valid anonymization parameter
-    """
-    mapping_list = MappingList(mapping=a_mapping)
+def test_format_job_info(a_grid_of_parameters):
+    grid = JobParameterGrid(rows=a_grid_of_parameters)
+    as_string = grid.to_table_string()
 
-    with pytest.raises(ValueError):
-        with open(Path(tmpdir) / "mapping.csv", "w") as f:
-            mapping_list.save(f, parameters_to_write=["Whatisthis"])
-
-
-def test_format_job_info(a_mapping):
-    mapping_list = MappingList(mapping=a_mapping)
-    as_string = mapping_list.to_table_string()
-
-    assert "Mapping with 20 entries" in as_string
-    assert all(str(x) in as_string for x in list(mapping_list))
+    assert "with 15 rows" in as_string
 
 
 def test_mapping_list_folder():
-    with_mapping = MappingListFolder(
+    with_mapping = MappingFolder(
         RESOURCE_PATH / "test_mapper" / "mapping_list_folder" / "with_mapping"
     )
-    without_mapping = MappingListFolder(
+    without_mapping = MappingFolder(
         RESOURCE_PATH / "test_mapper" / "mapping_list_folder" / "without_mapping"
     )
-    assert with_mapping.has_mapping_list()
-    assert not without_mapping.has_mapping_list()
+    assert with_mapping.has_mapping()
+    assert not without_mapping.has_mapping()
 
 
 def test_mapping_list_folder_path_funcs():
     path = RESOURCE_PATH / "test_mapper" / "mapping_list_folder" / "with_mapping"
-    assert str(MappingListFolder(path).make_relative(path / "foo/bar")) == "foo/bar"
-    assert str(MappingListFolder(path).make_relative("already/relative")
-               ) == "already/relative"
+    assert str(MappingFolder(path).make_relative(path / "foo/bar")) == "foo/bar"
+    assert (
+        str(MappingFolder(path).make_relative("already/relative")) == "already/relative"
+    )
 
     with pytest.raises(MapperException):
-        MappingListFolder(path).make_relative("/outside/scope")
+        MappingFolder(path).make_relative("/outside/scope")
 
-    assert MappingListFolder(path).make_absolute("foo/bar") == path / "foo/bar"
+    assert MappingFolder(path).make_absolute("foo/bar") == path / "foo/bar"
 
     with pytest.raises(MapperException):
-        MappingListFolder(path).make_absolute("/absolute/path")
+        MappingFolder(path).make_absolute("/absolute/root_path")
 
 
-def test_mapping_folder_read_write(tmpdir, a_mapping):
+def test_mapping_folder_read_write(tmpdir, a_grid_of_parameters):
     """Test creating reading and deleting mappings in folder"""
-    mapping_folder = MappingListFolder(tmpdir)
-    assert not mapping_folder.has_mapping_list()
+    mapping_folder = MappingFolder(tmpdir)
+    assert not mapping_folder.has_mapping()
 
-    mapping_list = MappingList(a_mapping)
-    mapping_folder.save_list(mapping_list)
-    assert mapping_folder.has_mapping_list()
+    mapping = Mapping(JobParameterGrid(a_grid_of_parameters))
+    mapping_folder.save_mapping(mapping)
+    assert mapping_folder.has_mapping()
 
-    loaded = mapping_folder.load_list()
-    assert set(map(str, a_mapping)) == set(map(str, loaded))
-    assert mapping_folder.has_mapping_list()
+    loaded = mapping_folder.load_mapping()
+    assert [str(x) for row in loaded.rows() for x in row] == [
+        str(x) for row in mapping.rows() for x in row
+    ]
+    assert mapping_folder.has_mapping()
 
-    mapping_folder.delete_list()
-    assert not mapping_folder.has_mapping_list()
+    mapping_folder.delete_mapping()
+    assert not mapping_folder.has_mapping()
+
+
+def test_os_error():
+    with open(RESOURCE_PATH / "test_mapper" / "anon_mapping_os_error.csv", "r") as f:
+        _ = Mapping.load(f)
+
+
+def test_open_file():
+    """Editors like openoffice and excel will lock open csv files. When combined
+    with working on shares directly, the error messages can be quite confusing.
+    No nice 'This file is opened in another application'. Make this slightly less
+    confusing
+    """
+
+    mapping_file = RESOURCE_PATH / "test_mapper" / "with_mapping_wide_settings.csv"
+    with open(mapping_file, "r") as f:
+        f.readlines = Mock(
+            side_effect=OSError(
+                "raw readinto() returned invalid length 4294967283 "
+                "(should have been between 0 and 8192)"
+            )
+        )
+        with pytest.raises(MappingLoadError) as e:
+
+            _ = Mapping.load(f)
+
+        assert "opened in any editor?" in str(e)

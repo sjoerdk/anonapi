@@ -23,7 +23,7 @@ def test_settings_folder(tmp_path):
     Returns
     -------
     str
-        path to folder
+        root_path to folder
 
     """
     template_folder = Path(RESOURCE_PATH) / "test_settings"
@@ -40,7 +40,7 @@ def test_settings_file(test_settings_folder):
 @pytest.fixture
 def test_settings_file_old(test_settings_folder):
     """Copy of a correctly formatted settings file before adding job_default_
-    parameters param"""
+    rows parameter"""
     return test_settings_folder / "settings_old.yml"
 
 
@@ -118,5 +118,3 @@ def test_settings_load_old(test_settings_file_old):
     assert settings.job_default_parameters is not None
     assert len(settings.servers) == 2
     assert str(settings) == f"Settings at {str(test_settings_file_old)}"
-
-

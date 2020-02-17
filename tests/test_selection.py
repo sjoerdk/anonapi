@@ -17,7 +17,7 @@ def test_selection_tool(a_file_folder):
 
 
 def test_selection_tool_parameters(a_file_folder):
-    """Try out different iteration parameters FileFolder"""
+    """Try out different iteration rows FileFolder"""
 
     folder = a_file_folder
 
@@ -32,4 +32,4 @@ def test_selection_tool_parameters(a_file_folder):
     assert_len(folder.iterate(pattern="*", exclude_patterns=["2.0*"]), 3)
     assert_len(folder.iterate(pattern="*", exclude_patterns=["2.0*", "AiCE*"]), 2)
     assert_len(folder.iterate(pattern="*.*", exclude_patterns=["2.0*", "AiCE*"]), 1)
-    assert_len(folder.iterate(pattern='*', exclude_patterns=['*/some*']), 4)
+    assert_len(folder.iterate(pattern="*", exclude_patterns=["*/some*"]), 4)

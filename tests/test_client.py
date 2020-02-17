@@ -111,7 +111,7 @@ def test_wrong_inputs(mocked_requests_client: WebAPIClient):
         client.get("get_job", job_id=100)
     assert "does not exist" in str(exception.value)
 
-    # passing insufficient parameters
+    # passing insufficient rows
     requests_mock.set_response_text(
         text=RequestsMockResponseExamples.REQUIRED_PARAMETER_NOT_SUPPLIED,
         status_code=400,
@@ -120,7 +120,7 @@ def test_wrong_inputs(mocked_requests_client: WebAPIClient):
         client.get("get_job")
     assert "Required parameter" in str(exception.value)
 
-    # passing insufficient parameters
+    # passing insufficient rows
     requests_mock.set_response_text(
         text=RequestsMockResponseExamples.API_CALL_NOT_DEFINED, status_code=400
     )

@@ -1,5 +1,8 @@
 .. highlight:: shell
 
+
+.. _quick_start:
+
 ===========
 Quick start
 ===========

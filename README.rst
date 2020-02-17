@@ -12,14 +12,14 @@ AnonAPI
     :target: https://anonapi.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
-.. image:: https://api.codeclimate.com/v1/badges/5c3b7f45f6a476d0f21e/maintainability
+.. image:: https://api.codeclimate.com/v1/badges/ee1a2a2632b671ad2c2a/maintainability
     :target: https://codeclimate.com/github/sjoerdk/anonapi/maintainability
     :alt: Maintainability
 
 .. image:: https://codecov.io/gh/sjoerdk/anonapi/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/sjoerdk/anonapi
 
-.. image:: https://pyup.io/repos/github/comic/evalutils/shield.svg
+.. image:: https://pyup.io/repos/github/sjoerdk/anonapi/shield.svg
     :target: https://pyup.io/repos/github/sjoerdk/anonapi/
     :alt: Updates
 

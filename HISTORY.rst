@@ -36,3 +36,8 @@ History
 -------------------
 
 * Replaced python CommandLineParser with click CLI. Makes code more concise, testable and stable
+
+1.0.0 (2020-02-14)
+------------------
+
+* Now with docs and job creation functions.

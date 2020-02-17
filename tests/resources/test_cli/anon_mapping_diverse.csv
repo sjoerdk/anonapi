@@ -1,3 +1,12 @@
+## Description ##
+Another comment
+
+## Options ##
+destination_path,\\someserver\share\folder2
+root_source_path,\\server2\myshare\thing
+
+
+## Mapping ##
 source,patient_id,patient_name,description
 folder:folder/file0,patient0,patientName0,test description
 folder:folder/file1,patient1,patientName1,another test description

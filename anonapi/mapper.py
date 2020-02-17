@@ -7,324 +7,244 @@ Excel, maybe notepad
 """
 import csv
 import os
-from collections import UserDict
-from os import path
+
+from tabulate import tabulate
+
+from anonapi.exceptions import AnonAPIException
+from anonapi.parameters import (
+    FolderIdentifier,
+    FileSelectionIdentifier,
+    StudyInstanceUIDIdentifier,
+    AccessionNumberIdentifier,
+    SourceIdentifierFactory,
+    SourceIdentifierParameter,
+    ParameterFactory,
+    PatientName,
+    PatientID,
+    Description,
+    ALL_PARAMETERS,
+    ParameterParsingError,
+)
+from collections import UserDict, defaultdict
+from io import StringIO
 from pathlib import Path
+from os import path
 
-from fileselection.fileselection import FileSelectionFile
 
+class Mapping:
+    """Everything needed for creating anonymization jobs
 
-class SourceIdentifier:
-    """A string representing a place where data is coming from
-
-    Attributes
-    ----------
-    key: str
-        Class level attribute to identify this class of identifiers
-    identifier: str
-        Instance level attribute giving the actual value for this identifier.
-        For example a specific path or UID
+    Wrapper around JobParameterGrid that adds description and mapping-wide settings
+    such as output dir
     """
 
-    key = "base"  # key with which this class is identified
+    # Headers used in between sections in csv file
+    DESCRIPTION_HEADER = "## Description ##"
+    OPTIONS_HEADER = "## Options ##"
+    GRID_HEADER = "## Mapping ##"
+    ALL_HEADERS = [DESCRIPTION_HEADER, OPTIONS_HEADER, GRID_HEADER]
 
-    def __init__(self, identifier):
-        self.identifier = identifier
-
-    def __str__(self):
-        return f"{self.key}:{self.identifier}"
-
-
-class PathIdentifier(SourceIdentifier):
-    """Refers to a path
-    """
-
-    key = "path"
-
-    def __init__(self, identifier):
+    def __init__(self, grid, options=None, description=""):
         """
 
         Parameters
         ----------
-        identifier: pathlike
+        grid: JobParameterGrid
+            The per-job table of parameters
+        options: List[Parameter], optional
+            List of rows that have been set for the entire mapping. Defaults to empty
+        description: str, optional
+            Human readable description of this mapping. Can contain newline chars.
+            Defaults to empty string
         """
-        super().__init__(Path(identifier))
-
-
-class ObjectIdentifier(SourceIdentifier):
-    """An identifier that can be translated from and to a python object
-
-    """
-    associated_object_class = None
-
-    @classmethod
-    def from_object(cls, object):
-        """
-
-        Returns
-        -------
-        ObjectIdentifier instance or child of ObjectIdentifier instance
-        """
-        raise NotImplemented
-
-    def to_object(self):
-        """
-        Returns
-        -------
-        instance of self.object_class corresponding to this identifier
-        """
-
-
-class FileSelectionFolderIdentifier(PathIdentifier):
-    """A file selection in a specific folder. Selection file name is default.
-    Folder can be relative or absolute
-    """
-
-    key = "folder"
-
-
-class FileSelectionIdentifier(PathIdentifier, ObjectIdentifier):
-    """A file selection in a specific file
-    """
-
-    key = "fileselection"
-    associated_object_class = FileSelectionFile
-
-    @classmethod
-    def from_object(cls, object: FileSelectionFile):
-        return cls(identifier=object.data_file_path)
-
-    def to_object(self):
-        """
-
-        Returns
-        -------
-        FileSelectionFile
-
-        Raises
-        ------
-        FileNotFoundError
-            When the fileselection file cannot be found on local disk
-
-        """
-        with open(self.identifier, 'r') as f:
-            return FileSelectionFile.load(f, datafile=self.identifier)
-
-
-class PACSResourceIdentifier(SourceIdentifier):
-    """A key to for some object in a PACS system
-
-    """
-
-    key = "pacs_resource"
-
-
-class StudyInstanceUIDIdentifier(PACSResourceIdentifier):
-    """a DICOM StudyInstanceUID
-    """
-
-    key = "study_instance_uid"
-
-
-class AccessionNumberIdentifier(PACSResourceIdentifier):
-    """A DICOM AccessionNumber
-    """
-
-    key = "accession_number"
-
-
-class SourceIdentifierFactory:
-    """Creates SourceIdentifier objects based on key string
-    """
-
-    types = [
-        SourceIdentifier,
-        FileSelectionFolderIdentifier,
-        StudyInstanceUIDIdentifier,
-        AccessionNumberIdentifier,
-        FileSelectionIdentifier
-    ]
-
-    def get_source_identifier_for_key(self, key):
-        """Cast given key string back to identifier object
-
-        Parameters
-        ----------
-        key: str
-            Key to cast, like 'folder:/myfolder'
-
-        Raises
-        ------
-        UnknownSourceIdentifier:
-            When the key cannot be cast to any known identifier
-
-        Returns
-        -------
-        SourceIdentifier or subtype
-        The type that the given key represents
-        """
-        try:
-            type_key, identifier = key.split(":")
-        except ValueError as e:
-            msg = (
-                f"'{key}' is not a valid source. There should be a single colon"
-                f" ':' sign somewhere. "
-                f"Original error: {e}"
-            )
-            raise UnknownSourceIdentifier(msg)
-
-        for id_type in self.types:
-            if id_type.key == type_key:
-                return id_type(identifier=identifier)
-
-        raise UnknownSourceIdentifier(
-            f"Unknown identifier '{key}'. Known identifiers: {[x.key for x in self.types]}"
-        )
-
-    def get_source_identifier_for_obj(self, object):
-        """Generate an identifier for a given object
-
-        Parameters
-        ----------
-        object: obj
-            Object instance to get identifier for
-
-        Raises
-        ------
-        UnknownObject:
-            When no identifier can be created for this object
-
-        Returns
-        -------
-        SourceIdentifier or subtype
-            Idenfitier for the given object
-        """
-        # get all indentifier types that can handle translation to and from objects
-        object_types = \
-            [x for x in self.types if hasattr(x, 'associated_object_class')]
-
-        object_identifier_class = None
-        for x in self.types:
-            try:
-                if x.associated_object_class == type(object):
-                    object_identifier_class = x
-                    break
-            except AttributeError:
-                continue
-        if not object_identifier_class:
-            raise UnknownObject(f"Unknown object: {object}. I can't create an"
-                                f"identifier for this")
-
-        return object_identifier_class.from_object(object)
-
-
-class AnonymizationParameters:
-    """Settings that can be set when creating a job and that are likely to
-    change within a single mapping
-
-    """
-
-    PATIENT_ID_NAME = "patient_id"
-    PATIENT_NAME = "patient_name"
-    DESCRIPTION_NAME = "description"
-    PIMS_KEY = "pims_key"
-
-    field_names = [PATIENT_ID_NAME, PATIENT_NAME, DESCRIPTION_NAME, PIMS_KEY]
-
-    def __init__(
-        self, patient_id=None, patient_name=None, description=None, pims_key=None
-    ):
-        self.patient_id = patient_id
-        self.patient_name = patient_name
+        self.grid = grid
+        if options is None:
+            options = []
+        self.options = options
         self.description = description
-        self.pims_key = pims_key
 
-    def as_dict(self, parameters_to_include=None):
-        """
+    def __len__(self):
+        return len(self.grid)
+
+    def save(self, f):
+        # write description
+        f.write(self.DESCRIPTION_HEADER + os.linesep)
+        f.write(self.description)
+        f.write(os.linesep)
+
+        # write options
+        f.write(self.OPTIONS_HEADER + os.linesep)
+        f.write(os.linesep.join([str(x) for x in self.options]))
+        f.write(os.linesep)
+        f.write(os.linesep)
+
+        # write mapping
+        f.write(self.GRID_HEADER + os.linesep)
+        mapping_content = StringIO()
+        self.grid.save(mapping_content)
+        mapping_content.seek(0)
+        f.write(mapping_content.read())
+
+    @classmethod
+    def load(cls, f):
+        """ Load a mapping from a csv file stream """
+        # split content into three sections
+
+        try:
+            sections = cls.parse_sections(f)
+        except OSError as e:
+            if "raw readinto() returned invalid length" in str(e):
+                raise MappingLoadError(
+                    f"Cannot load mapping. Is the mapping file opened in any"
+                    f" editor?. Original error: {e}"
+                )
+            else:
+                # Unsure which error this is. Can't handle this here.
+                raise
+
+        description = "".join(sections[cls.DESCRIPTION_HEADER])
+
+        options = [
+            ParameterFactory.parse_from_string(line)
+            for line in sections[cls.OPTIONS_HEADER]
+        ]
+
+        grid_content = StringIO(os.linesep.join(sections[cls.GRID_HEADER]))
+        grid = JobParameterGrid.load(grid_content)
+        return cls(grid=grid, options=options, description=description)
+
+    @classmethod
+    def parse_sections(cls, f):
+        """A mapping csv file consists of three sections devided by headers.
+         Try to parse each one. Also cleans each line
 
         Parameters
         ----------
-        parameters_to_include: List[str], optional
-            List of strings from AnonymizationParameters.field_names. Defaults
-            to all parameters
+        f: file handled opened with read flag
 
         Returns
         -------
+        Dict
+            A dict with all lines under each of the headers in cls.ALL_HEADERS
+            Line endings and trailing commas have been stripped. empty lines
+            have been removed
+
+        Raises
+        ------
+        MappingLoadError
+            If not all headers can be found or are not in the expected order
 
         """
-        if parameters_to_include:
-            for param in parameters_to_include:
-                if param not in AnonymizationParameters.field_names:
-                    raise ValueError(
-                        f"Unknown parameter '{param}'. "
-                        f"Allowed: {AnonymizationParameters.field_names}"
-                    )
+        collected = defaultdict(list)
+        headers_to_find = cls.ALL_HEADERS.copy()
+        header_to_find = headers_to_find.pop(0)
+        current_header = None
+        for line in f.readlines():
+            line = line.replace("\r", "").replace("\n", "").rstrip(",")
+            if not line:  # skip empty lines
+                continue
+            if header_to_find.lower() in line.lower():
+                # this is our header, start recording
+                current_header = header_to_find
+                # and look for the next one. If there is one.
+                if headers_to_find:
+                    header_to_find = headers_to_find.pop(0)
+                continue  # skip header line itself
+            if current_header:
+                collected[current_header].append(line)
 
-        all_values = {
-            self.PATIENT_ID_NAME: self.patient_id,
-            self.PATIENT_NAME: self.patient_name,
-            self.DESCRIPTION_NAME: self.description,
-            self.PIMS_KEY: self.pims_key,
-        }
-        if parameters_to_include:
-            return {
-                key: value
-                for key, value in all_values.items()
-                if key in parameters_to_include
-            }
-        else:
-            return all_values
+        # check the results do we have all headers?
+        if headers_to_find:
+            raise MappingLoadError(
+                f'Could not find required headers "{headers_to_find}"'
+            )
+
+        return collected
+
+    def rows(self):
+        """All parameters for each row. This includes the parameters in the
+        grid as well as the mapping-wide parameters in the options section.
+
+        Grid parameters overrule mapping-wide parameters
+
+        Returns
+        -------
+            List[Parameter] for each row in grid
+        """
+        rows = []
+        for grid_row in self.grid.rows:
+            row_dict = {type(x): x for x in self.options}
+            row_dict.update({type(x): x for x in grid_row})
+            rows.append(list(row_dict.values()))
+        return rows
+
+    def add_row(self, parameters):
+        """Add the given parameters in a new row in this mapping
+
+        Parameters
+        ----------
+        parameters: List[Parameter]
+            The parameters to create one job
+
+        """
+        self.grid.rows.append(parameters)
+
+    def to_string(self):
+        """Human readable multi-line description of this mapping
+
+        Returns
+        -------
+        str
+        """
+        output = self.description
+        output += "\n" + self.grid.to_table_string()
+        return output
 
 
-class MappingList(UserDict):
-    """List of mappings that can be read from and saved to disk
+class JobParameterGrid:
+    """A persistable 2D grid of job rows. Each row belongs to one job
 
     """
 
-    DEFAULT_FILENAME = "anon_mapping.csv"
-
-    def __init__(self, mapping):
+    def __init__(self, rows):
         """
 
         Parameters
         ----------
-        mapping: Dict[SourceIdentifier, AnonymizationParameters]
-            Initialize mapping with these dicts
-
+        rows: List[List[Parameter]]
         """
-        self.data = mapping
 
-    def save(self, f, parameters_to_write=AnonymizationParameters.field_names):
-        """
+        self.rows = rows
+
+    def __len__(self):
+        return len(self.rows)
+
+    def save(self, f):
+        """Write rows as CSV. Will omit columns where each value is none
 
         Parameters
         ----------
         f: stream
             Write to this
-        parameters_to_write: List[str], optional
-            List of strings from AnonymizationParameters.field_names.
-            Defaults to all parameters
 
         """
+        # Which parameter types are there?
+        params = self.parameter_types()
 
         writer = csv.DictWriter(
             f,
             delimiter=",",
             quotechar='"',
             quoting=csv.QUOTE_MINIMAL,
-            fieldnames=["source"] + parameters_to_write,
+            fieldnames=[x.field_name for x in params],
         )
         writer.writeheader()
-        for identifier, parameters in self.data.items():
-            fields = {
-                "source": str(identifier),
-                **parameters.as_dict(parameters_to_include=parameters_to_write),
-            }
-            writer.writerow(fields)
+        for row in self.rows:
+            writer.writerow({x.field_name: x.value for x in row})
 
     @classmethod
     def load(cls, f):
-        """Load a MappingList instance from open file handle
+        """Load a  instance from open file handle
 
         Parameters
         ----------
@@ -333,7 +253,7 @@ class MappingList(UserDict):
 
         Returns
         -------
-        MappingList
+        JobParameterGrid
             Loaded from data in f
 
         Raises
@@ -343,22 +263,35 @@ class MappingList(UserDict):
 
         """
         reader = csv.DictReader(f)
-        id_factory = SourceIdentifierFactory()
-        mapping = {}
-        for row in reader:
-            try:
-                source = id_factory.get_source_identifier_for_key(row["source"])
-            except KeyError as e:
-                raise MappingLoadError(
-                    f"Could not find column with header 'source'. This is required."
+        parameters = []
+        try:
+            for row in reader:
+                parameters.append(
+                    [
+                        ParameterFactory.parse_from_key_value(key, val)
+                        for key, val in row.items()
+                    ]
                 )
-            # Read in parameters. If they are missing from input set them to None
-            parameters = {
-                x: row.get(x, None) for x in AnonymizationParameters.field_names
-            }
 
-            mapping[source] = AnonymizationParameters(**parameters)
-        return cls(mapping)
+        except ParameterParsingError as e:
+            raise MappingLoadError(f"Problem parsing '{row}': {e}")
+
+        return cls(parameters)
+
+    def parameter_types(self):
+        """Sorted list of all classes of Parameter found in this list
+
+        Useful if you want to make a nice table for example
+
+        Returns
+        -------
+        List[class]
+            Each distinct class of Parameter, ordered in the same order as
+            rows.ALL_PARAMETERS
+
+        """
+        types = set(type(param) for row in self.rows for param in row)
+        return [x for x in ALL_PARAMETERS if x in types]
 
     def to_table_string(self):
         """A source - patient_id table with a small header
@@ -366,28 +299,31 @@ class MappingList(UserDict):
         Returns
         -------
         str:
-            Nice string representation of this list, 80 chars wide, truncated if needed
+            Nice string representation of this list, 80 chars wide, truncated if
+            needed
 
         """
+        # remember parameter list can be sparse
+        table = defaultdict(list)
+        types = [SourceIdentifierParameter, PatientID]
 
-        header = (
-            f"Mapping with {len(self)} entries\n"
-            "source                                             patient_id\n"
-            "--------------------------------------------------------------------------------"
-        )
-        info_string = header
+        for row in self.rows:
+            typed_row = {type(x): x for x in row}
+            for param_type in types:
+                try:
+                    instance = typed_row[param_type]
+                except KeyError:
+                    instance = param_type()
+                table[param_type.field_name].append(instance.value)
+        output = f"Parameter grid with {len(self.rows)} rows:\n\n"
+        output += tabulate(table, headers="keys", tablefmt="simple")
+        return output
 
-        for x, y in self.items():
-            info_line = f"{str(x)[-40:]:<50} {y.patient_id[-40:]:<30} "
-            info_string += "\n" + info_line
 
-        return info_string
+class MappingFolder:
+    """Folder that might contain a mapping.
 
-
-class MappingListFolder:
-    """Folder that might contain a mapping list.
-
-    Uses a single default filename that it expects mapping list to be saved under.
+    Uses a single default filename that it expects mapping to be saved under.
 
     """
 
@@ -398,8 +334,8 @@ class MappingListFolder:
 
         Parameters
         ----------
-        path: Pathlike
-            path to this folder
+        root_path: Pathlike
+            root_path to this folder
         """
         self.folder_path = Path(folder_path)
 
@@ -407,7 +343,7 @@ class MappingListFolder:
         return self.folder_path / self.DEFAULT_FILENAME
 
     def make_relative(self, path):
-        """Make the given path relative to this mapping folder
+        """Make the given root_path relative to this mapping folder
 
         Parameters
         ----------
@@ -421,7 +357,7 @@ class MappingListFolder:
         Raises
         ------
         MapperException
-            When path cannot be made relative
+            When root_path cannot be made relative
 
         """
         path = Path(path)
@@ -430,10 +366,10 @@ class MappingListFolder:
         try:
             return path.relative_to(self.folder_path)
         except ValueError as e:
-            raise MapperException(f"Error making path relative: {e}")
+            raise MapperException(f"Error making root_path relative: {e}")
 
     def make_absolute(self, path):
-        """Get absolute path to the given path, assuming it is in this mapping folder
+        """Get absolute root_path to the given root_path, assuming it is in this mapping folder
 
         Parameters
         ----------
@@ -442,38 +378,39 @@ class MappingListFolder:
         Returns
         -------
         Path
-            Absolute path, assuming mapping folder as base folder
+            Absolute root_path, assuming mapping folder as base folder
 
         Raises
         ------
         MapperException
-            When given path is already absolute
+            When given root_path is already absolute
 
         """
         path = Path(path)
         if path.is_absolute():
-            raise MapperException("Cannot make absolute path absolute")
+            raise MapperException("Cannot make absolute root_path absolute")
         return self.folder_path / Path(path)
 
-    def has_mapping_list(self):
-        """Is there a default mapping list defined in this folder?"""
+    def has_mapping(self):
+        """Is there a mapping file in this folder?"""
         return self.full_path().exists()
 
-    def save_list(self, mapping_list: MappingList):
-        with open(self.full_path(), "w") as f:
+    def save_mapping(self, mapping_list):
+        with open(self.full_path(), "w", newline="") as f:
             mapping_list.save(f)
 
-    def load_list(self):
-        """
+    def load_mapping(self):
+        """Load Mapping from default location in this folder
 
         Returns
         -------
+        Mapping
 
         """
-        with open(self.full_path(), "r") as f:
-            return MappingList.load(f)
+        with open(self.full_path(), "r", newline="") as f:
+            return Mapping.load(f)
 
-    def delete_list(self):
+    def delete_mapping(self):
         os.remove(self.full_path())
 
     def get_mapping(self):
@@ -481,91 +418,81 @@ class MappingListFolder:
 
         Returns
         -------
-        MappingList
+        Mapping
             Loaded from current dir
 
         Raises
         ------
-        MappingLoadError
+        MapperException
             When no mapping could be loaded from current directory
 
         """
 
         try:
-            with open(self.full_path(), "r") as f:
-                return MappingList.load(f)
+            with open(self.full_path(), "r", newline="") as f:
+                return Mapping.load(f)
         except FileNotFoundError:
-            raise MappingLoadError("No mapping defined in current directory")
+            raise NoMappingFoundError("No mapping defined in current directory")
         except MapperException as e:
-            raise MappingLoadError(f"Error loading mapping: {e}")
+            raise MappingLoadError(e)
 
 
-def get_example_mapping_list():
-    mapping = {
-        FileSelectionFolderIdentifier(
-            identifier=path.sep.join(["example", "folder1"])
-        ): AnonymizationParameters(
-            patient_name="Patient1",
-            patient_id="12345",
-            description="An optional description for patient 1",
-        ),
-        FileSelectionFolderIdentifier(
-            identifier=path.sep.join(["example", "folder2"])
-        ): AnonymizationParameters(
-            patient_name="Patient2",
-            patient_id="23456",
-            description="An optional description for patient 2",
-        ),
-    }
-    return MappingList(mapping=mapping)
-
-
-class ExampleMappingList(MappingList):
+class ExampleJobParameterGrid(JobParameterGrid):
     """A mapping list with some example content. Gives an overview of possible
      identifiers
 
     """
 
     def __init__(self):
-        mapping = {
-            FileSelectionFolderIdentifier(
-                identifier=path.sep.join(["example", "folder1"])
-            ): AnonymizationParameters(
-                patient_name="Patient1",
-                patient_id="001",
-                description="All files from folder1",
-            ),
-            StudyInstanceUIDIdentifier(
-                "123.12121212.12345678"
-            ): AnonymizationParameters(
-                patient_name="Patient2",
-                patient_id="002",
-                description="A study which should be retrieved from PACS, "
-                            "identified by StudyInstanceUID",
-            ),
-            AccessionNumberIdentifier("12345678.1234567"): AnonymizationParameters(
-                patient_name="Patient3",
-                patient_id="003",
-                description="A study which should be retrieved from PACS, "
-                            "identified by AccessionNumber",
-            ),
-            FileSelectionIdentifier(
-                Path("folder2/fileselection.txt")): AnonymizationParameters(
-                    patient_name="Patient4", patient_id="004",
-                    description="A selection of files in folder2")
-        }
-        super().__init__(mapping=mapping)
+        rows = [
+            [
+                SourceIdentifierParameter(
+                    FolderIdentifier(identifier=path.sep.join(["example", "folder1"]))
+                ),
+                PatientName("Patient1"),
+                PatientID("001"),
+                Description("All files from folder1"),
+            ],
+            [
+                SourceIdentifierParameter(
+                    StudyInstanceUIDIdentifier("123.12121212.12345678")
+                ),
+                PatientName("Patient2"),
+                PatientID("002"),
+                Description(
+                    "A study which should be retrieved from PACS, "
+                    "identified by StudyInstanceUID"
+                ),
+            ],
+            [
+                SourceIdentifierParameter(
+                    AccessionNumberIdentifier("12345678.1234567")
+                ),
+                PatientName("Patient3"),
+                PatientID("003"),
+                Description(
+                    "A study which should be retrieved from PACS, "
+                    "identified by AccessionNumber"
+                ),
+            ],
+            [
+                SourceIdentifierParameter(
+                    FileSelectionIdentifier(Path("folder2/fileselection.txt"))
+                ),
+                PatientName("Patient4"),
+                PatientID("004"),
+                Description("A selection of files in folder2"),
+            ],
+        ]
+
+        super().__init__(rows=rows)
 
 
-class MapperException(Exception):
+class MapperException(AnonAPIException):
     pass
 
 
-class UnknownSourceIdentifier(MapperException):
-    pass
-
-
-class UnknownObject(MapperException):
+class NoMappingFoundError(MapperException):
     pass
 
 

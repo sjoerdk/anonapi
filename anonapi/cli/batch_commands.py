@@ -5,7 +5,6 @@ from typing import List
 
 import click
 from click.exceptions import ClickException
-from tabulate import tabulate
 
 from anonapi.batch import JobBatch
 from anonapi.cli.click_types import JobIDRangeParamType
@@ -17,7 +16,7 @@ from anonapi.context import (
 )
 from anonapi.decorators import pass_anonapi_context
 from anonapi.responses import JobStatus, JobInfoColumns, JobInfo, format_job_info_list
-from collections import Counter, defaultdict
+from collections import Counter
 
 
 @click.group(name="batch")
@@ -32,9 +31,7 @@ def init(parser: AnonAPIContext):
     """Save an empty batch in the current folder, for current server"""
     batch_folder = parser.get_batch_folder()
     if batch_folder.has_batch():
-        raise AnonAPIContextException(
-            "Cannot init, A batch is already defined in this folder"
-        )
+        raise ClickException("Cannot init, A batch is already defined in this folder")
     else:
         server = parser.get_active_server()
         batch_folder.save(JobBatch(job_ids=[], server=server))
@@ -65,8 +62,7 @@ def delete(parser: AnonAPIContext):
 @pass_anonapi_context
 @click.argument("job_ids", type=JobIDRangeParamType(), nargs=-1)
 def add(parser: AnonAPIContext, job_ids):
-    """Add ids to current batch. Will not add already existing. Space separated, ranges like 1-40
-    allowed
+    """Add ids to current batch. Space-separated (1 2 3) or range (1-40)
     """
     job_ids = [x for x in itertools.chain(*job_ids)]  # make into one list
     batch_folder = parser.get_batch_folder()
@@ -80,7 +76,7 @@ def add(parser: AnonAPIContext, job_ids):
 @pass_anonapi_context
 @click.argument("job_ids", type=JobIDRangeParamType(), nargs=-1)
 def remove(parser: AnonAPIContext, job_ids):
-    """Remove ids from current batch. Space separated, ranges like 1-40 allowed
+    """Remove ids from current batch. Space-separated (1 2 3) or range (1-40)
     """
     job_ids = [x for x in itertools.chain(*job_ids)]  # make into one list
     batch_folder = parser.get_batch_folder()
@@ -230,6 +226,16 @@ def show_error(parser: AnonAPIContext):
         click.echo("There are no jobs with error status in this batch")
 
 
-for func in [info, status, reset, init, delete, add, remove, cancel, reset_error,
-             show_error]:
+for func in [
+    info,
+    status,
+    reset,
+    init,
+    delete,
+    add,
+    remove,
+    cancel,
+    reset_error,
+    show_error,
+]:
     main.add_command(func)
