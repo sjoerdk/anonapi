@@ -12,7 +12,8 @@ from anonapi.cli.entrypoint import get_context
 from anonapi.client import APIClientException, ClientToolException
 from anonapi.context import AnonAPIContextException
 from anonapi.responses import APIParseResponseException
-from tests.factories import RequestsMock, RequestsMockResponseExamples
+from tests.factories import RequestsMock
+from tests.mock_responses import RequestsMockResponseExamples
 
 
 @pytest.fixture

@@ -13,7 +13,8 @@ from anonapi.client import (
     APIClientException,
     AnonClientTool,
 )
-from tests.factories import RequestsMock, RequestsMockResponseExamples
+from tests.factories import RequestsMock
+from tests.mock_responses import RequestsMockResponseExamples
 
 
 def test_basic_client(mocked_requests_client: WebAPIClient):
