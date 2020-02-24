@@ -7,7 +7,7 @@ import click
 from anonapi.batch import BatchFolder, JobBatch
 from anonapi.context import AnonAPIContext
 from anonapi.client import APIClientException
-from anonapi.decorators import pass_anonapi_context
+from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
 from anonapi.exceptions import AnonAPIException
 from anonapi.mapper import MappingFolder, MapperException
 from anonapi.parameters import (
@@ -283,11 +283,9 @@ class CreateCommandsContext(AnonAPIContext):
             )  # add only unique new ids
             batch_folder.save(batch)
 
+    @handle_anonapi_exceptions
     def get_mapping(self):
-        try:
-            return MappingFolder(self.current_dir).get_mapping()
-        except MapperException as e:
-            raise ClickException(e)
+        return MappingFolder(self.current_dir).get_mapping()
 
 
 pass_create_commands_context = click.make_pass_decorator(CreateCommandsContext)

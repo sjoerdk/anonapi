@@ -7,6 +7,8 @@ python models on the server side and the client side. But we're not using django
 """
 
 from collections import UserList
+from typing import Dict
+
 from tabulate import tabulate
 
 from anonapi.exceptions import AnonAPIException
@@ -35,7 +37,15 @@ class JobInfo:
     in the info, and which are optional
     """
 
-    def __init__(self, json_raw):
+    def __init__(self, json_raw: Dict):
+        """
+
+        Parameters
+        ----------
+        json_raw: Dict
+            API response as received from server
+
+        """
         self.job_id = json_raw["job_id"]
         self.date = json_raw["date"]
         self.user_name = json_raw["user_name"]
@@ -56,6 +66,10 @@ class JobInfo:
         self.source_instance_id = json_raw.get("source_instance_id")
 
         self.json_raw = json_raw
+
+    def as_string(self):
+        """As human readable  multi-line string"""
+        return "\n".join([str(x) for x in list(self.json_raw.items())])
 
 
 class TableColumn:

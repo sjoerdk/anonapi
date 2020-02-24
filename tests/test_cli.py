@@ -360,7 +360,7 @@ def test_command_line_tool_user_commands(mock_main_runner):
     "command, mock_requests_response, expected_output",
     [
         ("server jobs", requests.exceptions.ConnectionError, "Error getting jobs"),
-        ("job info 123", requests.exceptions.ConnectionError, "Error getting job info"),
+        ("job info 123", requests.exceptions.ConnectionError, "Error"),
         (
             "server status",
             requests.exceptions.ConnectionError,
@@ -572,7 +572,7 @@ def test_cli_batch_reset_error(mock_main_runner_with_batch, mock_requests):
     mock_requests.reset()
     mock_requests.set_response_exception(ClientToolException("Terrible exception"))
     result = runner.invoke(entrypoint.cli, "batch reset-error")
-    assert "Error resetting:" in result.output
+    assert "Error:" in result.output
 
 
 def test_cli_batch_id_range(mock_main_runner):

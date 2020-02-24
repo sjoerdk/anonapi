@@ -15,7 +15,7 @@ from click.exceptions import BadParameter, UsageError, ClickException
 from anonapi.cli.click_types import FileSelectionFileParam
 from anonapi.cli.select_commands import create_dicom_selection_click
 from anonapi.context import AnonAPIContext
-from anonapi.decorators import pass_anonapi_context
+from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
 from anonapi.mapper import (
     MappingFolder,
     MappingLoadError,
@@ -79,14 +79,13 @@ def main(context: AnonAPIContext, ctx):
 
 
 @click.command()
+@handle_anonapi_exceptions
 @pass_map_command_context
 def status(context: MapCommandContext):
     """Show mapping in current directory"""
-    try:
-        mapping = context.get_current_mapping()
-        click.echo(mapping.to_string())
-    except MapperException as e:
-        raise ClickException(e)
+
+    mapping = context.get_current_mapping()
+    click.echo(mapping.to_string())
 
 
 def get_initial_options(settings: AnonClientSettings) -> List[Parameter]:
@@ -135,11 +134,9 @@ def delete(context: MapCommandContext):
     click.echo(f"Removed mapping in current dir")
 
 
+@handle_anonapi_exceptions
 def get_mapping(context):
-    try:
-        return context.get_current_mapping()
-    except MapperException as e:
-        raise ClickException(e)
+    return context.get_current_mapping()
 
 
 @click.command()
