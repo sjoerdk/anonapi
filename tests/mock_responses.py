@@ -1,4 +1,20 @@
-from tests.factories import RequestMockResponse
+class RequestMockResponse:
+    """A description of a http server response
+    """
+
+    def __init__(self, text, response_code):
+        """
+
+        Parameters
+        ----------
+        text: str
+            Text of this response
+        response_code: int
+            https response code, like 200 or 404
+        """
+
+        self.text = text
+        self.response_code = response_code
 
 
 class RequestsMockResponseExamples:
@@ -128,3 +144,5 @@ class RequestsMockResponseExamples:
     REQUIRED_PARAMETER_NOT_SUPPLIED = (
         r'{"errors": {"job_id": "Required parameter job_id not supplied"}}'
     )
+
+

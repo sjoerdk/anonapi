@@ -1,5 +1,6 @@
 """ Shared classes used in other tests. For generating test data """
 import itertools
+import json
 from itertools import cycle
 from pathlib import PureWindowsPath
 from typing import List
@@ -20,6 +21,8 @@ from anonapi.parameters import (
     RootSourcePath,
     Project,
 )
+from anonapi.responses import JobInfo
+from tests.mock_responses import RequestsMockResponseExamples, RequestMockResponse
 
 
 class PatientIDFactory(factory.Factory):
@@ -122,23 +125,11 @@ class SourceIdentifierParameterFactory(factory.Factory):
     value = factory.Iterator(SourceIdentifierIterator())
 
 
-class RequestMockResponse:
-    """A description of a http server response
-    """
+class JobInfoFactory(factory.Factory):
+    class Meta:
+        model = JobInfo
 
-    def __init__(self, text, response_code):
-        """
-
-        Parameters
-        ----------
-        text: str
-            Text of this response
-        response_code: int
-            https response code, like 200 or 404
-        """
-
-        self.text = text
-        self.response_code = response_code
+    json_raw = json.loads(RequestsMockResponseExamples.JOB_INFO)
 
 
 class RequestsMock:
