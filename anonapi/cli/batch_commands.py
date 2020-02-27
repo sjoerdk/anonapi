@@ -108,9 +108,7 @@ def status(parser: AnonAPIContext, patient_name):
     ids_queried = batch.job_ids
 
     infos = parser.client_tool.get_job_info_list(
-        server=batch.server,
-        job_ids=ids_queried,
-        get_extended_info=get_extended_info,
+        server=batch.server, job_ids=ids_queried, get_extended_info=get_extended_info,
     )
 
     click.echo(f"Job info for {len(infos)} jobs on {batch.server}:")

@@ -71,5 +71,3 @@ def cancel(parser: AnonAPIContext, job_id):
 
 for func in [info, reset, cancel, job_list]:
     main.add_command(func)
-
-

@@ -95,6 +95,16 @@ anonapi.settings module
    :undoc-members:
    :show-inheritance:
 
+.. _anonapi_testresources:
+
+anonapi.testresources module
+-----------------------
+
+.. automodule:: anonapi.testresources
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Module contents
 ---------------

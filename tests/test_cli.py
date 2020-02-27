@@ -12,6 +12,7 @@ from anonapi.cli.entrypoint import get_context
 from anonapi.client import APIClientException, ClientToolException
 from anonapi.context import AnonAPIContextException
 from anonapi.responses import APIParseResponseException
+from anonapi.testresources import JobInfoFactory
 from tests.factories import RequestsMock
 from tests.mock_responses import RequestsMockResponseExamples
 
@@ -540,7 +541,7 @@ def test_cli_batch_show_errors(mock_main_runner_with_batch, mock_requests):
         text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST_WITH_ERROR
     )
 
-    result = runner.invoke(entrypoint.cli, "batch show-error")
+    result = runner.invoke(entrypoint.cli, "batch show-error", catch_exceptions=False)
     assert result.exit_code == 0
     assert "Terrible error" in result.output
 
@@ -552,9 +553,11 @@ def test_cli_batch_reset_error(mock_main_runner_with_batch, mock_requests):
     mock_requests.set_response_text(
         text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST_WITH_ERROR
     )
-
+    test = JobInfoFactory()
     # try a reset, answer 'Yes' to question
-    result = runner.invoke(entrypoint.cli, "batch reset-error", input="Yes")
+    result = runner.invoke(
+        entrypoint.cli, "batch reset-error", input="Yes", catch_exceptions=False
+    )
     assert result.exit_code == 0
     assert "This will reset 2 jobs on testserver" in result.output
     assert "Done" in result.output

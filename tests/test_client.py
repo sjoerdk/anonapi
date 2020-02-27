@@ -13,7 +13,8 @@ from anonapi.client import (
     APIClientException,
     AnonClientTool,
 )
-from tests.factories import RequestsMock, JobInfoFactory
+from tests.factories import RequestsMock
+from anonapi.testresources import JobInfoFactory
 from tests.mock_responses import RequestsMockResponseExamples
 
 
@@ -42,7 +43,7 @@ def test_get_jobs(mocked_requests_client: WebAPIClient):
 def test_get_job(mocked_requests_client: WebAPIClient):
     """Get info on a single job """
     client, requests_mock = mocked_requests_client
-    test = JobInfoFactory()
+
 
     # job info for a job with id=3
     requests_mock.set_response_text(text=RequestsMockResponseExamples.JOB_INFO)
