@@ -136,17 +136,24 @@ def get_mapping(context):
 @click.command()
 @pass_map_command_context
 @click.argument("path", type=click.Path(exists=True))
-def add_study_folder(context: MapCommandContext, path):
+@click.option(
+    "--check-dicom/--no-check-dicom",
+    default=True,
+    help="Open each file to check whether it is valid DICOM",
+)
+def add_study_folder(context: MapCommandContext, path, check_dicom):
     """Add all dicom files in given folder to map
     """
     mapping = add_path_to_mapping_click(Path(path), get_mapping(context),
-                                        cwd=context.current_path)
+                                        cwd=context.current_path,
+                                        check_dicom=check_dicom)
     context.get_current_mapping_folder().save_mapping(mapping)
-
     click.echo(f"Done. Added '{path}' to mapping")
 
 
-def add_path_to_mapping_click(path: Path, mapping: Mapping,
+def add_path_to_mapping_click(path: Path,
+                              mapping: Mapping,
+                              check_dicom: bool = True,
                               cwd: Optional[Path] = None):
     """Create a fileselection in the given path and add it to the given mapping
 
@@ -157,6 +164,9 @@ def add_path_to_mapping_click(path: Path, mapping: Mapping,
         Path to create fileselection in
     mapping: Mapping
         Mapping to add the fileselection to
+    check_dicom: bool, optional
+        open each file to see whether it is valid DICOM. Setting False is faster
+        but could include files that will fail the job in IDIS. Defaults to True
     cwd: Optional[Path]
         Current working directory. If given, write to mapping relative to this
         path
@@ -172,7 +182,7 @@ def add_path_to_mapping_click(path: Path, mapping: Mapping,
         The mapping with path added
     """
     # create a selection from all dicom files in given root_path
-    file_selection = create_dicom_selection_click(path)
+    file_selection = create_dicom_selection_click(path, check_dicom)
 
     # make path relative if requested
     if cwd:
@@ -195,7 +205,12 @@ def add_path_to_mapping_click(path: Path, mapping: Mapping,
 @click.command()
 @pass_map_command_context
 @click.argument("pattern")
-def add_all_study_folders(context: MapCommandContext, pattern):
+@click.option(
+    "--check-dicom/--no-check-dicom",
+    default=True,
+    help="Open each file to check whether it is valid DICOM",
+)
+def add_all_study_folders(context: MapCommandContext, pattern, check_dicom):
     """Add all folders matching pattern to mapping
     """
     # Examples: **/* */1 */*/*2
@@ -213,7 +228,8 @@ def add_all_study_folders(context: MapCommandContext, pattern):
         mapping = get_mapping(context)
         for path in found:
             mapping = add_path_to_mapping_click(Path(path), mapping,
-                                                cwd=context.current_path)
+                                                cwd=context.current_path,
+                                                check_dicom=check_dicom)
 
         context.get_current_mapping_folder().save_mapping(mapping)
         click.echo("Done")
