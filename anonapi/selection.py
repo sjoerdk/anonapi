@@ -62,13 +62,16 @@ class FileFolder:
                 continue
 
 
-def open_as_dicom(path):
+def open_as_dicom(path, read_pixel_data: bool= True):
     """Tries to open root_path as dicom
 
     Parameters
     ----------
     path: Pathlike
         Path a to a file
+    read_pixel_data: Bool, optional
+        Whether to read pixel data when opening this file.
+        Defaults to True, meaning all pixel data will be read and returned
 
     Returns
     -------
@@ -77,8 +80,8 @@ def open_as_dicom(path):
     None
         If root_path cannot be opened
     """
-    # sleep(0.2)
     try:
-        return pydicom.dcmread(str(path))
+        return pydicom.filereader.dcmread(str(path),
+                                          stop_before_pixels=not read_pixel_data)
     except InvalidDicomError:
         return None

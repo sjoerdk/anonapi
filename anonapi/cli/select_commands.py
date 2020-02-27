@@ -155,7 +155,7 @@ def edit(context: SelectCommandContext):
         click.launch(str(selection_folder.get_data_file_path()))
 
 
-def create_dicom_selection_click(path):
+def create_dicom_selection_click(path, check_dicom=True):
     """Find all DICOM files path (recursive) and save them a FileSelectionFile.
 
     Meant to be included directly inside click commands. Uses a lot of click.echo()
@@ -163,6 +163,9 @@ def create_dicom_selection_click(path):
     Parameters
     ----------
     path: PathLike
+    check_dicom: bool, optional
+        open each file to see whether it is valid DICOM. Setting False is faster
+        but could include files that will fail the job in IDIS. Defaults to True
 
     Returns
     -------
@@ -174,8 +177,14 @@ def create_dicom_selection_click(path):
     folder = FileFolder(path)
     click.echo(f"Finding all files in {path}")
     files = [x for x in tqdm(folder.iterate()) if x is not None]
-    click.echo(f"Found {len(files)} files. Finding out which ones are DICOM")
-    dicom_files = [x for x in tqdm(files) if open_as_dicom(x)]
+    if check_dicom:
+        click.echo(f"Found {len(files)} files. Finding out which ones are DICOM")
+        dicom_files = [x for x in tqdm(files) if open_as_dicom(x)]
+    else:
+        click.echo(f"Found {len(files)} files. Adding all without check because "
+                   f"--no-check-dicom was set")
+        dicom_files = files
+
     click.echo(f"Found {len(dicom_files)} DICOM files")
     # record dicom files as fileselection
     selection_folder = FileSelectionFolder(path=path.absolute())

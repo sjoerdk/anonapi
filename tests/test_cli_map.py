@@ -10,7 +10,7 @@ from anonapi.cli.map_commands import MapCommandContext, add_selection, \
     add_all_study_folders, add_path_to_mapping_click
 from anonapi.mapper import MappingLoadError, MappingFolder
 from anonapi.parameters import ParameterSet, RootSourcePath, SourceIdentifierParameter
-from anonapi.settings import  DefaultAnonClientSettings
+from anonapi.settings import DefaultAnonClientSettings
 from tests.conftest import MockContextCliRunner
 from tests import RESOURCE_PATH
 
@@ -150,6 +150,25 @@ def test_cli_map_add_folder(mock_main_runner, folder_with_some_dicom_files):
     assert not identifier.path.is_absolute()
 
 
+def test_cli_map_add_folder_no_check(mock_main_runner, folder_with_some_dicom_files):
+    """Add all dicom files in this folder to mapping but do not scan"""
+    selection_folder = folder_with_some_dicom_files
+
+    mock_main_runner.invoke(entrypoint.cli, f"map init")
+    mapping_folder = MappingFolder(mock_main_runner.mock_context.current_dir)
+    assert len(mapping_folder.load_mapping().grid) == 4  # by default there are 4 example rows in mapping
+
+    # dicom files should not have been selected yet currently
+    assert not selection_folder.has_file_selection()
+    result = mock_main_runner.invoke(
+        entrypoint.cli, f"map add-study-folder {selection_folder.path} --no-check-dicom"
+    )
+    # but should be now
+    assert result.exit_code == 0
+    assert selection_folder.has_file_selection()
+    assert '--no-check-dicom was set' in result.output
+
+
 @fixture
 def add_path_to_mapping_click_recorder(monkeypatch):
     """Add a decorator around the function that adds paths to mapping. Function
@@ -195,6 +214,26 @@ def test_cli_map_add_all_study_folders(map_command_runner_mapping_dir,
         catch_exceptions=False, )
 
     assert add_path_to_mapping_click_recorder.call_count == 2
+
+
+def test_cli_map_add_all_study_folders_no_scan(map_command_runner_mapping_dir,
+                                       folder_with_mapping_and_some_dicom_files,
+                                       add_path_to_mapping_click_recorder,
+                                       monkeypatch):
+    """Add multiple study folders"""
+    context: MapCommandContext = map_command_runner_mapping_dir.mock_context
+    context.current_path = folder_with_mapping_and_some_dicom_files.path
+    monkeypatch.setattr("os.getcwd",
+                         lambda: str(folder_with_mapping_and_some_dicom_files.path))
+
+    # now repeat and do not cancel
+    result = map_command_runner_mapping_dir.invoke(
+        add_all_study_folders, "* --no-check-dicom",
+        input='Yes',
+        catch_exceptions=False, )
+
+    assert add_path_to_mapping_click_recorder.call_count == 2
+    assert '--no-check-dicom was set' in result.output
 
 
 def test_cli_map_delete(mock_main_runner, a_folder_with_mapping):
