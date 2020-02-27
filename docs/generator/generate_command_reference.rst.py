@@ -24,25 +24,29 @@ from jinja2 import Template
 from pathlib import Path
 from typing import List
 
-from anonapi.parameters import ALL_PARAMETERS, COMMON_GLOBAL_PARAMETERS, \
-    COMMON_JOB_PARAMETERS, Parameter
+from anonapi.parameters import (
+    ALL_PARAMETERS,
+    COMMON_GLOBAL_PARAMETERS,
+    COMMON_JOB_PARAMETERS,
+    Parameter,
+)
 
 
 def make_h1(text):
-    bar = '='*len(text)
+    bar = "=" * len(text)
     return os.linesep.join([bar, text, bar])
 
 
 def make_h2(text):
-    bar = '='*len(text)
+    bar = "=" * len(text)
     return os.linesep.join([text, bar])
 
 
 def make_sphinx_link(text):
-    return f'.. _{text}:'
+    return f".. _{text}:"
 
 
-TableRow = namedtuple('TableRow', ['value', 'text'])
+TableRow = namedtuple("TableRow", ["value", "text"])
 
 
 class SphinxTable:
@@ -56,7 +60,7 @@ class SphinxTable:
         self.rows = self.sort_rows(rows)
         self.max_width = max_width
         if not header:
-            header = ['Command', 'Description']
+            header = ["Command", "Description"]
         self.header = header
 
     def __str__(self):
@@ -83,22 +87,27 @@ class SphinxTable:
         if self.text_column_width < 2:
             raise ValueError(
                 f"Max width is {self.max_width} but Values take up"
-                f" {self.val_column_width} already!")
+                f" {self.val_column_width} already!"
+            )
 
-        line = self.format_row(value="="*self.val_column_width,
-                               text="="*self.text_column_width)
+        line = self.format_row(
+            value="=" * self.val_column_width, text="=" * self.text_column_width
+        )
 
-        header = "\n".join([line,
-                            self.format_row(self.header[0], self.header[1]),
-                            line])
+        header = "\n".join(
+            [line, self.format_row(self.header[0], self.header[1]), line]
+        )
         rows = "\n".join([self.format_row(x.value, x.text) for x in self.rows])
         return "\n".join([header, rows, line])
 
     def format_row(self, value, text):
-        value = value.replace('\n', '')
-        text = text.replace('\n', '')
-        return self.set_length(value, self.val_column_width) + " " \
-               + self.set_length(text, self.text_column_width)
+        value = value.replace("\n", "")
+        text = text.replace("\n", "")
+        return (
+            self.set_length(value, self.val_column_width)
+            + " "
+            + self.set_length(text, self.text_column_width)
+        )
 
     def set_length(self, string, length):
         """Make input string length by either padding right or truncating right"""
@@ -128,17 +137,21 @@ class ClickCommandJinjaContext:
 
     $ root = ClickCommandJinjaContext(click_group=foo)
     {{ context.tables.root.groupname }}"""
+
     def __init__(self, root: click.core.Group):
         self.root = root
-        self.tables = {'root': self.create_tables(root)}
+        self.tables = {"root": self.create_tables(root)}
 
     def create_tables(self, root: click.core.Group):
         """Create a command and group overview recursively """
 
         # list all commands/ groups and help for them
-        table = ClickCommandTableNode(SphinxTable(
-            rows=[TableRow(x.name, x.help) for x in root.commands.values()],
-            max_width=80))
+        table = ClickCommandTableNode(
+            SphinxTable(
+                rows=[TableRow(x.name, x.help) for x in root.commands.values()],
+                max_width=80,
+            )
+        )
 
         # now try to go recursive. If there were groups, make tables for those too
         for command_or_group in root.commands.values():
@@ -171,7 +184,7 @@ class AnonApiContext:
     @staticmethod
     def to_sphinx_table(parameters: List[Parameter]) -> SphinxTable:
         rows = [TableRow(x.field_name, x.description) for x in parameters]
-        return SphinxTable(rows=rows, max_width=80, header=['Parameter', 'Description'])
+        return SphinxTable(rows=rows, max_width=80, header=["Parameter", "Description"])
 
 
 # create contexts that provide the info to render with jinja
@@ -179,18 +192,21 @@ click_context = ClickCommandJinjaContext(root=entrypoint.cli)
 anonapi_context = AnonApiContext()
 
 # render these templates to these locations
-template_mapping = \
-    {Path('templates/command_reference_base.rst'): Path('../sphinx/command_reference.rst'),
-     Path('templates/concepts_base.rst'): Path('../sphinx/concepts.rst')
-     }
+template_mapping = {
+    Path("templates/command_reference_base.rst"): Path(
+        "../sphinx/command_reference.rst"
+    ),
+    Path("templates/concepts_base.rst"): Path("../sphinx/concepts.rst"),
+}
 
 for template_path, output_path in template_mapping.items():
-    with open(template_path, 'r') as f:
-        output = Template(f.read()).render(context={'click': click_context,
-                                                    'anonapi': anonapi_context})
+    with open(template_path, "r") as f:
+        output = Template(f.read()).render(
+            context={"click": click_context, "anonapi": anonapi_context}
+        )
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         f.write(output)
-    print(f'Rendered {template_path} to {output_path.absolute()}')
+    print(f"Rendered {template_path} to {output_path.absolute()}")
 
-print('Done')
+print("Done")

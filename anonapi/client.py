@@ -305,7 +305,7 @@ class AnonClientTool:
 
         return status
 
-    def get_job_info(self, server: RemoteAnonServer, job_id: int):
+    def get_job_info(self, server: RemoteAnonServer, job_id: int) -> JobInfo:
         """Full description of a single job
 
         Parameters
@@ -318,21 +318,15 @@ class AnonClientTool:
 
         Returns
         -------
-        str:
-            string describing job, or error if job could not be found
+        JobInfo:
+            Information for the job
 
         """
 
         client = self.get_client(server.url)
+        response_dict = client.get("get_job", job_id=job_id)
 
-        try:
-            response = client.get("get_job", job_id=job_id)
-            info_string = f"job {job_id} on {server.name}:\n\n"
-            info_string += "\n".join([str(x) for x in list(response.items())])
-
-        except APIClientException as e:
-            info_string = f"Error getting job info from {server}:\n{str(e)}"
-        return info_string
+        return JobInfo.from_json(response_dict)
 
     def get_job_info_list(
         self, server: RemoteAnonServer, job_ids, get_extended_info=False
@@ -369,7 +363,7 @@ class AnonClientTool:
         try:
             return JobsInfoList(
                 [
-                    JobInfo(x)
+                    JobInfo.from_json(x)
                     for x in client.get(api_function_name, job_ids=job_ids).values()
                 ]
             )
@@ -587,7 +581,8 @@ class APIClientAuthorizationFailedException(APIClientException):
 
 
 class APIClientAPIException(APIClientException):
-    """The API was called successfully, but there was a problem within the API itself """
+    """The API was called successfully, but there was a problem within the API
+     itself """
 
     def __init__(self, msg, api_errors):
         """

@@ -228,7 +228,7 @@ def test_mapping_folder_read_write(tmpdir, a_grid_of_parameters):
 
 
 def test_os_error():
-    with open(RESOURCE_PATH / 'test_mapper' / 'anon_mapping_os_error.csv', 'r') as f:
+    with open(RESOURCE_PATH / "test_mapper" / "anon_mapping_os_error.csv", "r") as f:
         _ = Mapping.load(f)
 
 
@@ -241,15 +241,14 @@ def test_open_file():
 
     mapping_file = RESOURCE_PATH / "test_mapper" / "with_mapping_wide_settings.csv"
     with open(mapping_file, "r") as f:
-        f.readlines = Mock(side_effect=OSError(
-            "raw readinto() returned invalid length 4294967283 "
-            "(should have been between 0 and 8192)"))
+        f.readlines = Mock(
+            side_effect=OSError(
+                "raw readinto() returned invalid length 4294967283 "
+                "(should have been between 0 and 8192)"
+            )
+        )
         with pytest.raises(MappingLoadError) as e:
 
             _ = Mapping.load(f)
 
         assert "opened in any editor?" in str(e)
-
-
-
-

@@ -23,7 +23,7 @@ from anonapi.parameters import (
     ParameterSet,
 )
 from anonapi.settings import JobDefaultParameters
-from tests.factories import RequestsMockResponseExamples
+from tests.mock_responses import RequestsMockResponseExamples
 
 
 @pytest.fixture()
