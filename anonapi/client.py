@@ -315,6 +315,10 @@ class AnonClientTool:
         job_id: str
             id of job to get info for
 
+        Raises
+        ------
+        ClientToolException:
+            if something goes wrong getting jobs info from server
 
         Returns
         -------

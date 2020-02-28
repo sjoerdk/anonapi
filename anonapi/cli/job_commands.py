@@ -7,7 +7,6 @@ import click
 from anonapi.cli.click_types import JobIDRangeParamType
 from anonapi.cli.parser import command_group_function
 from anonapi.context import AnonAPIContext
-from anonapi.client import ClientToolException
 from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
 
 
