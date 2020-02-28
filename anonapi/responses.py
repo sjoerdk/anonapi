@@ -154,7 +154,7 @@ class JobInfo:
 
 
 class TableColumn:
-    """A single column in a table"""
+    """A single column in a command_table"""
 
     def __init__(self, header, parameter_name):
         self.header = header
@@ -162,7 +162,7 @@ class TableColumn:
 
 
 class JobInfoColumns:
-    """Columns that can be used in a table of JobInfos"""
+    """Columns that can be used in a command_table of JobInfos"""
 
     job_id = TableColumn(header="id", parameter_name="job_id")
     date = TableColumn(header="date", parameter_name="date")
@@ -186,7 +186,7 @@ def format_job_info_list(job_infos, columns=JobInfoColumns.DEFAULT_COLUMNS):
     job_infos: List[JobInfo]
         List of short infos
     columns: List[TableColumns], optional
-        Show only these columns in table. Defaults to default columns for
+        Show only these columns in command_table. Defaults to default columns for
         JobInfo objects
 
     Returns
@@ -241,12 +241,12 @@ class JobsInfoList(UserList):
         self.data = job_infos
 
     def as_table_string(self, columns=JobInfoColumns.DEFAULT_COLUMNS):
-        """As a string with newlines, forming a neat table
+        """As a string with newlines, forming a neat command_table
 
         Parameters
         ----------
         columns: List[TableColumns], optional
-            Show only these columns in table. Defaults to default columns for
+            Show only these columns in command_table. Defaults to default columns for
             JobInfo objects
 
         Returns

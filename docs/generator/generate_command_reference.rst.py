@@ -22,7 +22,7 @@ from anonapi.cli import entrypoint
 from collections import namedtuple, UserDict
 from jinja2 import Template
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 
 from anonapi.parameters import (
     ALL_PARAMETERS,
@@ -50,7 +50,7 @@ TableRow = namedtuple("TableRow", ["value", "text"])
 
 
 class SphinxTable:
-    """A sphinx table with two columns. like
+    """A sphinx command_table with two columns. like
     ====  =========
     val   some text
     ====  =========
@@ -114,19 +114,75 @@ class SphinxTable:
         return string.ljust(length)[:length]
 
 
-class ClickCommandTableNode(UserDict):
-    """A command table that can have sub-tables.
+class SphinxItemDefinition:
+    """A sphinx list like  this:
 
-    For easy referencing in jinja
-    So  {{ foo }}  prints table foo
-    And {{ foo.baz }}  prints subtable for command 'baz' """
+    item1
+        description of item1
+    item2
+        description of item2
+    """
 
-    def __init__(self, table: SphinxTable):
-        super(ClickCommandTableNode, self).__init__()
-        self.table = table
+    def __init__(self, items: Dict = None):
+        if not items:
+            items = {}
+        self.items = items
 
     def __str__(self):
-        return self.table.as_string()
+        return self.as_string()
+
+    def as_string(self):
+        """As text that can be included straight in sphinx"""
+        return "\n\n".join([f"{key}\n\t{value}" for key, value in self.items.items()])
+
+
+class ClickCommandInfo:
+
+    def __init__(self, name: str, help: str):
+        self.name = name
+        self.help = help
+
+
+class ClickCommandOrGroupNode(UserDict):
+    """Refers to a command or a group in click.
+
+    Can have child nodes accessed like dict keys for easy referencing in jinja:
+
+    So  {{ foo.command_table }}  prints command_table foo
+    And {{ foo.baz.command_table }}  prints subtable for command 'baz' """
+
+    def __init__(self, command_table: SphinxTable = None,
+                 options: SphinxItemDefinition = None,
+                 command: ClickCommandInfo = None):
+        """
+
+        Parameters
+        ----------
+        command_table: SphinxTable, optional
+            A sphinx command_table with all the commands + command descriptions for
+            this
+            click group
+        options: SphinxItemDefinition
+            A list of sphinx definition items about each of the options in this click
+            function
+        command: ClickCommandInfo
+            Access to name and help for this command
+
+        options
+        """
+        super(ClickCommandOrGroupNode, self).__init__()
+        if not command_table:
+            command_table = SphinxTable(rows={}, max_width=80)
+        self.command_table = command_table
+        if not options:
+            options = SphinxItemDefinition()
+        self.options = options
+        if not command:
+            command = ClickCommandInfo(name=None, help=None)
+        self.command = command
+
+    def command_table(self):
+        return self.command_table.as_string()
 
 
 class ClickCommandJinjaContext:
@@ -136,17 +192,23 @@ class ClickCommandJinjaContext:
     like this:
 
     $ root = ClickCommandJinjaContext(click_group=foo)
-    {{ context.tables.root.groupname }}"""
+    {{ context.tables.root.groupname }}
+
+    This runs on the fact that jinja allows dot notation for dictionary access:
+    {{ context.tables.root.groupname }}
+
+    context.tables['root']['groupname']
+    """
 
     def __init__(self, root: click.core.Group):
-        self.root = root
-        self.tables = {"root": self.create_tables(root)}
+        self.root = self.populate_nodes(root)
+        self.click_root = root
 
-    def create_tables(self, root: click.core.Group):
+    def populate_nodes(self, root: click.core.Group):
         """Create a command and group overview recursively """
 
         # list all commands/ groups and help for them
-        table = ClickCommandTableNode(
+        node = ClickCommandOrGroupNode(
             SphinxTable(
                 rows=[TableRow(x.name, x.help) for x in root.commands.values()],
                 max_width=80,
@@ -155,14 +217,35 @@ class ClickCommandJinjaContext:
 
         # now try to go recursive. If there were groups, make tables for those too
         for command_or_group in root.commands.values():
-            try:
-                subcommands = command_or_group.commands.values()
-            except AttributeError:
-                continue
+            if hasattr(command_or_group, 'commands'):
+                # this is a group. recurse into it
+                node[command_or_group.name] = self.populate_nodes(command_or_group)
             else:
-                table[command_or_group.name] = self.create_tables(command_or_group)
+                # this is a command. Add info for that
+                command_node = ClickCommandOrGroupNode()
+                command_node.command = ClickCommandInfo(name=command_or_group.name,
+                                                        help=command_or_group.help)
+                # get option info. Like "f, --foo / --no-foo: run command with foo"
 
-        return table
+                options = {}
+                # add all switches like --no-print, but not regular arguments
+                candidates = [x for x in command_or_group.params if
+                              isinstance(x, click.Option)]
+                for option in candidates:
+                    key_elements = [", ".join(option.opts),
+                                    ", ".join(option.secondary_opts)]
+                    key_elements = [x for x in key_elements if x] # remove empty
+                    key = "/ ".join(key_elements)
+                    try:
+                        value = option.help
+                    except AttributeError:
+                        value = ""
+
+                    options[key] = value
+                command_node.options = SphinxItemDefinition(options)
+                node[command_or_group.name.replace("-", '_')] = command_node
+
+        return node
 
 
 class AnonApiContext:

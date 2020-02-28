@@ -50,7 +50,7 @@ class Mapping:
         Parameters
         ----------
         grid: JobParameterGrid
-            The per-job table of parameters
+            The per-job command_table of parameters
         options: List[Parameter], optional
             List of rows that have been set for the entire mapping. Defaults to empty
         description: str, optional
@@ -281,7 +281,7 @@ class JobParameterGrid:
     def parameter_types(self):
         """Sorted list of all classes of Parameter found in this list
 
-        Useful if you want to make a nice table for example
+        Useful if you want to make a nice command_table for example
 
         Returns
         -------
@@ -294,7 +294,7 @@ class JobParameterGrid:
         return [x for x in ALL_PARAMETERS if x in types]
 
     def to_table_string(self):
-        """A source - patient_id table with a small header
+        """A source - patient_id command_table with a small header
 
         Returns
         -------

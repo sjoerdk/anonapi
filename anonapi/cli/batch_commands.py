@@ -93,7 +93,7 @@ def remove(parser: AnonAPIContext, job_ids):
 @click.option(
     "--patient-name/--no-patient-name",
     default=False,
-    help="Add pseudo patient id to table",
+    help="Add pseudo patient id to command_table",
 )
 def status(parser: AnonAPIContext, patient_name):
     """Print status overview for all jobs in batch"""

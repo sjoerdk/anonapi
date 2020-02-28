@@ -96,17 +96,21 @@ def delete(context: SelectCommandContext):
 @click.command()
 @pass_select_command_context
 @click.argument("pattern", type=str)
-@click.option("--recurse/--no-recurse", default=True, help="Recurse into directories")
+@click.option("--recurse/--no-recurse", default=True,
+              help="Search for files to add in subfolders as well. On by default")
 @click.option(
     "--check-dicom/--no-check-dicom",
     default=False,
-    help="Allows only DICOM files. Opens all files",
+    help="Only add files that are valid DICOM file. For many files, this might "
+         "take some time. Off by default.",
 )
 @click.option(
     "--exclude-pattern",
     "-e",
     multiple=True,
-    help="Exclude any filepath matching this. * is wildcard.",
+    help="Exclude any file matching the given pattern. The pattern can use ``*`` "
+         "to match any part of a name. --exclude-pattern can be used "
+         "multiple times, to exclude multiple patterns",
 )
 def add(context: SelectCommandContext, pattern, recurse, check_dicom, exclude_pattern):
     """Add all files matching pattern to selection in the current directory.

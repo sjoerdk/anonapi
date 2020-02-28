@@ -143,23 +143,27 @@ def get_mapping(context):
 @click.option(
     "--check-dicom/--no-check-dicom",
     default=True,
-    help="Open each file to check whether it is valid DICOM",
+    help="Open each file to check whether it is valid DICOM. Turning this off is "
+    "faster, but the anonymization fails if non-DICOM files are included. "
+    "On by default",
 )
 def add_study_folder(context: MapCommandContext, path, check_dicom):
     """Add all dicom files in given folder to map
     """
 
-    mapping = add_path_to_mapping_click(Path(path), get_mapping(context),
-                                        cwd=context.current_path,
-                                        check_dicom=check_dicom)
+    mapping = add_path_to_mapping_click(
+        Path(path),
+        get_mapping(context),
+        cwd=context.current_path,
+        check_dicom=check_dicom,
+    )
     context.get_current_mapping_folder().save_mapping(mapping)
     click.echo(f"Done. Added '{path}' to mapping")
 
 
-def add_path_to_mapping_click(path: Path,
-                              mapping: Mapping,
-                              check_dicom: bool = True,
-                              cwd: Optional[Path] = None):
+def add_path_to_mapping_click(
+    path: Path, mapping: Mapping, check_dicom: bool = True, cwd: Optional[Path] = None
+):
     """Create a fileselection in the given path and add it to the given mapping
 
     Meant to be called from a click function. Contains calls to click.echo().
@@ -217,7 +221,9 @@ def add_path_to_mapping_click(path: Path,
 @click.option(
     "--check-dicom/--no-check-dicom",
     default=True,
-    help="Open each file to check whether it is valid DICOM",
+    help="Open each file to check whether it is valid DICOM. Turning this off is "
+    "faster, but the anonymization fails if non-DICOM files are included. "
+    "On by default",
 )
 def add_all_study_folders(context: MapCommandContext, pattern, check_dicom):
     """Add all folders matching pattern to mapping
@@ -242,9 +248,9 @@ def add_all_study_folders(context: MapCommandContext, pattern, check_dicom):
     else:
         mapping = get_mapping(context)
         for path in found:
-            mapping = add_path_to_mapping_click(Path(path), mapping,
-                                                cwd=context.current_path,
-                                                check_dicom=check_dicom)
+            mapping = add_path_to_mapping_click(
+                Path(path), mapping, cwd=context.current_path, check_dicom=check_dicom
+            )
 
         context.get_current_mapping_folder().save_mapping(mapping)
         click.echo("Done")
