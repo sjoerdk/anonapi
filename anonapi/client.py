@@ -449,12 +449,12 @@ class AnonClientTool:
     def create_path_job(
         self,
         server: RemoteAnonServer,
-        anon_name,
-        anon_id,
         project_name,
         source_path,
         destination_path,
         description,
+        anon_name=None,
+        anon_id=None,
         pims_keyfile_id=None,
     ):
         """Create a job with data coming from a network root_path
@@ -462,12 +462,16 @@ class AnonClientTool:
         Parameters
         ----------
         server: RemoteAnonServer
-        anon_name: str
-        anon_id: str
         project_name: str
         source_path: root_path
         destination_path: root_path
         description: str
+        anon_name: str, optional
+            Patient name to set in anonymized data. Can be omitted if pims_keyfile_id
+            is given
+        anon_id: str, optional
+            Patient id to set in anonymized data. Can be omitted if pims_keyfile_id
+            is given
         pims_keyfile_id: str, optional
            pims keyfile to use. Defaults to no pims keyfile
 
@@ -504,12 +508,12 @@ class AnonClientTool:
     def create_pacs_job(
         self,
         server: RemoteAnonServer,
-        anon_name,
-        anon_id,
         source_instance_id,
         project_name,
         destination_path,
         description,
+        anon_name=None,
+        anon_id=None,
         pims_keyfile_id=None,
     ):
         """Create a job with data from a PACS system
@@ -517,12 +521,16 @@ class AnonClientTool:
         Parameters
         ----------
         server: RemoteAnonServer
-        anon_name: str
-        anon_id: str
         project_name: str
         source_instance_id: str
         destination_path: root_path
         description: str
+        anon_name: str, optional
+            Patient name to set in anonymized data. Can be omitted if pims_keyfile_id
+            is given
+        anon_id: str, optional
+            Patient id to set in anonymized data. Can be omitted if pims_keyfile_id
+            is given
         pims_keyfile_id: str, optional
            pims keyfile to use. Defaults to no pims keyfile
 

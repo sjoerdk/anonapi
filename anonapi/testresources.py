@@ -48,6 +48,34 @@ class MockAnonClientTool(AnonClientTool):
     ) -> JobsInfoList:
         return JobsInfoList(job_infos=[next(self.response_generator) for _ in job_ids])
 
+    def create_path_job(
+            self,
+            server: RemoteAnonServer,
+            project_name,
+            source_path,
+            destination_path,
+            description,
+            anon_name=None,
+            anon_id=None,
+            pims_keyfile_id=None,
+    ) -> JobInfo:
+
+        return next(self.response_generator)
+
+    def create_pacs_job(
+            self,
+            server: RemoteAnonServer,
+            source_instance_id,
+            project_name,
+            destination_path,
+            description,
+            anon_name=None,
+            anon_id=None,
+            pims_keyfile_id=None,
+    ) -> JobInfo:
+
+        return next(self.response_generator)
+
 
 class JobStatus:
     """All the states a job can be in"""

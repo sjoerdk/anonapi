@@ -60,7 +60,6 @@ The :mod:`anonapi.testresources` module can be used to generate mock responses w
                    destination_path='\\server\share\folder',
                    priority=50)
 
-
 Examples
 ========
 
