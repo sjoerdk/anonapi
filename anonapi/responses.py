@@ -24,6 +24,8 @@ class JobStatus:
     INACTIVE = "INACTIVE"
     ACTIVE = "ACTIVE"
 
+    ALL = [INACTIVE, ACTIVE, ERROR, UPLOADED, DONE]
+
 
 class APIResponse:
     """A response from the Anonymizationserver web API

@@ -13,7 +13,7 @@ import factory
 
 from anonapi.client import AnonClientTool
 from anonapi.objects import RemoteAnonServer
-from anonapi.responses import JobInfo, JobsInfoList
+from anonapi.responses import JobInfo, JobsInfoList, JobStatus
 
 
 class MockAnonClientTool(AnonClientTool):
@@ -75,18 +75,6 @@ class MockAnonClientTool(AnonClientTool):
     ) -> JobInfo:
 
         return next(self.response_generator)
-
-
-class JobStatus:
-    """All the states a job can be in"""
-
-    INACTIVE = "INACTIVE"
-    ACTIVE = "ACTIVE"
-    ERROR = "ERROR"
-    UPLOADED = "UPLOADED"
-    DONE = "DONE"
-
-    ALL = [INACTIVE, ACTIVE, ERROR, UPLOADED, DONE]
 
 
 class JobInfoFactory(factory.Factory):
