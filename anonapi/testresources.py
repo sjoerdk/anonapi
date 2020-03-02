@@ -17,7 +17,10 @@ from anonapi.responses import JobInfo, JobsInfoList, JobStatus
 
 
 class MockAnonClientTool(AnonClientTool):
-    """A client tool that does not hit any server. Returns mocked responses"""
+    """A client tool that does not hit any server. Returns mocked responses
+
+    job_id in mocked return values will be altered to any job_id requested
+    """
 
     def __init__(self, responses: List[JobInfo] = None):
         """
@@ -34,19 +37,32 @@ class MockAnonClientTool(AnonClientTool):
         if not responses:
             responses = [JobInfoFactory()]
 
-        self.response_generator = cycle(responses)
+        self.response_generator = self.get_response_generator(responses)
+
+    def set_responses(self, responses: List[JobInfo]):
+        """Return these responses for any method call. Cycle if depleted"""
+        self.response_generator = self.get_response_generator(responses)
+
+    @staticmethod
+    def get_response_generator(responses: List[JobInfo]):
+        return cycle(responses)
+
+    def get_response(self, job_id: int) -> JobInfo:
+        job_info = next(self.response_generator)
+        job_info.job_id = job_id
+        return job_info
 
     def get_client(self, _):
         # Just to be sure. Client should never be invoked
         raise NotImplemented("Mock client has no API client")
 
     def get_job_info(self, server: RemoteAnonServer, job_id: int) -> JobInfo:
-        return next(self.response_generator)
+        return self.get_response(job_id)
 
     def get_job_info_list(
         self, server: RemoteAnonServer, job_ids, get_extended_info=False
     ) -> JobsInfoList:
-        return JobsInfoList(job_infos=[next(self.response_generator) for _ in job_ids])
+        return JobsInfoList([self.get_response(x) for x in job_ids])
 
     def create_path_job(
             self,
