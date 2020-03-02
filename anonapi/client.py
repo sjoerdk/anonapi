@@ -262,6 +262,8 @@ class AnonClientTool:
     One abstraction level above WebAPIClient. Client deals with https calls, get and
     post, this tool should not do any http operations, and instead deal with servers
     and jobs.
+
+    Information about jobs is done trough JobInfo instances where possible
     """
 
     def __init__(self, username, token):
@@ -334,7 +336,7 @@ class AnonClientTool:
 
     def get_job_info_list(
         self, server: RemoteAnonServer, job_ids, get_extended_info=False
-    ):
+    ) -> JobsInfoList:
         """Get a list of info on the given job ids.
 
         Parameters
@@ -460,7 +462,7 @@ class AnonClientTool:
         anon_name=None,
         anon_id=None,
         pims_keyfile_id=None,
-    ):
+    ) -> JobInfo:
         """Create a job with data coming from a network root_path
 
         Parameters
@@ -486,7 +488,7 @@ class AnonClientTool:
 
         Returns
         -------
-        dict
+        JobInfo
             response from server with info on created job
 
 
@@ -494,7 +496,7 @@ class AnonClientTool:
 
         client = self.get_client(server.url)
 
-        info = client.post(
+        response_dict = client.post(
             "create_job",
             source_type="PATH",
             source_path=source_path,
@@ -507,7 +509,7 @@ class AnonClientTool:
             pims_keyfile_id=pims_keyfile_id,
         )
 
-        return info
+        return JobInfo.from_json(response_dict)
 
     def create_pacs_job(
         self,
@@ -519,7 +521,7 @@ class AnonClientTool:
         anon_name=None,
         anon_id=None,
         pims_keyfile_id=None,
-    ):
+    ) -> JobInfo:
         """Create a job with data from a PACS system
 
         Parameters
@@ -545,14 +547,14 @@ class AnonClientTool:
 
         Returns
         -------
-        dict
+        JobInfo
             response from server with info on created job
 
 
         """
         client = self.get_client(server.url)
 
-        info = client.post(
+        response_dict = client.post(
             "create_job",
             source_type="WADO",
             source_name="IDC_WADO",
@@ -566,7 +568,7 @@ class AnonClientTool:
             pims_keyfile_id=pims_keyfile_id,
         )
 
-        return info
+        return JobInfo.from_json(response_dict)
 
 
 class ClientInterfaceException(AnonAPIException):

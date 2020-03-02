@@ -175,9 +175,6 @@ class RequestsMock:
             for response in responses
         ]
 
-        def rotate_over_objects(*args, **kwargs):
-            pass
-
         self.requests.get.side_effect = cycle(objects)
         self.requests.post.side_effect = cycle(objects)
 
