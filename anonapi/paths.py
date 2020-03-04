@@ -1,4 +1,4 @@
-"""For mapping local paths to UNC paths
+r"""For maps local paths to UNC paths
 
 Paths in IDIS are tricky. Data coming from 'H:\some_path' locally cannot
 be found by the servers under that name. Instead only UNC paths like
@@ -9,13 +9,15 @@ to make this connection because of several reasons
 * A local disk might not even be accessible as a unc path
 
 In the end we just need to ditch local network drives altogether in favor of either
-file transfer via https, or perhaps doing the processing locally.
+file transfer via https or perhaps doing the processing locally.
 
-In the mean time, solving this by just having a user-defined mapping.
+In the mean time, solving this by just having a user-defined maps.
 """
 import collections
 from pathlib import Path, PureWindowsPath, PurePath
 from typing import Dict, List
+
+from anonapi.exceptions import AnonAPIException
 
 
 class UNCPath(PureWindowsPath):
@@ -40,21 +42,87 @@ class UNCPath(PureWindowsPath):
 
 
 class UNCMap:
-    """A mapping between one local path and a unc path"""
+    """A maps between one local path and a unc path"""
     def __init__(self, local: Path, unc: UNCPath):
         self.local = local
         self.unc = unc
 
 
 class UNCMapping:
-    """Translates paths between local and UNC"""
+    r"""Translates paths between local and UNC
 
-    def __init__(self, mapping: List[UNCMap]):
-        self.mapping = mapping
+    Conversion has the following properties:
+    * Re-converting already converted is allowed. convert(convert(x)) = convert(x)
+    * If no conversion is needed, input is returned as is. to_unc(unc) = unc
 
-    def to_unc(self, path: Path) -> UNCPath:
-        # see whether local path starts any of the mapped ones
-        pass
+    Sidestepping the path marsh with simplistic defintions of UNC and local:
+    * 'UNC path' : anything with an anchor that starts with \\
+    * 'local path': anything that is not UNC path
+    """
 
-    def to_local(self, unc_path: UNCPath) -> Path:
-        pass
+    def __init__(self, maps: List[UNCMap]):
+        self.maps = maps
+
+    def to_unc(self, path_in: Path) -> UNCPath:
+        """Convert the given path to a UNC path
+        
+        Parameters
+        ----------
+        path_in: Path
+            Any path
+
+        Returns
+        -------
+        UNCPath
+            Input path as a UNC path. Searches internal list of maps
+        
+        Raises
+        ------
+        UNCMappingException
+            If path cannot be mapped any UNC path 
+
+        """
+        if UNCPath.is_unc(path_in):
+            return path_in  # is it a UNC path already? Then return as is
+
+        for map_in in self.maps:   # try each map
+            try:
+                return map_in.unc / path_in.relative_to(map_in.local)
+            except ValueError:
+                continue
+
+        raise UNCMappingException(f'{path_in} could not be mapped to UNC path')
+
+    def to_local(self, path_in: Path) -> Path:
+        """Convert the given path to a local path
+
+        Parameters
+        ----------
+        path_in: Path
+            Any path
+
+        Returns
+        -------
+        Path
+            Input path as local path
+
+        Raises
+        ------
+        UNCMappingException
+            If path cannot be mapped any local path
+
+        """
+
+        if not UNCPath.is_unc(path_in):
+            return path_in  # if path is not UNC, assume it's local and return as is
+
+        for map_in in self.maps:
+            try:
+                return map_in.local / path_in.relative_to(map_in.unc)
+            except ValueError:
+                continue
+        raise UNCMappingException(f'{path_in} could not be mapped to local path')
+
+
+class UNCMappingException(AnonAPIException):
+    pass
