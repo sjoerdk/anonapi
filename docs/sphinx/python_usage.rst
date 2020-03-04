@@ -23,6 +23,64 @@ To use it in a python file:
     # Get some information on first few jobs
     jobs_info = client.get("get_jobs")
 
+Testing
+=======
+The :mod:`anonapi.testresources` module can be used to generate mock responses without the need for a live server:
+
+.. code-block:: python
+
+    from anonapi.testresources import (
+        MockAnonClientTool,
+        JobInfoFactory,
+        RemoteAnonServerFactory,
+        JobStatus,
+    )
+
+    # Create a mock client tool that returns information about jobs
+    tool = MockAnonClientTool()
+
+    # Client tool methods need a server to query. This is mocked too here
+    mock_server = RemoteAnonServerFactory()
+    tool.get_job_info(server=mock_server, job_id=1)    # Returns realistic JobInfo response
+
+    # You can set the responses that mock client cycles through:
+    some_responses = [
+        JobInfoFactory(status=JobStatus.DONE),
+        JobInfoFactory(status=JobStatus.ERROR),
+        JobInfoFactory(status=JobStatus.INACTIVE),
+    ]
+    tool = MockAnonClientTool(responses=some_responses)
+    tool.get_job_info(mock_server, job_id=1).status # returns JobStatus.DONE
+    tool.get_job_info(mock_server, job_id=1).status # returns JobStatus.ERROR
+    tool.get_job_info(mock_server, job_id=1).status # returns JobStatus.INACTIVE
+    tool.get_job_info(mock_server, job_id=1).status # returns JobStatus.DONE again
+
+    # You can set any of the JobInfo fields on the JobInfo instances:
+    JobInfoFactory(project_name='project1',
+                   destination_path='\\server\share\folder',
+                   priority=50)
+
+
+Exceptions
+==========
+All exceptions raised in anonapi derive from :mod:`anonapi.exceptions.AnonAPIException`. Catching that will allow you to
+handle them:
+
+.. code-block:: python
+
+    from anonapi.exceptions import AnonAPIException
+    from anonapi.client import AnonClientTool
+
+    tool = AnonClientTool('user','token')
+    server = RemoveAnonServer('a_server','https://aserver')
+    try:
+        tool.get_server_status(server)
+
+    except AnonAPIException as e:
+        print(f"Something went wrong but its anonapi's fault. Look: {e}")
+
+
+
 Examples
 ========
 

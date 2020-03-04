@@ -1,6 +1,5 @@
 """Click group and commands for the 'map' subcommand
 """
-import os
 from pathlib import Path
 from typing import List, Optional
 
@@ -10,15 +9,14 @@ import getpass
 import random
 import string
 
-from click.exceptions import BadParameter, UsageError, ClickException
+from click.exceptions import BadParameter, ClickException
 
 from anonapi.cli.click_types import FileSelectionFileParam
 from anonapi.cli.select_commands import create_dicom_selection_click
 from anonapi.context import AnonAPIContext
-from anonapi.decorators import pass_anonapi_context
+from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
 from anonapi.mapper import (
     MappingFolder,
-    MappingLoadError,
     ExampleJobParameterGrid,
     MapperException,
     Mapping,
@@ -79,14 +77,13 @@ def main(context: AnonAPIContext, ctx):
 
 
 @click.command()
+@handle_anonapi_exceptions
 @pass_map_command_context
 def status(context: MapCommandContext):
     """Show mapping in current directory"""
-    try:
-        mapping = context.get_current_mapping()
-        click.echo(mapping.to_string())
-    except MapperException as e:
-        raise ClickException(e)
+
+    mapping = context.get_current_mapping()
+    click.echo(mapping.to_string())
 
 
 def get_initial_options(settings: AnonClientSettings) -> List[Parameter]:
@@ -135,28 +132,38 @@ def delete(context: MapCommandContext):
     click.echo(f"Removed mapping in current dir")
 
 
+@handle_anonapi_exceptions
 def get_mapping(context):
-    try:
-        return context.get_current_mapping()
-    except MapperException as e:
-        raise ClickException(e)
+    return context.get_current_mapping()
 
 
 @click.command()
 @pass_map_command_context
 @click.argument("path", type=click.Path(exists=True))
-def add_study_folder(context: MapCommandContext, path):
+@click.option(
+    "--check-dicom/--no-check-dicom",
+    default=True,
+    help="Open each file to check whether it is valid DICOM. Turning this off is "
+    "faster, but the anonymization fails if non-DICOM files are included. "
+    "On by default",
+)
+def add_study_folder(context: MapCommandContext, path, check_dicom):
     """Add all dicom files in given folder to map
     """
+
     mapping = add_path_to_mapping_click(
-        Path(path), get_mapping(context), cwd=context.current_path
+        Path(path),
+        get_mapping(context),
+        cwd=context.current_path,
+        check_dicom=check_dicom,
     )
     context.get_current_mapping_folder().save_mapping(mapping)
-
     click.echo(f"Done. Added '{path}' to mapping")
 
 
-def add_path_to_mapping_click(path: Path, mapping: Mapping, cwd: Optional[Path] = None):
+def add_path_to_mapping_click(
+    path: Path, mapping: Mapping, check_dicom: bool = True, cwd: Optional[Path] = None
+):
     """Create a fileselection in the given path and add it to the given mapping
 
     Meant to be called from a click function. Contains calls to click.echo().
@@ -166,6 +173,9 @@ def add_path_to_mapping_click(path: Path, mapping: Mapping, cwd: Optional[Path] 
         Path to create fileselection in
     mapping: Mapping
         Mapping to add the fileselection to
+    check_dicom: bool, optional
+        open each file to see whether it is valid DICOM. Setting False is faster
+        but could include files that will fail the job in IDIS. Defaults to True
     cwd: Optional[Path]
         Current working directory. If given, write to mapping relative to this
         path
@@ -181,7 +191,7 @@ def add_path_to_mapping_click(path: Path, mapping: Mapping, cwd: Optional[Path] 
         The mapping with path added
     """
     # create a selection from all dicom files in given root_path
-    file_selection = create_dicom_selection_click(path)
+    file_selection = create_dicom_selection_click(path, check_dicom)
 
     # make path relative if requested
     if cwd:
@@ -208,7 +218,14 @@ def add_path_to_mapping_click(path: Path, mapping: Mapping, cwd: Optional[Path] 
 @click.command()
 @pass_map_command_context
 @click.argument("pattern")
-def add_all_study_folders(context: MapCommandContext, pattern):
+@click.option(
+    "--check-dicom/--no-check-dicom",
+    default=True,
+    help="Open each file to check whether it is valid DICOM. Turning this off is "
+    "faster, but the anonymization fails if non-DICOM files are included. "
+    "On by default",
+)
+def add_all_study_folders(context: MapCommandContext, pattern, check_dicom):
     """Add all folders matching pattern to mapping
     """
     # Examples: **/* */1 */*/*2
@@ -232,7 +249,7 @@ def add_all_study_folders(context: MapCommandContext, pattern):
         mapping = get_mapping(context)
         for path in found:
             mapping = add_path_to_mapping_click(
-                Path(path), mapping, cwd=context.current_path
+                Path(path), mapping, cwd=context.current_path, check_dicom=check_dicom
             )
 
         context.get_current_mapping_folder().save_mapping(mapping)

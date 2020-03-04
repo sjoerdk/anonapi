@@ -7,6 +7,8 @@ python models on the server side and the client side. But we're not using django
 """
 
 from collections import UserList
+from typing import Dict
+
 from tabulate import tabulate
 
 from anonapi.exceptions import AnonAPIException
@@ -22,6 +24,8 @@ class JobStatus:
     INACTIVE = "INACTIVE"
     ACTIVE = "ACTIVE"
 
+    ALL = [INACTIVE, ACTIVE, ERROR, UPLOADED, DONE]
+
 
 class APIResponse:
     """A response from the Anonymizationserver web API
@@ -33,33 +37,126 @@ class APIResponse:
 class JobInfo:
     """Info on a single job. Makes it clear which fields should definitely be
     in the info, and which are optional
+
+    Notes
+    -----
+    This whole implementation is shoddy. Moving to openAPI definition asap
     """
 
-    def __init__(self, json_raw):
-        self.job_id = json_raw["job_id"]
-        self.date = json_raw["date"]
-        self.user_name = json_raw["user_name"]
-        self.status = json_raw["status"]
-        self.error = json_raw["error"]
-        self.description = json_raw["description"]
-        self.project_name = json_raw["project_name"]
-        self.priority = json_raw["priority"]
-        self.files_downloaded = json_raw["files_downloaded"]
-        self.files_processed = json_raw["files_processed"]
+    def __init__(
+        self,
+        *,
+        job_id,
+        date,
+        user_name,
+        status,
+        error="",
+        description,
+        project_name,
+        priority=1,
+        files_downloaded=0,
+        files_processed=0,
+        destination_id=0,
+        destination_name=None,
+        destination_path=None,
+        destination_network=None,
+        destination_status=None,
+        destination_type=None,
+        source_type=None,
+        source_name=None,
+        source_protocol=None,
+        source_anonymizedpatientid=None,
+        source_anonymizedpatientname=None,
+        source_path=None,
+        source_pims_keyfile_id=None,
+        source_instance_id=None,
+    ):
+        self.job_id = job_id
+        self.date = date
+        self.user_name = user_name
+        self.status = status
+        self.error = error
+        self.description = description
+        self.project_name = project_name
+        self.priority = priority
+        self.files_downloaded = files_downloaded
+        self.files_processed = files_processed
 
-        # extended rows that might not be given
-        self.destination_path = json_raw.get("destination_path")
-        self.source_anonymizedpatientid = json_raw.get("source_anonymizedpatientid")
-        self.source_anonymizedpatientname = json_raw.get("source_anonymizedpatientname")
-        self.source_path = json_raw.get("source_path")
-        self.source_pims_keyfile_id = json_raw.get("source_pims_keyfile_id")
-        self.source_instance_id = json_raw.get("source_instance_id")
+        self.destination_id = destination_id
+        self.destination_name = destination_name
+        self.destination_path = destination_path
+        self.destination_network = destination_network
+        self.destination_status = destination_status
+        self.destination_type = destination_type
 
-        self.json_raw = json_raw
+        self.source_type = source_type
+        self.source_name = source_name
+        self.source_protocol = source_protocol
+        self.source_anonymizedpatientid = source_anonymizedpatientid
+        self.source_anonymizedpatientname = source_anonymizedpatientname
+        self.source_path = source_path
+        self.source_pims_keyfile_id = source_pims_keyfile_id
+        self.source_instance_id = source_instance_id
+
+    @classmethod
+    def from_json(cls, json_dict: Dict):
+        """
+
+        Parameters
+        ----------
+        json_dict: Dict
+            API response as received from server
+
+        """
+        return cls(
+            job_id=json_dict["job_id"],
+            date=json_dict["date"],
+            user_name=json_dict["user_name"],
+            status=json_dict["status"],
+            error=json_dict["error"],
+            description=json_dict["description"],
+            project_name=json_dict["project_name"],
+            priority=json_dict["priority"],
+            files_downloaded=json_dict["files_downloaded"],
+            files_processed=json_dict["files_processed"],
+            destination_path=json_dict.get("destination_path"),
+            source_type=json_dict.get("source_type"),
+            source_anonymizedpatientid=json_dict.get("source_anonymizedpatientid"),
+            source_anonymizedpatientname=json_dict.get("source_anonymizedpatientname"),
+            source_name=json_dict.get("source_name"),
+            source_path=json_dict.get("source_path"),
+            source_pims_keyfile_id=json_dict.get("source_pims_keyfile_id"),
+            source_instance_id=json_dict.get("source_instance_id"),
+        )
+
+    def as_string(self):
+        """As human readable  multi-line string"""
+        to_print = {
+            "job_id": self.job_id,
+            "date": self.date,
+            "user_name": self.user_name,
+            "status": self.status,
+            "error": self.error,
+            "description": self.description,
+            "project_name": self.project_name,
+            "priority": self.priority,
+            "files_downloaded": self.files_downloaded,
+            "files_processed": self.files_processed,
+            "destination_path": self.destination_path,
+            "source_type": self.source_type,
+            "source_anonymizedpatientid": self.source_anonymizedpatientid,
+            "source_anonymizedpatientname": self.source_anonymizedpatientname,
+            "source_name": self.source_name,
+            "source_path": self.source_path,
+            "source_pims_keyfile_id": self.source_pims_keyfile_id,
+            "source_instance_id": self.source_instance_id,
+        }
+
+        return "\n".join([str(x) for x in to_print.items()])
 
 
 class TableColumn:
-    """A single column in a table"""
+    """A single column in a command_table"""
 
     def __init__(self, header, parameter_name):
         self.header = header
@@ -67,7 +164,7 @@ class TableColumn:
 
 
 class JobInfoColumns:
-    """Columns that can be used in a table of JobInfos"""
+    """Columns that can be used in a command_table of JobInfos"""
 
     job_id = TableColumn(header="id", parameter_name="job_id")
     date = TableColumn(header="date", parameter_name="date")
@@ -91,7 +188,7 @@ def format_job_info_list(job_infos, columns=JobInfoColumns.DEFAULT_COLUMNS):
     job_infos: List[JobInfo]
         List of short infos
     columns: List[TableColumns], optional
-        Show only these columns in table. Defaults to default columns for
+        Show only these columns in command_table. Defaults to default columns for
         JobInfo objects
 
     Returns
@@ -101,7 +198,7 @@ def format_job_info_list(job_infos, columns=JobInfoColumns.DEFAULT_COLUMNS):
 
     """
     table = {
-        column.header: [x.json_raw.get(column.parameter_name) for x in job_infos]
+        column.header: [getattr(x, column.parameter_name) for x in job_infos]
         for column in columns
     }
 
@@ -127,7 +224,7 @@ def parse_job_infos_response(response):
 
     """
     try:
-        return [JobInfo(x) for x in response.values()]
+        return [JobInfo.from_json(x) for x in response.values()]
     except (KeyError, AttributeError) as e:
         raise APIParseResponseException(
             f"Error parsing server response as job info: {e}"
@@ -146,12 +243,12 @@ class JobsInfoList(UserList):
         self.data = job_infos
 
     def as_table_string(self, columns=JobInfoColumns.DEFAULT_COLUMNS):
-        """As a string with newlines, forming a neat table
+        """As a string with newlines, forming a neat command_table
 
         Parameters
         ----------
         columns: List[TableColumns], optional
-            Show only these columns in table. Defaults to default columns for
+            Show only these columns in command_table. Defaults to default columns for
             JobInfo objects
 
         Returns

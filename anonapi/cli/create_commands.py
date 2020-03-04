@@ -7,7 +7,7 @@ import click
 from anonapi.batch import BatchFolder, JobBatch
 from anonapi.context import AnonAPIContext
 from anonapi.client import APIClientException
-from anonapi.decorators import pass_anonapi_context
+from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
 from anonapi.exceptions import AnonAPIException
 from anonapi.mapper import MappingFolder, MapperException
 from anonapi.parameters import (
@@ -25,10 +25,13 @@ from anonapi.parameters import (
     RootSourcePath,
     is_unc_path,
 )
+from anonapi.responses import JobInfo
 from anonapi.settings import JobDefaultParameters, AnonClientSettingsException
 from click.exceptions import Abort, ClickException
 
 from pathlib import PureWindowsPath
+
+from anonapi.testresources import JobInfoFactory
 
 
 class JobParameterSet(ParameterSet):
@@ -236,7 +239,7 @@ class CreateCommandsContext(AnonAPIContext):
         except (APIClientException, AnonClientSettingsException) as e:
             raise JobCreationException(f"Error creating job for source {source}: {e}")
 
-        return response["job_id"]
+        return response.job_id
 
     @staticmethod
     def get_source_instance_id_value(identifier: SourceIdentifier):
@@ -283,11 +286,9 @@ class CreateCommandsContext(AnonAPIContext):
             )  # add only unique new ids
             batch_folder.save(batch)
 
+    @handle_anonapi_exceptions
     def get_mapping(self):
-        try:
-            return MappingFolder(self.current_dir).get_mapping()
-        except MapperException as e:
-            raise ClickException(e)
+        return MappingFolder(self.current_dir).get_mapping()
 
 
 pass_create_commands_context = click.make_pass_decorator(CreateCommandsContext)
@@ -348,7 +349,7 @@ def from_mapping(context: CreateCommandsContext, dry_run):
                 click.echo("create was called with rows:")
                 click.echo("\n".join(args))
                 click.echo("\n".join(map(str, kwargs.items())))
-                return {"job_id": -1}
+                return JobInfoFactory(job_id=-1)  # a mocked response
 
             context.client_tool.create_path_job = mock_create
             context.client_tool.create_pacs_job = mock_create

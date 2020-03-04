@@ -7,7 +7,7 @@ from anonapi.responses import (
     parse_job_infos_response,
     APIParseResponseException,
 )
-from tests.factories import RequestsMockResponseExamples
+from tests.mock_responses import RequestsMockResponseExamples
 
 
 def test_jobs_response():

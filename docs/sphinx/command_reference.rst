@@ -204,6 +204,11 @@ add-study-folder
 Add the given folder to :ref:`mapping <concepts_mapping>`. This is done by finding all dicom files in the folder and any folders below it, adding
 those to a :ref:`file selection <concepts_selection>`, and then adding the file selection to the mapping.
 
+Options:
+
+--check-dicom/ --no-check-dicom
+	Open each file to check whether it is valid DICOM. Turning this off is faster, but the anonymization fails if non-DICOM files are included. On by default
+
 Example:
 
 .. code-block:: console
@@ -234,6 +239,11 @@ add-all-study-folders
 
 Runs :ref:`add-study-folder <map_add_study_folder>` on all folders that match pattern. The pattern can include ``*``
 to match part of a file or folder and ``**`` to match any combination of folders and filenames.
+
+Options:
+
+--check-dicom/ --no-check-dicom
+	Open each file to check whether it is valid DICOM. Turning this off is faster, but the anonymization fails if non-DICOM files are included. On by default
 
 For example, given the following folder structure::
 
@@ -342,16 +352,14 @@ Add all files matching pattern paths to a :ref:`file selection <concepts_selecti
 
 There are several modifiers available:
 
---check-dicom
-    Only add files that are valid DICOM file. For many files, this might take some time. This if off by default.
+--recurse/ --no-recurse
+	Search for files to add in subfolders as well. On by default
 
---exclude-pattern (or -e)
-    When adding, exclude any file matching the given pattern. The pattern can use ``*`` to match any part of a name.
-    --exclude-pattern can be used multiple times, to exclude multiple patterns
+--check-dicom/ --no-check-dicom
+	Only add files that are valid DICOM file. For many files, this might take some time. Off by default.
 
---recurse/--no-recurse
-    Search for files to add in subfolders. This is the default. If --no-recurse is given, only search for files in the
-    current directory
+--exclude-pattern, -e
+	Exclude any file matching the given pattern. The pattern can use ``*`` to match any part of a name. --exclude-pattern can be used multiple times, to exclude multiple patterns
 
 Examples of different selections. Given the following folder structure::
 

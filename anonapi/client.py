@@ -262,6 +262,8 @@ class AnonClientTool:
     One abstraction level above WebAPIClient. Client deals with https calls, get and
     post, this tool should not do any http operations, and instead deal with servers
     and jobs.
+
+    Information about jobs is done trough JobInfo instances where possible
     """
 
     def __init__(self, username, token):
@@ -305,7 +307,7 @@ class AnonClientTool:
 
         return status
 
-    def get_job_info(self, server: RemoteAnonServer, job_id: int):
+    def get_job_info(self, server: RemoteAnonServer, job_id: int) -> JobInfo:
         """Full description of a single job
 
         Parameters
@@ -315,28 +317,26 @@ class AnonClientTool:
         job_id: str
             id of job to get info for
 
+        Raises
+        ------
+        ClientToolException:
+            if something goes wrong getting jobs info from server
 
         Returns
         -------
-        str:
-            string describing job, or error if job could not be found
+        JobInfo:
+            Information for the job
 
         """
 
         client = self.get_client(server.url)
+        response_dict = client.get("get_job", job_id=job_id)
 
-        try:
-            response = client.get("get_job", job_id=job_id)
-            info_string = f"job {job_id} on {server.name}:\n\n"
-            info_string += "\n".join([str(x) for x in list(response.items())])
-
-        except APIClientException as e:
-            info_string = f"Error getting job info from {server}:\n{str(e)}"
-        return info_string
+        return JobInfo.from_json(response_dict)
 
     def get_job_info_list(
         self, server: RemoteAnonServer, job_ids, get_extended_info=False
-    ):
+    ) -> JobsInfoList:
         """Get a list of info on the given job ids.
 
         Parameters
@@ -369,7 +369,7 @@ class AnonClientTool:
         try:
             return JobsInfoList(
                 [
-                    JobInfo(x)
+                    JobInfo.from_json(x)
                     for x in client.get(api_function_name, job_ids=job_ids).values()
                 ]
             )
@@ -455,25 +455,29 @@ class AnonClientTool:
     def create_path_job(
         self,
         server: RemoteAnonServer,
-        anon_name,
-        anon_id,
         project_name,
         source_path,
         destination_path,
         description,
+        anon_name=None,
+        anon_id=None,
         pims_keyfile_id=None,
-    ):
+    ) -> JobInfo:
         """Create a job with data coming from a network root_path
 
         Parameters
         ----------
         server: RemoteAnonServer
-        anon_name: str
-        anon_id: str
         project_name: str
         source_path: root_path
         destination_path: root_path
         description: str
+        anon_name: str, optional
+            Patient name to set in anonymized data. Can be omitted if pims_keyfile_id
+            is given
+        anon_id: str, optional
+            Patient id to set in anonymized data. Can be omitted if pims_keyfile_id
+            is given
         pims_keyfile_id: str, optional
            pims keyfile to use. Defaults to no pims keyfile
 
@@ -484,7 +488,7 @@ class AnonClientTool:
 
         Returns
         -------
-        dict
+        JobInfo
             response from server with info on created job
 
 
@@ -492,7 +496,7 @@ class AnonClientTool:
 
         client = self.get_client(server.url)
 
-        info = client.post(
+        response_dict = client.post(
             "create_job",
             source_type="PATH",
             source_path=source_path,
@@ -505,30 +509,34 @@ class AnonClientTool:
             pims_keyfile_id=pims_keyfile_id,
         )
 
-        return info
+        return JobInfo.from_json(response_dict)
 
     def create_pacs_job(
         self,
         server: RemoteAnonServer,
-        anon_name,
-        anon_id,
         source_instance_id,
         project_name,
         destination_path,
         description,
+        anon_name=None,
+        anon_id=None,
         pims_keyfile_id=None,
-    ):
+    ) -> JobInfo:
         """Create a job with data from a PACS system
 
         Parameters
         ----------
         server: RemoteAnonServer
-        anon_name: str
-        anon_id: str
         project_name: str
         source_instance_id: str
         destination_path: root_path
         description: str
+        anon_name: str, optional
+            Patient name to set in anonymized data. Can be omitted if pims_keyfile_id
+            is given
+        anon_id: str, optional
+            Patient id to set in anonymized data. Can be omitted if pims_keyfile_id
+            is given
         pims_keyfile_id: str, optional
            pims keyfile to use. Defaults to no pims keyfile
 
@@ -539,14 +547,14 @@ class AnonClientTool:
 
         Returns
         -------
-        dict
+        JobInfo
             response from server with info on created job
 
 
         """
         client = self.get_client(server.url)
 
-        info = client.post(
+        response_dict = client.post(
             "create_job",
             source_type="WADO",
             source_name="IDC_WADO",
@@ -560,7 +568,7 @@ class AnonClientTool:
             pims_keyfile_id=pims_keyfile_id,
         )
 
-        return info
+        return JobInfo.from_json(response_dict)
 
 
 class ClientInterfaceException(AnonAPIException):
@@ -587,7 +595,8 @@ class APIClientAuthorizationFailedException(APIClientException):
 
 
 class APIClientAPIException(APIClientException):
-    """The API was called successfully, but there was a problem within the API itself """
+    """The API was called successfully, but there was a problem within the API
+     itself """
 
     def __init__(self, msg, api_errors):
         """

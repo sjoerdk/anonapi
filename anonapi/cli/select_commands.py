@@ -96,17 +96,21 @@ def delete(context: SelectCommandContext):
 @click.command()
 @pass_select_command_context
 @click.argument("pattern", type=str)
-@click.option("--recurse/--no-recurse", default=True, help="Recurse into directories")
+@click.option("--recurse/--no-recurse", default=True,
+              help="Search for files to add in subfolders as well. On by default")
 @click.option(
     "--check-dicom/--no-check-dicom",
     default=False,
-    help="Allows only DICOM files. Opens all files",
+    help="Only add files that are valid DICOM file. For many files, this might "
+         "take some time. Off by default.",
 )
 @click.option(
     "--exclude-pattern",
     "-e",
     multiple=True,
-    help="Exclude any filepath matching this. * is wildcard.",
+    help="Exclude any file matching the given pattern. The pattern can use ``*`` "
+         "to match any part of a name. --exclude-pattern can be used "
+         "multiple times, to exclude multiple patterns",
 )
 def add(context: SelectCommandContext, pattern, recurse, check_dicom, exclude_pattern):
     """Add all files matching pattern to selection in the current directory.
@@ -155,7 +159,7 @@ def edit(context: SelectCommandContext):
         click.launch(str(selection_folder.get_data_file_path()))
 
 
-def create_dicom_selection_click(path):
+def create_dicom_selection_click(path, check_dicom=True):
     """Find all DICOM files path (recursive) and save them a FileSelectionFile.
 
     Meant to be included directly inside click commands. Uses a lot of click.echo()
@@ -163,6 +167,9 @@ def create_dicom_selection_click(path):
     Parameters
     ----------
     path: PathLike
+    check_dicom: bool, optional
+        open each file to see whether it is valid DICOM. Setting False is faster
+        but could include files that will fail the job in IDIS. Defaults to True
 
     Returns
     -------
@@ -174,8 +181,14 @@ def create_dicom_selection_click(path):
     folder = FileFolder(path)
     click.echo(f"Finding all files in {path}")
     files = [x for x in tqdm(folder.iterate()) if x is not None]
-    click.echo(f"Found {len(files)} files. Finding out which ones are DICOM")
-    dicom_files = [x for x in tqdm(files) if open_as_dicom(x)]
+    if check_dicom:
+        click.echo(f"Found {len(files)} files. Finding out which ones are DICOM")
+        dicom_files = [x for x in tqdm(files) if open_as_dicom(x)]
+    else:
+        click.echo(f"Found {len(files)} files. Adding all without check because "
+                   f"--no-check-dicom was set")
+        dicom_files = files
+
     click.echo(f"Found {len(dicom_files)} DICOM files")
     # record dicom files as fileselection
     selection_folder = FileSelectionFolder(path=path.absolute())
