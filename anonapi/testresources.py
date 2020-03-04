@@ -1,10 +1,23 @@
-""" Generates realistic api call return values without actually calling or needing
-a server
+"""Resources for testing external code that imports anonapi
 
-Putting this module here in main package because methods and classes are useful
-for libs importing anonapi.
+Generates realistic api call return values without actually calling or needing
+an IDIS server
 
-Tests for anonapi itself are still kept in /tests
+Example:
+
+from anonapi.responses import JobStatus
+from anonapi.testresources import MockAnonClientTool, JobInfoFactory, \
+    RemoteAnonServerFactory
+
+tool = MockAnonClientTool(
+    responses=[JobInfoFactory(status=JobStatus.DONE),
+               JobInfoFactory(status=JobStatus.ERROR),
+               JobInfoFactory(status=JobStatus.INACTIVE)])
+
+info = tool.get_job_info(server=RemoteAnonServerFactory(), job_id=100)
+info.status  # DONE
+info.job_id  # 100  (matches whatever you put in it)
+
 """
 from itertools import cycle
 from typing import List
@@ -14,7 +27,6 @@ import factory
 from anonapi.client import AnonClientTool
 from anonapi.objects import RemoteAnonServer
 from anonapi.responses import JobInfo, JobsInfoList, JobStatus
-
 
 class MockAnonClientTool(AnonClientTool):
     """A client tool that does not hit any server. Returns mocked responses
