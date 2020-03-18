@@ -91,7 +91,8 @@ class UNCMapping:
             except ValueError:
                 continue
 
-        raise UNCMappingException(f'{path_in} could not be mapped to UNC path')
+        raise UNCMappingException(f'{path_in} could not be mapped to UNC path.'
+                                  f' I know only {[x.local for x in self.maps]}')
 
     def to_local(self, path_in: Path) -> Path:
         """Convert the given path to a local path
@@ -121,7 +122,8 @@ class UNCMapping:
                 return map_in.local / path_in.relative_to(map_in.unc)
             except ValueError:
                 continue
-        raise UNCMappingException(f'{path_in} could not be mapped to local path')
+        raise UNCMappingException(f'{path_in} could not be mapped to local path.'
+                                  f' I know only {[x.unc for x in self.maps]}')
 
 
 class UNCMappingException(AnonAPIException):
