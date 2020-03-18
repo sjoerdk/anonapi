@@ -441,9 +441,35 @@ class ParameterSet:
 
 
 def is_unc_path(path: Path):
-    """Is this a unc path like \\server\share\things? """
+    r"""Is this a unc path like \\server\share\things? """
 
     return PureWindowsPath(path).anchor.startswith(r"\\")
+
+
+def get_legacy_idis_value(identifier: SourceIdentifier) -> str:
+    """Give the value for source_instance_id that IDIS understands
+
+    For historical reasons, StudyInstanceUIDs are given without prepended key.
+    This should change. For now just do this conversion.
+    Example:
+    StudyInstanceUID should be parsed as "123.4.5.15.5.56",
+    but AccessionNumber should be parsed as "accession_number:1234567.3434636"
+
+
+    Parameters
+    ----------
+    identifier: anonapi.parameters.SourceIdentifier
+        The identifier for which to get the id string
+
+    Returns
+    -------
+    str
+        Value to pass as source_instance_id to IDIS api server
+    """
+    if type(identifier) == StudyInstanceUIDIdentifier:
+        return str(identifier.identifier)
+    else:
+        return str(identifier)  # will prepend the identifier type
 
 
 COMMON_JOB_PARAMETERS = [SourceIdentifierParameter, PatientID, PatientName, Description]

@@ -10,21 +10,11 @@ from anonapi.client import APIClientException
 from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
 from anonapi.exceptions import AnonAPIException
 from anonapi.mapper import MappingFolder, MapperException
-from anonapi.parameters import (
-    SourceIdentifier,
-    StudyInstanceUIDIdentifier,
-    Parameter,
-    DestinationPath,
-    PatientID,
-    PatientName,
-    Project,
-    Description,
-    SourceIdentifierParameter,
-    PIMSKey,
-    ParameterSet,
-    RootSourcePath,
-    is_unc_path,
-)
+from anonapi.parameters import (SourceIdentifier, StudyInstanceUIDIdentifier,
+                                Parameter, DestinationPath, PatientID, PatientName,
+                                Project, Description, SourceIdentifierParameter,
+                                PIMSKey, ParameterSet, RootSourcePath, is_unc_path,
+                                get_legacy_idis_value)
 from anonapi.responses import JobInfo
 from anonapi.settings import JobDefaultParameters, AnonClientSettingsException
 from click.exceptions import Abort, ClickException
@@ -92,7 +82,8 @@ class JobParameterSet(ParameterSet):
                 continue
             elif self.is_source_identifier(parameter):
                 if self.is_pacs_type(parameter):
-                    dict_out["source_instance_id"] = str(parameter.value.identifier)
+                    dict_out["source_instance_id"] = \
+                        get_legacy_idis_value(parameter.value)
                 elif self.is_path_type(parameter):
                     dict_out["source_path"] = str(parameter.value)
                 else:
@@ -240,32 +231,6 @@ class CreateCommandsContext(AnonAPIContext):
             raise JobCreationException(f"Error creating job for source {source}: {e}")
 
         return response.job_id
-
-    @staticmethod
-    def get_source_instance_id_value(identifier: SourceIdentifier):
-        """Give the value for source_instance_id that IDIS understands
-
-        For historical reasons, StudyInstanceUIDs are given without prepended key.
-        This should change. For now just do this conversion.
-        Example:
-        StudyInstanceUID should be parsed as "123.4.5.15.5.56",
-        but AccessionNumber should be parsed as "accession_number:1234567.3434636"
-
-
-        Parameters
-        ----------
-        identifier: anonapi.parameters.SourceIdentifier
-            The identifier for which to get the id string
-
-        Returns
-        -------
-        str
-            Value to pass as source_instance_id to IDIS api server
-        """
-        if type(identifier) == StudyInstanceUIDIdentifier:
-            return str(identifier.identifier)
-        else:
-            return str(identifier)  # will prepend the identifier type
 
     def add_to_batch(self, created_job_ids):
         """Add job ids as batch in current dir. If batch does not exist, create"""
