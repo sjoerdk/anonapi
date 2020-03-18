@@ -1,12 +1,9 @@
 import pytest
 
-from anonapi.parameters import (
-    SourceIdentifier,
-    SourceIdentifierParameter,
-    Parameter,
-    ParameterFactory,
-    ParameterParsingError,
-)
+from anonapi.cli.create_commands import JobParameterSet
+from anonapi.parameters import (SourceIdentifier, SourceIdentifierParameter,
+                                Parameter, ParameterFactory, ParameterParsingError,
+                                AccessionNumberIdentifier)
 from tests.factories import SourceIdentifierParameterFactory
 
 
@@ -47,3 +44,13 @@ def test_parameter_factory():
 def test_parameter_factory_exceptions(input_string):
     with pytest.raises(ParameterParsingError):
         ParameterFactory.parse_from_string(input_string)
+
+
+def test_parameter_as_kwargs():
+    """This exposes a bug with accession numbers"""
+
+    parameters = [SourceIdentifierParameter(
+        AccessionNumberIdentifier('1234567.12345678'))]
+
+    row = JobParameterSet(parameters=parameters)
+    assert row.as_kwargs()['source_instance_id'] == 'accession_number:1234567.12345678'
