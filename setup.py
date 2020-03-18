@@ -12,7 +12,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = ['pyyaml', 'click', 'tqdm', 'fileselection>=0.3.2', 'pydicom',
-                'tabulate', 'requests']
+                'tabulate', 'requests', 'factory_boy']
 
 setup_requirements = ['pytest-runner', ]
 
