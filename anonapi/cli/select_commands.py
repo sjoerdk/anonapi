@@ -183,7 +183,8 @@ def create_dicom_selection_click(path, check_dicom=True):
     files = [x for x in tqdm(folder.iterate()) if x is not None]
     if check_dicom:
         click.echo(f"Found {len(files)} files. Finding out which ones are DICOM")
-        dicom_files = [x for x in tqdm(files) if open_as_dicom(x)]
+        dicom_files = [x for x in tqdm(files) if open_as_dicom(x,
+                                                               read_pixel_data=False)]
     else:
         click.echo(f"Found {len(files)} files. Adding all without check because "
                    f"--no-check-dicom was set")
