@@ -198,7 +198,6 @@ class MockContextCliRunner(CliRunner):
         env=None,
         catch_exceptions=True,
         color=False,
-        mix_stderr=False,
         **extra
     ):
         return super().invoke(
@@ -208,7 +207,6 @@ class MockContextCliRunner(CliRunner):
             env,
             catch_exceptions,
             color,
-            mix_stderr,
             obj=self.mock_context,
         )
 
