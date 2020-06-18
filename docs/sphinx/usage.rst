@@ -203,6 +203,11 @@ Quick example
     $ anon batch status        # monitor the progress of your jobs
 
 
+.. tip::
+    The example above adds each study folder individually. To add many study folders at once, use
+    ``anon map add-all-study-folders *`` . See :ref:`add-all-study-folders <map_add_all_study_folders>` for more info
+
+
 Detailed example
 ----------------
 In this example we will anonymize three studies that are on a share ``\\server1\share``. The data folder looks like this:

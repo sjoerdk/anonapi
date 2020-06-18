@@ -233,6 +233,7 @@ Running the command ``anon map add-study-folder <folder>`` is equivalent to runn
 
     For folders with many files, add-study-folder might take several seconds up to a minute to complete.
 
+.. _map_add_all_study_folders:
 
 add-all-study-folders
 ---------------------
