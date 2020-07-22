@@ -61,6 +61,20 @@ def reset(parser: AnonAPIContext, job_id):
 @click.command()
 @pass_anonapi_context
 @click.argument("job_id", type=str)
+@click.argument("reason", type=str)
+def set_opt_out_ignore(parser: AnonAPIContext, job_id, reason):
+    """Set opt-out ignore with given reason for job_id
+    """
+    job_info = parser.client_tool.set_opt_out_ignore(
+        server=parser.get_active_server(),
+        job_id=job_id,
+        reason=reason)
+    click.echo(job_info)
+
+
+@click.command()
+@pass_anonapi_context
+@click.argument("job_id", type=str)
 def cancel(parser: AnonAPIContext, job_id):
     """set job status to inactive """
     server = parser.get_active_server()

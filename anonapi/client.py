@@ -452,6 +452,26 @@ class AnonClientTool:
             info = f"Error resetting job on{server.name}:\n{str(e)}"
         return info
 
+    def set_opt_out_ignore(self, server: RemoteAnonServer, job_id: str, reason: str):
+        """Set opt-out ignore with a reason for given job
+
+        Returns
+        -------
+        str
+            a string describing success or any API error
+        """
+
+        client = self.get_client(server.url)
+        try:
+            _ = client.post("modify_job",
+                            job_id=job_id,
+                            source_ignore_opt_out=True,
+                            source_ignore_opt_out_reason=f'Reason: {reason}')
+            info = f"Set opt-out ignore ({reason}) for job {job_id} on {server}"
+        except APIClientException as e:
+            info = f"Error setting opt-out ignore on{server.name}:\n{str(e)}"
+        return info
+
     def create_path_job(
         self,
         server: RemoteAnonServer,
