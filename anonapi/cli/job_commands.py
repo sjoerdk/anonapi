@@ -82,5 +82,5 @@ def cancel(parser: AnonAPIContext, job_id):
     click.echo(job_info)
 
 
-for func in [info, reset, cancel, job_list]:
+for func in [info, reset, cancel, job_list, set_opt_out_ignore]:
     main.add_command(func)
