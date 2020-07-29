@@ -13,7 +13,8 @@ pass_anonapi_context = click.make_pass_decorator(AnonAPIContext)
 
 def handle_anonapi_exceptions(func):
     """Catch any AnonAPIExceptions and raise as ClickExceptions. This means no
-    full stack strace for these errors. Hopefully a more user-friendly message"""
+    full stack trace for these errors. Hopefully a more user-friendly message
+    """
 
     @wraps(func)
     def wrapper(*args, **kwargs):

@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from anonapi.cli import entrypoint
 from anonapi.settings import (
     AnonClientSettingsFromFile,
     AnonClientSettingsException,
@@ -118,3 +119,8 @@ def test_settings_load_old(test_settings_file_old):
     assert settings.job_default_parameters is not None
     assert len(settings.servers) == 2
     assert str(settings) == f"Settings at {str(test_settings_file_old)}"
+
+
+def test_settings_edit(mock_main_runner, test_settings_file):
+    result = mock_main_runner.invoke(entrypoint.cli, ["settings", "edit"])
+    test = 1

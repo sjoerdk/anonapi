@@ -6,3 +6,4 @@ create_job_defaults:
 user_name: kees
 user_token: token
 active_server_name: sandbox
+validate_ssl: True

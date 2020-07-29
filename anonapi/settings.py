@@ -12,7 +12,8 @@ from anonapi.objects import RemoteAnonServer
 class AnonClientSettings:
     """Settings used by anonymization web API client """
 
-    def __init__(self, servers, user_name, user_token, job_default_parameters=None):
+    def __init__(self, servers, user_name, user_token, job_default_parameters=None,
+                 validate_ssl=True):
         """
         Parameters
         ----------
@@ -24,6 +25,9 @@ class AnonClientSettings:
             API token
         job_default_parameters: JobDefaultParameters, optional
             When creating jobs, use these settings by default
+        validate_ssl: bool, optional
+            If False, ignore ssl warnings and outdated certificates.
+            Defaults to True
 
         """
         self.servers = servers
@@ -37,6 +41,7 @@ class AnonClientSettings:
             self.active_server = servers[0]
         else:
             self.active_server = None
+        self.validate_ssl = validate_ssl
 
     def to_datamap(self):
         """Convert these settings to a dict that can be used by YAML
@@ -46,6 +51,7 @@ class AnonClientSettings:
             "servers": {x.name: x.url for x in self.servers},
             "user_name": self.user_name,
             "user_token": self.user_token,
+            "validate_ssl": self.validate_ssl,
             "job_default_parameters": self.job_default_parameters.to_dict(),
         }
         if self.active_server:
@@ -53,6 +59,9 @@ class AnonClientSettings:
         else:
             datamap["active_server_name"] = None
         return datamap
+
+    def as_human_readable(self) -> str:
+        return yaml.dump(self.to_datamap(), default_flow_style=False)
 
     def save_to_file(self, filename):
         """ Putting save to file method here in base class so I can write settings files generated from code
@@ -92,6 +101,8 @@ class DefaultAnonClientSettings(AnonClientSettings):
         )
 
 
+NOT_SET = 'NOT_SET12342t4'  # sorry
+
 class DataMap:
     """Structure to hold output from a yaml load(). Raises error when you cannot get()
      an expected key Poor man's substitute for schema validation.
@@ -101,10 +112,13 @@ class DataMap:
     def __init__(self, datamap):
         self._datamap = datamap
 
-    def get(self, key):
+    def get(self, key, default=NOT_SET):
         if key not in self._datamap.keys():
-            msg = f"expected to find key '{key}'"
-            raise AnonClientSettingsFromFileException(msg)
+            if default != NOT_SET:
+                return default
+            else:
+                msg = f"expected to find key '{key}'"
+                raise AnonClientSettingsFromFileException(msg)
         return self._datamap[key]
 
     def __iter__(self):
@@ -132,6 +146,7 @@ class AnonClientSettingsFromFile(AnonClientSettings):
             user_name = datamap.get("user_name")
             user_token = datamap.get("user_token")
             active_server_name = datamap.get("active_server_name")
+            validate_ssl = datamap.get("validate_ssl", default=True)
         except AnonClientSettingsFromFileException as e:
             msg = f"Could not read all settings from {self.filename}: {e}"
             raise AnonClientSettingsException(msg)
@@ -155,6 +170,7 @@ class AnonClientSettingsFromFile(AnonClientSettings):
             user_name=user_name,
             user_token=user_token,
             job_default_parameters=create_job_defaults_parsed,
+            validate_ssl=validate_ssl
         )
         # set active server
         if active_server_name is None:

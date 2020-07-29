@@ -76,17 +76,11 @@ class WebAPIClient:
 
         function_url = self.hostname + "/" + function_name
 
-        # self.validate_https is false or true, but requests.get expects false or none to either validate or not
-        if self.validate_https:
-            validate = self.validate_https
-        else:
-            validate = None
-
         try:
             response = self.requestslib.get(
                 function_url,
                 data=self.add_user_name_to_args(kwargs),
-                verify=validate,
+                verify=self.validate_https,
                 headers={"Authorization": f"Token {self.token}"},
             )
         except requests.exceptions.RequestException as e:
@@ -266,7 +260,7 @@ class AnonClientTool:
     Information about jobs is done trough JobInfo instances where possible
     """
 
-    def __init__(self, username, token):
+    def __init__(self, username, token, validate_https=True):
         """Create an anonymization web API client tool
 
         Parameters
@@ -275,10 +269,13 @@ class AnonClientTool:
             use this when calling API
         token:
             API token to use when calling API
+        validate_https: bool, optional
+            If false, ignore all ssl errors
 
         """
         self.username = username
         self.token = token
+        self.validate_https = validate_https
 
     def get_client(self, url):
         """Create an API client with the information in this tool
@@ -287,7 +284,8 @@ class AnonClientTool:
         -------
         WebAPIClient
         """
-        client = WebAPIClient(hostname=url, username=self.username, token=self.token)
+        client = WebAPIClient(hostname=url, username=self.username, token=self.token,
+                              validate_https=self.validate_https)
         return client
 
     def get_server_status(self, server: RemoteAnonServer):
