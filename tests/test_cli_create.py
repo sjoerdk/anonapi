@@ -9,7 +9,7 @@ from anonapi.cli.create_commands import (
     ParameterMappingException,
     JobSetValidationError,
 )
-from anonapi.mapper import MappingFolder
+from anonapi.mapper import Mapping, MappingFolder
 from anonapi.parameters import (
     SourceIdentifierParameter,
     Description,
@@ -21,6 +21,7 @@ from anonapi.parameters import (
     ParameterSet,
 )
 from anonapi.settings import JobDefaultParameters
+from tests import RESOURCE_PATH
 from tests.mock_responses import RequestsMockResponseExamples
 
 
@@ -253,3 +254,18 @@ def test_job_parameter_set_defaults():
         default_parameters=[Description("Default")],
     )
     assert param_set2.get_param_by_type(Description).value == "Overwrite!"
+
+
+def test_create_from_mapping_syntax_error():
+    """Trailing space in mapping should not be a problem.  Recreates #246"""
+
+    # Set a mapping with an accession_number identifier that does not have expected
+    # format
+    mapping_path = RESOURCE_PATH / "test_cli_create" / "trailing_space_in_mapping.csv"
+
+    # opening this should not raise an error
+    with open(mapping_path, "r") as f:
+        mapping = Mapping.load(f)
+    # this trailing space should nog be in the parsed parameter. This will generate
+    # a preventable error when trying to create a job with this
+    assert not str(mapping.grid.rows[2][0]).endswith(" ")

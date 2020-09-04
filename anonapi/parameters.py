@@ -7,7 +7,7 @@ the job creation process and I want a unified type
 
 """
 from copy import copy
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from anonapi.exceptions import AnonAPIException
 from fileselection.fileselection import FileSelectionFile
@@ -29,10 +29,30 @@ class SourceIdentifier:
     key = "base"  # key with which this class is identified
 
     def __init__(self, identifier):
-        self.identifier = identifier
+        self.identifier = self.parse_identifier(identifier)
 
     def __str__(self):
         return f"{self.key}:{self.identifier}"
+
+    @classmethod
+    def parse_identifier(cls, identifier: Any) -> Any:
+        """Check format, remove clutter. Can be overwritten in child classes
+
+        Returns
+        -------
+        str
+            cleaned identifier string
+
+        Raises
+        ------
+        ParameterException
+            If this identifier does not have the correct format
+
+        """
+        if type(identifier) == str:
+            return identifier.rstrip()
+        else:
+            return identifier
 
     @classmethod
     def cast_to_subtype(cls, identifier):

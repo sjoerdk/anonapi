@@ -1,0 +1,13 @@
+## Description ##
+In the mapping below is an accession number that has a trailing space.. This should not be a problem.
+
+## Options ##
+destination_path,\\someserver\share\folder1
+pims_key,555
+
+
+## Mapping ##
+source,patient_id,patient_name,description
+folder:/folder/file0,patient0,patientName0,test description
+folder:/folder/file1,patient1,patientName1,test description
+accession_number:1234567.1234578dwe ,test description
