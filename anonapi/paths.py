@@ -13,9 +13,9 @@ file transfer via https or perhaps doing the processing locally.
 
 In the mean time, solving this by just having a user-defined maps.
 """
-import collections
-from pathlib import Path, PureWindowsPath, PurePath
-from typing import Dict, List
+from collections import namedtuple
+from pathlib import Path, PureWindowsPath
+from typing import List
 
 from anonapi.exceptions import AnonAPIException
 
@@ -41,11 +41,8 @@ class UNCPath(PureWindowsPath):
         return PureWindowsPath(path).anchor.startswith(r"\\")
 
 
-class UNCMap:
-    """A maps between one local path and a unc path"""
-    def __init__(self, local: Path, unc: UNCPath):
-        self.local = local
-        self.unc = unc
+# A maps between one local path and a unc path
+UNCMap = namedtuple("UNCMap", ["local", "unc"])
 
 
 class UNCMapping:
@@ -65,7 +62,7 @@ class UNCMapping:
 
     def to_unc(self, path_in: Path) -> UNCPath:
         """Convert the given path to a UNC path
-        
+
         Parameters
         ----------
         path_in: Path
@@ -75,24 +72,26 @@ class UNCMapping:
         -------
         UNCPath
             Input path as a UNC path. Searches internal list of maps
-        
+
         Raises
         ------
         UNCMappingException
-            If path cannot be mapped any UNC path 
+            If path cannot be mapped any UNC path
 
         """
         if UNCPath.is_unc(path_in):
             return path_in  # is it a UNC path already? Then return as is
 
-        for map_in in self.maps:   # try each map
+        for map_in in self.maps:  # try each map
             try:
                 return map_in.unc / path_in.relative_to(map_in.local)
             except ValueError:
                 continue
 
-        raise UNCMappingException(f'{path_in} could not be mapped to UNC path.'
-                                  f' I know only {[x.local for x in self.maps]}')
+        raise UNCMappingException(
+            f"{path_in} could not be mapped to UNC path."
+            f" I know only {[x.local for x in self.maps]}"
+        )
 
     def to_local(self, path_in: Path) -> Path:
         """Convert the given path to a local path
@@ -122,8 +121,10 @@ class UNCMapping:
                 return map_in.local / path_in.relative_to(map_in.unc)
             except ValueError:
                 continue
-        raise UNCMappingException(f'{path_in} could not be mapped to local path.'
-                                  f' I know only {[x.unc for x in self.maps]}')
+        raise UNCMappingException(
+            f"{path_in} could not be mapped to local path."
+            f" I know only {[x.unc for x in self.maps]}"
+        )
 
 
 class UNCMappingException(AnonAPIException):

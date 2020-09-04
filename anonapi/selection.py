@@ -3,7 +3,6 @@ Useful for example for selecting only DICOM files in a folder.
 """
 from fnmatch import fnmatch
 from pathlib import Path
-from time import sleep
 
 import pydicom
 from pydicom.errors import InvalidDicomError
@@ -62,7 +61,7 @@ class FileFolder:
                 continue
 
 
-def open_as_dicom(path, read_pixel_data: bool= True):
+def open_as_dicom(path, read_pixel_data: bool = True):
     """Tries to open root_path as dicom
 
     Parameters
@@ -81,7 +80,8 @@ def open_as_dicom(path, read_pixel_data: bool= True):
         If root_path cannot be opened
     """
     try:
-        return pydicom.filereader.dcmread(str(path),
-                                          stop_before_pixels=not read_pixel_data)
+        return pydicom.filereader.dcmread(
+            str(path), stop_before_pixels=not read_pixel_data
+        )
     except InvalidDicomError:
         return None

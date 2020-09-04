@@ -1,6 +1,4 @@
-"""User sub commands
-
-"""
+"""User sub commands"""
 import random
 import string
 
@@ -12,13 +10,13 @@ from anonapi.decorators import pass_anonapi_context
 
 @click.group(name="user")
 def main():
-    """manage API credentials"""
+    """Manage API credentials"""
 
 
 @click.command()
 @pass_anonapi_context
 def info(parser: AnonAPIContext):
-    """show current credentials"""
+    """Show current credentials"""
     click.echo(
         f"username is {parser.settings.user_name}\nAPI token: {parser.settings.user_token}"
     )
@@ -28,8 +26,7 @@ def info(parser: AnonAPIContext):
 @pass_anonapi_context
 @click.argument("user_name", type=str)
 def set_username(parser: AnonAPIContext, user_name):
-    """Set the given username in settings
-    """
+    """Set the given username in settings"""
     parser.settings.user_name = user_name
     parser.settings.save()
     click.echo(f"username is now '{user_name}'")
@@ -38,8 +35,7 @@ def set_username(parser: AnonAPIContext, user_name):
 @click.command()
 @pass_anonapi_context
 def get_token(parser: AnonAPIContext):
-    """Obtain a security token
-    """
+    """Obtain a security token"""
     token = "".join(
         random.SystemRandom().choice(
             string.ascii_uppercase + string.ascii_lowercase + string.digits

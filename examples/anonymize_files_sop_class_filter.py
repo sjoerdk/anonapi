@@ -2,9 +2,7 @@ from anonapi.client import WebAPIClient
 
 
 def anonymize_files_sop_class_filter():
-    """Create an IDIS job that pulls files from the hospital information system
-
-    """
+    """Create an IDIS job that pulls files from the hospital information system"""
 
     # Create a client that will talk to the web API
     client = WebAPIClient(
@@ -14,8 +12,8 @@ def anonymize_files_sop_class_filter():
     )
 
     # Create a job that takes data from the IDC (formally IMPAX) directly
-    # and allow only files that match the given SOPClassUIDs. For a full list of possible SOPClassUIDs see
-    # https://www.dicomlibrary.com/dicom/sop/
+    # and allow only files that match the given SOPClassUIDs. For a full list of
+    # possible SOPClassUIDs see https://www.dicomlibrary.com/dicom/sop/
     anon_name = "TEST_NAME_03"
     anon_id = "03"
     sid = "123.12335.3353.36464.343435677"  # study UID

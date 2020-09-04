@@ -1,10 +1,8 @@
-"""classes and methods shared by anonapi modules """
+"""classes and methods shared by anonapi modules"""
 
 
 class RemoteAnonServer:
-    """An anonymization server that can be talked to via the API
-
-    """
+    """An anonymization server that can be talked to via the API"""
 
     def __init__(self, name, url):
         """Create a Remote anon server entry

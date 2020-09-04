@@ -14,7 +14,6 @@ from anonapi.client import (
     AnonClientTool,
 )
 from tests.factories import RequestsMock
-from anonapi.testresources import JobInfoFactory
 from tests.mock_responses import RequestsMockResponseExamples
 
 
@@ -41,9 +40,8 @@ def test_get_jobs(mocked_requests_client: WebAPIClient):
 
 
 def test_get_job(mocked_requests_client: WebAPIClient):
-    """Get info on a single job """
+    """Get info on a single job"""
     client, requests_mock = mocked_requests_client
-
 
     # job info for a job with id=3
     requests_mock.set_response_text(text=RequestsMockResponseExamples.JOB_INFO)
@@ -53,23 +51,26 @@ def test_get_job(mocked_requests_client: WebAPIClient):
 
 
 def test_modify_job(mocked_requests_client: WebAPIClient):
-    """Get info on a single job """
+    """Get info on a single job"""
     client, requests_mock = mocked_requests_client
 
-    # modify status. For a real server this would return the modified job. For test just return test job
+    # modify status. For a real server this would return the modified job.
+    # For test just return test job
     requests_mock.set_response_text(text=RequestsMockResponseExamples.JOB_INFO)
     _ = client.post("modify_job", job_id=3, status="INACTIVE")
     assert requests_mock.requests.post.called
 
 
 def test_404_responses(mocked_requests_client: WebAPIClient):
-    """If the API is running but there is an error, 400 is returned, but if other things are wrong (e.g. the whole api
-    is not running, the url on server you are calling is not recognized) a 404 is returned. Handle these properly
+    """If the API is running but there is an error, 400 is returned, but if other
+    things are wrong (e.g. the whole api is not running, the url on server you are
+    calling is not recognized) a 404 is returned. Handle these properly
     """
     client, requests_mock = mocked_requests_client
     requests_mock: RequestsMock
 
-    # Calling an API method that is not recognized will yield a 404 with useful info. This should be no error
+    # Calling an API method that is not recognized will yield a 404 with useful
+    # info. This should be no error
     requests_mock.set_response_text(
         text=RequestsMockResponseExamples.API_CALL_NOT_DEFINED, status_code=404
     )
@@ -88,8 +89,7 @@ def test_404_responses(mocked_requests_client: WebAPIClient):
 
 
 def test_server_not_found(mocked_requests_client: WebAPIClient):
-    """Calling a url that does not exist should yield an APIClientException
-    """
+    """Calling a url that does not exist should yield an APIClientException"""
     client, requests_mock = mocked_requests_client
     requests_mock: RequestsMock
 
@@ -160,5 +160,4 @@ def test_response_code_handling(mocked_requests_client: WebAPIClient):
 
 
 def test_client_tool_create():
-    client_tool = AnonClientTool(username="user", token="token")
-    # client_tool.create_job()
+    AnonClientTool(username="user", token="token")

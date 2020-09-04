@@ -1,5 +1,4 @@
-"""Click group and commands for the 'select' subcommand
-"""
+"""Click group and commands for the 'select' subcommand"""
 import os
 import click
 from click.exceptions import ClickException
@@ -65,7 +64,7 @@ def describe_selection(selection):
 @click.pass_context
 @pass_anonapi_context
 def main(context: SelectCommandContext, ctx):
-    """select files for a single anonymization job"""
+    """Select files for a single anonymization job"""
     ctx.obj = SelectCommandContext(current_path=context.current_dir)
 
 
@@ -76,7 +75,7 @@ def status(context: SelectCommandContext):
     try:
         selection = context.get_current_selection()
         click.echo(describe_selection(selection))
-    except FileNotFoundError as e:
+    except FileNotFoundError:
         raise ClickException(CLIMessages.NO_SELECTION_DEFINED)
 
 
@@ -96,21 +95,24 @@ def delete(context: SelectCommandContext):
 @click.command()
 @pass_select_command_context
 @click.argument("pattern", type=str)
-@click.option("--recurse/--no-recurse", default=True,
-              help="Search for files to add in subfolders as well. On by default")
+@click.option(
+    "--recurse/--no-recurse",
+    default=True,
+    help="Search for files to add in subfolders as well. On by default",
+)
 @click.option(
     "--check-dicom/--no-check-dicom",
     default=False,
     help="Only add files that are valid DICOM file. For many files, this might "
-         "take some time. Off by default.",
+    "take some time. Off by default.",
 )
 @click.option(
     "--exclude-pattern",
     "-e",
     multiple=True,
     help="Exclude any file matching the given pattern. The pattern can use ``*`` "
-         "to match any part of a name. --exclude-pattern can be used "
-         "multiple times, to exclude multiple patterns",
+    "to match any part of a name. --exclude-pattern can be used "
+    "multiple times, to exclude multiple patterns",
 )
 def add(context: SelectCommandContext, pattern, recurse, check_dicom, exclude_pattern):
     """Add all files matching pattern to selection in the current directory.
@@ -183,11 +185,14 @@ def create_dicom_selection_click(path, check_dicom=True):
     files = [x for x in tqdm(folder.iterate()) if x is not None]
     if check_dicom:
         click.echo(f"Found {len(files)} files. Finding out which ones are DICOM")
-        dicom_files = [x for x in tqdm(files) if open_as_dicom(x,
-                                                               read_pixel_data=False)]
+        dicom_files = [
+            x for x in tqdm(files) if open_as_dicom(x, read_pixel_data=False)
+        ]
     else:
-        click.echo(f"Found {len(files)} files. Adding all without check because "
-                   f"--no-check-dicom was set")
+        click.echo(
+            f"Found {len(files)} files. Adding all without check because "
+            f"--no-check-dicom was set"
+        )
         dicom_files = files
 
     click.echo(f"Found {len(dicom_files)} DICOM files")

@@ -15,7 +15,7 @@ from anonapi.paths import UNCPath, UNCMapping, UNCMap, UNCMappingException
         "//server/share/thing",
     ],
 )
-def test_unc_path(path):
+def test_unc_path_accept(path):
     """All these paths should be accepted as valid unc paths"""
     UNCPath(path)
 
@@ -31,7 +31,7 @@ def test_unc_path(path):
         "C:/yomomma",
     ],
 )
-def test_unc_path(path):
+def test_unc_path_reject(path):
     """All these paths should be rejected"""
     with pytest.raises(ValueError):
         UNCPath(path)
@@ -48,7 +48,7 @@ def test_unc_mapping():
         maps=[UNCMap(local=local1, unc=unc1), UNCMap(local=local2, unc=unc2)]
     )
 
-    a_local_path = local1 / 'folder1' / 'a_file.txt'
+    a_local_path = local1 / "folder1" / "a_file.txt"
 
     # converting to unc and back again should not change the path
     unc = mapping.to_unc(a_local_path)
@@ -62,9 +62,9 @@ def test_unc_mapping():
     assert unc == mapping.to_unc(unc)
 
     # unknown paths will still work if conversion is not needed
-    unknown_path = Path('/not_known')
+    unknown_path = Path("/not_known")
     assert mapping.to_local(unknown_path) == unknown_path
-    unknown_share = Path(r'\\an_unknown_server\share\file.txt')
+    unknown_share = Path(r"\\an_unknown_server\share\file.txt")
     assert mapping.to_unc(unknown_share) == unknown_share
 
     # but if conversion *is* needed, unknown paths will raise
@@ -73,7 +73,3 @@ def test_unc_mapping():
 
     with pytest.raises(UNCMappingException):
         mapping.to_unc(unknown_path)
-
-
-
-

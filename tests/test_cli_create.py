@@ -1,4 +1,4 @@
-from pathlib import Path, PureWindowsPath
+from pathlib import PureWindowsPath
 
 import pytest
 
@@ -12,14 +12,12 @@ from anonapi.cli.create_commands import (
 from anonapi.mapper import MappingFolder
 from anonapi.parameters import (
     SourceIdentifierParameter,
-    FolderIdentifier,
     Description,
     SourceIdentifier,
     Parameter,
     PatientID,
     PIMSKey,
     RootSourcePath,
-    ParameterException,
     ParameterSet,
 )
 from anonapi.settings import JobDefaultParameters
@@ -86,7 +84,7 @@ def test_create_from_mapping_server_error(mock_from_mapping_runner, mock_request
 def test_create_from_mapping_server_error_halfway(
     mock_from_mapping_runner, mock_requests
 ):
-    """What if an error occurs halfway through? """
+    """What if an error occurs halfway through?"""
 
     mock_requests.set_responses(
         [
@@ -156,8 +154,7 @@ def test_create_from_mapping_relative_path(
 def test_create_from_mapping_dry_run(
     mock_from_mapping_runner, mock_requests_for_job_creation
 ):
-    """Test dry run mode. Should not hit anything important
-    """
+    """Test dry run mode. Should not hit anything important"""
 
     result = mock_from_mapping_runner.invoke(
         main, "from-mapping --dry-run", input="Y", catch_exceptions=False
@@ -222,27 +219,28 @@ def test_job_parameter_set_validate(all_parameters):
     # now without a root source root_path, it is not possible to know what the
     # relative root_path parameters are referring to. Exception.
     param_set.parameters.remove(param_set.get_param_by_type(RootSourcePath))
-    with pytest.raises(JobSetValidationError) as e:
+    with pytest.raises(JobSetValidationError):
         param_set.validate()
 
 
 def test_job_parameter_set_validate_non_unc_paths(all_parameters):
-    """Windows maps drive letters, makes then unaccessible to normal
-     python code and then forbids using anything BUT drive letters in windows cmd
-     A very annoying combination which makes it hard to determine what a path is
-     in windows. Just make sure no jobs can be created with drive letters any paths
-     """
+    """Windows maps drive letters, makes then inaccessible to normal
+    python code and then forbids using anything BUT drive letters in windows cmd
+    A very annoying combination which makes it hard to determine what a path is
+    in windows. Just make sure no jobs can be created with drive letters any paths
+    """
 
     param_set = JobParameterSet(all_parameters)
     root_source = param_set.get_param_by_type(RootSourcePath)
     root_source.value = PureWindowsPath(r"Z:\folder1")
-    with pytest.raises(JobSetValidationError) as e:
+    with pytest.raises(JobSetValidationError):
         param_set.validate()
 
 
 def test_job_parameter_set_defaults():
     """You can set defaults for a parameter set. These are only kept if not
-    overwritten """
+    overwritten
+    """
 
     param_set = JobParameterSet(
         [PatientID("1234"), PIMSKey("0000")],

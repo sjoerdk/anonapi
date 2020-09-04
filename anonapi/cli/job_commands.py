@@ -1,5 +1,4 @@
-"""Click group and commands for the 'job' subcommand
-"""
+"""Click group and commands for the 'job' subcommand"""
 import itertools
 
 import click
@@ -12,7 +11,7 @@ from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
 
 @click.group(name="job")
 def main():
-    """manage anonymization jobs"""
+    """Manage anonymization jobs"""
     pass
 
 
@@ -21,8 +20,7 @@ def main():
 @handle_anonapi_exceptions
 @click.argument("job_id", type=str)
 def info(parser: AnonAPIContext, job_id):
-    """print job info
-    """
+    """Print job info"""
     server = parser.get_active_server()
     job_info = parser.client_tool.get_job_info(server=server, job_id=job_id)
     click.echo(f"job {job_id} on {server.name}:")
@@ -33,8 +31,7 @@ def info(parser: AnonAPIContext, job_id):
 @handle_anonapi_exceptions
 @click.argument("job_ids", type=JobIDRangeParamType(), nargs=-1)
 def job_list(parser: AnonAPIContext, job_ids):
-    """list info for multiple jobs
-    """
+    """List info for multiple jobs"""
     if len(job_ids) == 0:  # handle empty nargs input gracefully
         click.echo("No job ids given")
         return
@@ -51,8 +48,7 @@ def job_list(parser: AnonAPIContext, job_ids):
 @pass_anonapi_context
 @click.argument("job_id", type=str)
 def reset(parser: AnonAPIContext, job_id):
-    """reset job, process again
-    """
+    """Reset job, process again"""
     server = parser.get_active_server()
     job_info = parser.client_tool.reset_job(server=server, job_id=job_id)
     click.echo(job_info)
@@ -63,12 +59,10 @@ def reset(parser: AnonAPIContext, job_id):
 @click.argument("job_id", type=str)
 @click.argument("reason", type=str)
 def set_opt_out_ignore(parser: AnonAPIContext, job_id, reason):
-    """Set opt-out ignore with given reason for job_id
-    """
+    """Set opt-out ignore with given reason for job_id"""
     job_info = parser.client_tool.set_opt_out_ignore(
-        server=parser.get_active_server(),
-        job_id=job_id,
-        reason=reason)
+        server=parser.get_active_server(), job_id=job_id, reason=reason
+    )
     click.echo(job_info)
 
 
@@ -76,7 +70,7 @@ def set_opt_out_ignore(parser: AnonAPIContext, job_id, reason):
 @pass_anonapi_context
 @click.argument("job_id", type=str)
 def cancel(parser: AnonAPIContext, job_id):
-    """set job status to inactive """
+    """Set job status to inactive"""
     server = parser.get_active_server()
     job_info = parser.client_tool.cancel_job(server=server, job_id=job_id)
     click.echo(job_info)

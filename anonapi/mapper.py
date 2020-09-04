@@ -16,7 +16,6 @@ from anonapi.parameters import (
     FileSelectionIdentifier,
     StudyInstanceUIDIdentifier,
     AccessionNumberIdentifier,
-    SourceIdentifierFactory,
     SourceIdentifierParameter,
     ParameterFactory,
     PatientName,
@@ -25,7 +24,7 @@ from anonapi.parameters import (
     ALL_PARAMETERS,
     ParameterParsingError,
 )
-from collections import UserDict, defaultdict
+from collections import defaultdict
 from io import StringIO
 from pathlib import Path
 from os import path
@@ -87,7 +86,7 @@ class Mapping:
 
     @classmethod
     def load(cls, f):
-        """ Load a mapping from a csv file stream """
+        """Load a mapping from a csv file stream"""
         # split content into three sections
 
         try:
@@ -202,9 +201,7 @@ class Mapping:
 
 
 class JobParameterGrid:
-    """A persistable 2D grid of job rows. Each row belongs to one job
-
-    """
+    """A persistable 2D grid of job rows. Each row belongs to one job"""
 
     def __init__(self, rows):
         """
@@ -290,7 +287,7 @@ class JobParameterGrid:
             rows.ALL_PARAMETERS
 
         """
-        types = set(type(param) for row in self.rows for param in row)
+        types = {type(param) for row in self.rows for param in row}
         return [x for x in ALL_PARAMETERS if x in types]
 
     def to_table_string(self):
@@ -439,8 +436,7 @@ class MappingFolder:
 
 class ExampleJobParameterGrid(JobParameterGrid):
     """A mapping list with some example content. Gives an overview of possible
-     identifiers
-
+    identifiers
     """
 
     def __init__(self):

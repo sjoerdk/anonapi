@@ -1,5 +1,5 @@
 """Anonymization web API client. Can interface with Anonymization server to retrieve,
- create, modify anonymization jobs
+create, modify anonymization jobs
 """
 
 import requests
@@ -154,7 +154,7 @@ class WebAPIClient:
         return args_in
 
     def get_documentation(self):
-        """ Query the API for info on all functions and rows.
+        """Query the API for info on all functions and rows.
 
         Returns
         -------
@@ -220,7 +220,7 @@ class WebAPIClient:
             return
 
         elif response.status_code == 401:
-            msg = "Server '{0}' returned 401 - Unauthorized, Your credentials do not seem to work".format(
+            msg = "Server '{}' returned 401 - Unauthorized, Your credentials do not seem to work".format(
                 self.hostname
             )
             raise APIClientAuthorizationFailedException(msg)
@@ -244,7 +244,7 @@ class WebAPIClient:
             raise APIClientException(msg)
 
         else:
-            msg = "Unexpected response from {0}: code '{1}', reason '{2}'".format(
+            msg = "Unexpected response from {}: code '{}', reason '{}'".format(
                 self, response.status_code, response.reason
             )
             raise APIClientException(msg)
@@ -284,8 +284,12 @@ class AnonClientTool:
         -------
         WebAPIClient
         """
-        client = WebAPIClient(hostname=url, username=self.username, token=self.token,
-                              validate_https=self.validate_https)
+        client = WebAPIClient(
+            hostname=url,
+            username=self.username,
+            token=self.token,
+            validate_https=self.validate_https,
+        )
         return client
 
     def get_server_status(self, server: RemoteAnonServer):
@@ -461,10 +465,12 @@ class AnonClientTool:
 
         client = self.get_client(server.url)
         try:
-            _ = client.post("modify_job",
-                            job_id=job_id,
-                            source_ignore_opt_out=True,
-                            source_ignore_opt_out_reason=f'Reason: {reason}')
+            _ = client.post(
+                "modify_job",
+                job_id=job_id,
+                source_ignore_opt_out=True,
+                source_ignore_opt_out_reason=f"Reason: {reason}",
+            )
             info = f"Set opt-out ignore ({reason}) for job {job_id} on {server}"
         except APIClientException as e:
             info = f"Error setting opt-out ignore on{server.name}:\n{str(e)}"
@@ -590,20 +596,21 @@ class AnonClientTool:
 
 
 class ClientInterfaceException(AnonAPIException):
-    """A general problem with client interface """
+    """A general problem with client interface"""
 
     pass
 
 
 class APIClientException(AnonAPIException):
-    """A general problem with the APIClient """
+    """A general problem with the APIClient"""
 
     pass
 
 
 class APIClient404Exception(AnonAPIException):
-    """object not found. Made this into a separate function to be able to ignore
-    it in special cases"""
+    """Object not found. Made this into a separate function to be able to ignore
+    it in special cases
+    """
 
     pass
 
@@ -614,7 +621,8 @@ class APIClientAuthorizationFailedException(APIClientException):
 
 class APIClientAPIException(APIClientException):
     """The API was called successfully, but there was a problem within the API
-     itself """
+    itself
+    """
 
     def __init__(self, msg, api_errors):
         """
@@ -629,7 +637,7 @@ class APIClientAPIException(APIClientException):
 
         """
 
-        super(APIClientAPIException, self).__init__(msg)
+        super().__init__(msg)
         self.api_errors = api_errors
 
 

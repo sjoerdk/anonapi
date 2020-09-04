@@ -1,12 +1,11 @@
-""" Models things that an API server can send back. Bridge between raw json and
+"""Models things that an API server can send back. Bridge between raw json and
 actual python objects
 
 It would be much nicer to use an existing library that does serialization of
 python models on the server side and the client side. But we're not using django yet.
-
 """
 
-from collections import UserList
+from collections import UserList, namedtuple
 from typing import Dict
 
 from tabulate import tabulate
@@ -15,8 +14,7 @@ from anonapi.exceptions import AnonAPIException
 
 
 class JobStatus:
-    """ Job status string the API server uses
-    """
+    """Job status string the API server uses"""
 
     ERROR = "ERROR"
     DONE = "DONE"
@@ -28,8 +26,7 @@ class JobStatus:
 
 
 class APIResponse:
-    """A response from the Anonymizationserver web API
-    """
+    """A response from the Anonymizationserver web API"""
 
     pass
 
@@ -155,12 +152,8 @@ class JobInfo:
         return "\n".join([str(x) for x in to_print.items()])
 
 
-class TableColumn:
-    """A single column in a command_table"""
-
-    def __init__(self, header, parameter_name):
-        self.header = header
-        self.parameter_name = parameter_name
+# A single column in a command_table
+TableColumn = namedtuple("TableColumn", ["header", "parameter_name"])
 
 
 class JobInfoColumns:

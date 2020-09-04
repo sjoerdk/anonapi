@@ -34,14 +34,15 @@ def test_settings_folder(tmp_path):
 
 @pytest.fixture
 def test_settings_file(test_settings_folder):
-    """Copy of a correctly formatted settings file """
+    """Copy of a correctly formatted settings file"""
     return test_settings_folder / "settings.yml"
 
 
 @pytest.fixture
 def test_settings_file_old(test_settings_folder):
     """Copy of a correctly formatted settings file before adding job_default_
-    rows parameter"""
+    rows parameter
+    """
     return test_settings_folder / "settings_old.yml"
 
 
@@ -56,8 +57,7 @@ def test_settings_load(test_settings_file):
 
 
 def test_settings_save(test_settings_file):
-    """Load settings, change, save and see whether they have been saved
-    """
+    """Load settings, change, save and see whether they have been saved"""
     settings = AnonClientSettingsFromFile(test_settings_file)
 
     assert settings.user_name == "kees"
@@ -71,8 +71,7 @@ def test_settings_save(test_settings_file):
 
 
 def test_settings_save_with_none_active(test_settings_file):
-    """ fixing a bug found live: saving when active server = none
-    """
+    """Fixing a bug found live: saving when active server = none"""
     settings = AnonClientSettingsFromFile(test_settings_file)
 
     # It is possible that there is no active server. You should still be able to save
@@ -85,7 +84,7 @@ def test_settings_save_with_none_active(test_settings_file):
 
 
 def test_settings_load_error(test_settings_folder):
-    """ Poor mans YAML validation should at least raise some informative exception
+    """Poor man's YAML validation should at least raise some informative exception
     when a key is missing from settings
     """
     settings_file_wrong = test_settings_folder / "settings_wrong.yml"
@@ -94,8 +93,7 @@ def test_settings_load_error(test_settings_folder):
 
 
 def test_settings_load_error2(test_settings_folder):
-    """ Some more easy errors to make when manually editing settings file
-    """
+    """Some more easy errors to make when manually editing settings file"""
     settings_file_wrong = test_settings_folder / "settings_wrong_2.yml"
     with pytest.raises(AnonClientSettingsException):
         AnonClientSettingsFromFile(settings_file_wrong)
@@ -110,7 +108,8 @@ def test_anon_client_settings_init_with_no_servers():
 def test_settings_load_old(test_settings_file_old):
     """A parameter was added to settings. You should still be able to load older
     settings files that do not contain this settings. A default version of the new
-    setting should be added silently"""
+    setting should be added silently
+    """
     settings = AnonClientSettingsFromFile(test_settings_file_old)
 
     assert settings.user_name == "kees"
@@ -122,5 +121,4 @@ def test_settings_load_old(test_settings_file_old):
 
 
 def test_settings_edit(mock_main_runner, test_settings_file):
-    result = mock_main_runner.invoke(entrypoint.cli, ["settings", "edit"])
-    test = 1
+    mock_main_runner.invoke(entrypoint.cli, ["settings", "edit"])

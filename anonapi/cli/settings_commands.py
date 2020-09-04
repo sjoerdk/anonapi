@@ -1,6 +1,4 @@
-"""User sub commands
-
-"""
+"""User sub commands"""
 
 
 import click
@@ -12,7 +10,8 @@ from anonapi.decorators import pass_anonapi_context
 
 @click.group(name="settings")
 def main():
-    """manage local settings"""
+    """Manage local settings"""
+    pass
 
 
 @click.command()
@@ -22,7 +21,7 @@ def set_validate_ssl(parser: AnonAPIContext, value: bool):
     """If False, ignore all ssl certificate errors"""
     parser.settings.validate_ssl = value
     parser.settings.save()
-    click.echo(f'Set validate ssl to {value}')
+    click.echo(f"Set validate ssl to {value}")
 
 
 @click.command()

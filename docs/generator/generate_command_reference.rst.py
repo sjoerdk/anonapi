@@ -136,11 +136,7 @@ class SphinxItemDefinition:
         return "\n\n".join([f"{key}\n\t{value}" for key, value in self.items.items()])
 
 
-class ClickCommandInfo:
-
-    def __init__(self, name: str, help: str):
-        self.name = name
-        self.help = help
+ClickCommandInfo = namedtuple("ClickCommandInfo", ["name", "help"])
 
 
 class ClickCommandOrGroupNode(UserDict):
@@ -149,11 +145,15 @@ class ClickCommandOrGroupNode(UserDict):
     Can have child nodes accessed like dict keys for easy referencing in jinja:
 
     So  {{ foo.command_table }}  prints command_table foo
-    And {{ foo.baz.command_table }}  prints subtable for command 'baz' """
+    And {{ foo.baz.command_table }}  prints subtable for command 'baz'
+    """
 
-    def __init__(self, command_table: SphinxTable = None,
-                 options: SphinxItemDefinition = None,
-                 command: ClickCommandInfo = None):
+    def __init__(
+        self,
+        command_table: SphinxTable = None,
+        options: SphinxItemDefinition = None,
+        command: ClickCommandInfo = None,
+    ):
         """
 
         Parameters
@@ -170,7 +170,7 @@ class ClickCommandOrGroupNode(UserDict):
 
         options
         """
-        super(ClickCommandOrGroupNode, self).__init__()
+        super().__init__()
         if not command_table:
             command_table = SphinxTable(rows={}, max_width=80)
         self.command_table = command_table
@@ -205,7 +205,7 @@ class ClickCommandJinjaContext:
         self.click_root = root
 
     def populate_nodes(self, root: click.core.Group):
-        """Create a command and group overview recursively """
+        """Create a command and group overview recursively"""
 
         # list all commands/ groups and help for them
         node = ClickCommandOrGroupNode(
@@ -217,24 +217,28 @@ class ClickCommandJinjaContext:
 
         # now try to go recursive. If there were groups, make tables for those too
         for command_or_group in root.commands.values():
-            if hasattr(command_or_group, 'commands'):
+            if hasattr(command_or_group, "commands"):
                 # this is a group. recurse into it
                 node[command_or_group.name] = self.populate_nodes(command_or_group)
             else:
                 # this is a command. Add info for that
                 command_node = ClickCommandOrGroupNode()
-                command_node.command = ClickCommandInfo(name=command_or_group.name,
-                                                        help=command_or_group.help)
+                command_node.command = ClickCommandInfo(
+                    name=command_or_group.name, help=command_or_group.help
+                )
                 # get option info. Like "f, --foo / --no-foo: run command with foo"
 
                 options = {}
                 # add all switches like --no-print, but not regular arguments
-                candidates = [x for x in command_or_group.params if
-                              isinstance(x, click.Option)]
+                candidates = [
+                    x for x in command_or_group.params if isinstance(x, click.Option)
+                ]
                 for option in candidates:
-                    key_elements = [", ".join(option.opts),
-                                    ", ".join(option.secondary_opts)]
-                    key_elements = [x for x in key_elements if x] # remove empty
+                    key_elements = [
+                        ", ".join(option.opts),
+                        ", ".join(option.secondary_opts),
+                    ]
+                    key_elements = [x for x in key_elements if x]  # remove empty
                     key = "/ ".join(key_elements)
                     try:
                         value = option.help
@@ -243,7 +247,7 @@ class ClickCommandJinjaContext:
 
                     options[key] = value
                 command_node.options = SphinxItemDefinition(options)
-                node[command_or_group.name.replace("-", '_')] = command_node
+                node[command_or_group.name.replace("-", "_")] = command_node
 
         return node
 

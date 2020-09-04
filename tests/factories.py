@@ -1,4 +1,4 @@
-""" Shared classes used in other tests. For generating test data """
+"""Shared classes used in other tests. For generating test data"""
 import itertools
 from itertools import cycle
 from pathlib import PureWindowsPath
@@ -124,9 +124,8 @@ class SourceIdentifierParameterFactory(factory.Factory):
 
 
 class RequestsMock:
-    """ Can be put in place of the requests module. Does not hit any server but
+    """Can be put in place of the requests module. Does not hit any server but
     returns kind of realistic arbitrary responses
-
     """
 
     def __init__(self):
@@ -179,8 +178,7 @@ class RequestsMock:
         self.requests.post.side_effect = cycle(objects)
 
     def set_response_exception(self, exception):
-        """Any call to get() or post() will yield the given exception instance
-        """
+        """Any call to get() or post() will yield the given exception instance"""
         self.requests.get.side_effect = exception
         self.requests.post.side_effect = exception
 
@@ -196,5 +194,3 @@ class RequestsMock:
     def called(self):
         """True if either get() or post() was called"""
         return self.requests.get.called or self.requests.post.called
-
-

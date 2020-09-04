@@ -1,5 +1,4 @@
-"""Click group and commands for the 'batch' subcommand
-"""
+"""Click group and commands for the 'batch' subcommand"""
 import itertools
 from typing import List
 
@@ -20,7 +19,7 @@ from collections import Counter
 
 @click.group(name="batch")
 def main():
-    """manage anonymization job batches"""
+    """Manage anonymization job batches"""
     pass
 
 
@@ -52,7 +51,7 @@ def info(parser: AnonAPIContext):
 @click.command()
 @pass_anonapi_context
 def delete(parser: AnonAPIContext):
-    """delete batch in current folder"""
+    """Delete batch in current folder"""
     parser.get_batch_folder().delete_batch()
     click.echo(f"Removed batch in current dir")
 
@@ -61,8 +60,7 @@ def delete(parser: AnonAPIContext):
 @pass_anonapi_context
 @click.argument("job_ids", type=JobIDRangeParamType(), nargs=-1)
 def add(parser: AnonAPIContext, job_ids):
-    """Add ids to current batch. Space-separated (1 2 3) or range (1-40)
-    """
+    """Add ids to current batch. Space-separated (1 2 3) or range (1-40)"""
     job_ids = [x for x in itertools.chain(*job_ids)]  # make into one list
     batch_folder = parser.get_batch_folder()
     batch: JobBatch = batch_folder.load()
@@ -75,8 +73,7 @@ def add(parser: AnonAPIContext, job_ids):
 @pass_anonapi_context
 @click.argument("job_ids", type=JobIDRangeParamType(), nargs=-1)
 def remove(parser: AnonAPIContext, job_ids):
-    """Remove ids from current batch. Space-separated (1 2 3) or range (1-40)
-    """
+    """Remove ids from current batch. Space-separated (1 2 3) or range (1-40)"""
     job_ids = [x for x in itertools.chain(*job_ids)]  # make into one list
     batch_folder = parser.get_batch_folder()
     batch: JobBatch = batch_folder.load()

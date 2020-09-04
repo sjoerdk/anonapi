@@ -1,5 +1,5 @@
-"""Work with batches of jobs. Batches are modeled on git repos; state is maintained via hidden file in current folder.
-
+"""Work with batches of jobs. Batches are modeled on git repos; state is maintained
+via hidden file in current folder.
 """
 import os
 from pathlib import Path
@@ -17,7 +17,7 @@ class YamlSavable:
         -------
         Dict
         """
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def save(self, f):
         """
@@ -42,10 +42,10 @@ class YamlSavable:
         Instance of this class
 
         """
-        raise NotImplemented()
+        raise NotImplementedError()
 
     @classmethod
-    def load(cls, f):
+    def load(cls, f) -> "YamlSavable":
         """Load an instance of this class
 
         Parameters
@@ -54,6 +54,7 @@ class YamlSavable:
 
         Returns
         -------
+        YamlSavable
 
         """
         flat_dict = yaml.safe_load(f)
@@ -61,9 +62,7 @@ class YamlSavable:
 
 
 class JobBatch(YamlSavable):
-    """A collection of anonymisation jobs
-
-    """
+    """A collection of anonymisation jobs"""
 
     def __init__(self, job_ids, server):
         """
@@ -89,7 +88,7 @@ class JobBatch(YamlSavable):
         return {"server": self.server.to_dict(), "job_ids": self.job_ids}
 
     def to_string(self):
-        """This batch as string
+        """Batch as string
 
         Returns
         -------
@@ -107,9 +106,7 @@ class JobBatch(YamlSavable):
 
 
 class BatchFolder:
-    """A folder in which a batch might be defined
-
-    """
+    """A folder in which a batch might be defined"""
 
     BATCH_FILE_NAME = ".anonbatch"
 

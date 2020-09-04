@@ -1,6 +1,5 @@
 class RequestMockResponse:
-    """A description of a http server response
-    """
+    """A description of a http server response"""
 
     def __init__(self, text, response_code):
         """
@@ -144,5 +143,3 @@ class RequestsMockResponseExamples:
     REQUIRED_PARAMETER_NOT_SUPPLIED = (
         r'{"errors": {"job_id": "Required parameter job_id not supplied"}}'
     )
-
-

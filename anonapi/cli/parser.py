@@ -1,5 +1,6 @@
 """Command line utility object that gets passed around by click functions to
-have shared settings etc."""
+have shared settings etc.
+"""
 
 import click
 

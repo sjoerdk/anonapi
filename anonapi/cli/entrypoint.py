@@ -1,13 +1,10 @@
-"""Entrypoint for calling CLI with click.
-
-"""
+"""Entrypoint for calling CLI with click."""
 import os
 import pathlib
 
 import click
 
 from anonapi.cli import (
-    user_commands,
     parser,
     job_commands,
     batch_commands,
@@ -37,8 +34,11 @@ def get_context():
         )
         DefaultAnonClientSettings().save_to_file(settings_file)
     settings = AnonClientSettingsFromFile(settings_file)
-    tool = AnonClientTool(username=settings.user_name, token=settings.user_token,
-                          validate_https=settings.validate_ssl)
+    tool = AnonClientTool(
+        username=settings.user_name,
+        token=settings.user_token,
+        validate_https=settings.validate_ssl,
+    )
     parser = AnonAPIContext(
         client_tool=tool, settings=settings, current_dir=os.getcwd()
     )
@@ -48,7 +48,7 @@ def get_context():
 @click.group()
 @click.pass_context
 def cli(ctx):
-    """\b
+    r"""\b
     anonymization web API tool
     Controls remote anonymization servers
     Use the commands below with -h for more info

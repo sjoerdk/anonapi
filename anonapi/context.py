@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from anonapi.batch import BatchFolder
@@ -37,7 +36,7 @@ class AnonAPIContext:
         self.current_dir = current_dir
 
     def create_server_list(self):
-        """ A concise, printable overview of servers
+        """A concise, printable overview of servers
 
         Returns
         -------
@@ -76,7 +75,7 @@ class AnonAPIContext:
         return server_list[short_name]
 
     def get_active_server(self):
-        """ Active server can be None, hence the check and exception
+        """Active server can be None, hence the check and exception
 
         Returns
         -------
@@ -100,7 +99,8 @@ class AnonAPIContext:
 
     def current_dir(self):
         """Return full root_path to the folder this command line mock_context is
-        called from"""
+        called from
+        """
         return self.current_dir
 
     def get_batch(self):

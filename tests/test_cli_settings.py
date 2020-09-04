@@ -15,7 +15,7 @@ def mock_selection_folder(tmpdir):
 
 @pytest.fixture()
 def initialised_selection_folder(mock_selection_folder):
-    """Will seed the default 'current' folder with a selection """
+    """Will seed the default 'current' folder with a selection"""
     rootpath = mock_selection_folder.path
     selection = FileSelectionFile(
         data_file_path=mock_selection_folder.get_data_file_path(),
@@ -71,19 +71,15 @@ def test_select_add_append(mock_main_runner, folder_with_some_dicom_files):
 
     # start with emtpy selection and add a file
     assert not selection_folder.has_file_selection()
-    result = mock_main_runner.invoke(
-        main, args=["add", "*.txt"], catch_exceptions=False
-    )
+    mock_main_runner.invoke(main, args=["add", "*.txt"], catch_exceptions=False)
     assert len(selection_folder.load_file_selection().selected_paths) == 1
 
     # now add the same file again
-    result = mock_main_runner.invoke(
-        main, args=["add", "*.txt"], catch_exceptions=False
-    )
+    mock_main_runner.invoke(main, args=["add", "*.txt"], catch_exceptions=False)
     # this should not have added any new file because it was already there
     assert len(selection_folder.load_file_selection().selected_paths) == 1
     # now add more
-    result = mock_main_runner.invoke(main, args=["add", "1"], catch_exceptions=False)
+    mock_main_runner.invoke(main, args=["add", "1"], catch_exceptions=False)
     assert len(selection_folder.load_file_selection().selected_paths) == 3
 
 

@@ -1,7 +1,8 @@
-"""Conftest.py is loaded for each pytest. Contains fixtures shared by multiple tests, amongs other things """
+"""Conftest.py is loaded for each pytest. Contains fixtures shared by multiple
+tests, amongs other things
+"""
 import shutil
 from pathlib import Path
-from unittest.mock import Mock
 
 from _pytest.fixtures import fixture
 from click.testing import CliRunner
@@ -9,7 +10,6 @@ from fileselection.fileselection import FileSelectionFolder
 
 from anonapi.context import AnonAPIContext
 from anonapi.client import WebAPIClient, AnonClientTool
-from anonapi.mapper import MappingFolder, ExampleJobParameterGrid
 from anonapi.objects import RemoteAnonServer
 from anonapi.settings import DefaultAnonClientSettings
 from tests.factories import (
@@ -83,7 +83,8 @@ def mock_cli_with_mapping(anonapi_mock_cli, a_folder_with_mapping):
 @fixture
 def a_folder_with_mapping_diverse(tmpdir):
     """In addition to a_folder_with_mapping, contains also pacskey identifiers.
-     (Added these later)"""
+    (Added these later)
+    """
     shutil.copyfile(
         RESOURCE_PATH / "test_cli" / "anon_mapping_diverse.csv",
         Path(tmpdir) / "anon_mapping.csv",
@@ -94,7 +95,8 @@ def a_folder_with_mapping_diverse(tmpdir):
 @fixture
 def folder_with_some_dicom_files(tmpdir):
     """A folder with some structure, some dicom files and some non-dicom files.
-    No FileSelectionFile saved yet"""
+    No FileSelectionFile saved yet
+    """
     a_folder = tmpdir / "a_folder"
     shutil.copytree(RESOURCE_PATH / "test_cli" / "test_dir", a_folder)
     return FileSelectionFolder(path=a_folder)
@@ -110,14 +112,15 @@ def folder_with_mapping_and_some_dicom_files(tmpdir):
 
 @fixture
 def a_file_selection(tmpdir):
-    """A file with a valid file selection """
+    """A file with a valid file selection"""
     return RESOURCE_PATH / "test_cli" / "selection" / "fileselection.txt"
 
 
 @fixture
 def mock_api_context(tmpdir):
     """Context required by many anonapi commands. Will yield a temp folder as
-    current_dir"""
+    current_dir
+    """
     settings = DefaultAnonClientSettings()
     settings.servers.append(RemoteAnonServer("testserver2", "https://hostname_of_api2"))
     context = AnonAPIContext(
@@ -138,8 +141,9 @@ def mock_cli_base_context(monkeypatch, mock_api_context):
 
 @fixture
 def mock_main_runner(mock_api_context, mock_cli_base_context):
-    """a click.testing.CliRunner that always passes a mocked context to any call,
-    making sure any operations on current dir are done in a temp folder"""
+    """A click.testing.CliRunner that always passes a mocked context to any call,
+    making sure any operations on current dir are done in a temp folder
+    """
     runner = AnonAPIContextRunner(mock_context=mock_api_context)
     return runner
 
@@ -170,7 +174,8 @@ def mock_main_runner_with_mapping(mock_main_runner, a_folder_with_mapping):
 def mock_from_mapping_runner(mock_main_runner_with_mapping):
     """Mock runner that has everything to make a call to from-mapping work:
     * Mapping defined in current dir
-    * Default job rows are non-empty"""
+    * Default job rows are non-empty
+    """
 
     parameters = (
         mock_main_runner_with_mapping.get_context().settings.job_default_parameters
@@ -183,7 +188,8 @@ def mock_from_mapping_runner(mock_main_runner_with_mapping):
 
 class MockContextCliRunner(CliRunner):
     """a click.testing.CliRunner that always passes a mocked context to any call,
-    making sure any operations on current dir are done in a temp folder"""
+    making sure any operations on current dir are done in a temp folder
+    """
 
     def __init__(self, *args, mock_context, **kwargs):
 
@@ -201,18 +207,13 @@ class MockContextCliRunner(CliRunner):
         **extra
     ):
         return super().invoke(
-            cli,
-            args,
-            input,
-            env,
-            catch_exceptions,
-            color,
-            obj=self.mock_context,
+            cli, args, input, env, catch_exceptions, color, obj=self.mock_context,
         )
 
 
 class AnonAPIContextRunner(MockContextCliRunner):
-    """A click runner that always injects a AnonAPIContext instance into the context
+    """A click runner that always injects a AnonAPIContext instance into the
+    context
     """
 
     def __init__(self, *args, mock_context, **kwargs):

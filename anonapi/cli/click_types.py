@@ -1,6 +1,4 @@
-"""
-Custom click parameter types
-"""
+"""Custom click parameter types"""
 import re
 
 from click.types import ParamType
@@ -64,9 +62,7 @@ class AnonServerKeyParamType(ParamType):
 
 
 class FileSelectionFileParam(ParamType):
-    """A FileSelectionFile object
-
-    """
+    """A FileSelectionFile object"""
 
     name = "file_selection_file"
 

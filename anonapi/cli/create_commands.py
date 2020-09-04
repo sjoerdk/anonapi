@@ -1,5 +1,4 @@
-"""Click group and commands for the 'create' subcommand
-"""
+"""Click group and commands for the 'create' subcommand"""
 from typing import List, Optional
 
 import click
@@ -9,13 +8,21 @@ from anonapi.context import AnonAPIContext
 from anonapi.client import APIClientException
 from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
 from anonapi.exceptions import AnonAPIException
-from anonapi.mapper import MappingFolder, MapperException
-from anonapi.parameters import (SourceIdentifier, StudyInstanceUIDIdentifier,
-                                Parameter, DestinationPath, PatientID, PatientName,
-                                Project, Description, SourceIdentifierParameter,
-                                PIMSKey, ParameterSet, RootSourcePath, is_unc_path,
-                                get_legacy_idis_value)
-from anonapi.responses import JobInfo
+from anonapi.mapper import Mapping, MappingFolder
+from anonapi.parameters import (
+    Parameter,
+    DestinationPath,
+    PatientID,
+    PatientName,
+    Project,
+    Description,
+    SourceIdentifierParameter,
+    PIMSKey,
+    ParameterSet,
+    RootSourcePath,
+    is_unc_path,
+    get_legacy_idis_value,
+)
 from anonapi.settings import JobDefaultParameters, AnonClientSettingsException
 from click.exceptions import Abort, ClickException
 
@@ -82,8 +89,9 @@ class JobParameterSet(ParameterSet):
                 continue
             elif self.is_source_identifier(parameter):
                 if self.is_pacs_type(parameter):
-                    dict_out["source_instance_id"] = \
-                        get_legacy_idis_value(parameter.value)
+                    dict_out["source_instance_id"] = get_legacy_idis_value(
+                        parameter.value
+                    )
                 elif self.is_path_type(parameter):
                     dict_out["source_path"] = str(parameter.value)
                 else:
@@ -173,15 +181,14 @@ class CreateCommandsContext(AnonAPIContext):
     """
 
     def __init__(self, context: AnonAPIContext):
-        super(CreateCommandsContext, self).__init__(
+        super().__init__(
             client_tool=context.client_tool,
             settings=context.settings,
             current_dir=context.current_dir,
         )
 
     def default_parameters(self) -> List[Parameter]:
-        """Default parameters from settings
-        """
+        """Default parameters from settings"""
         defaults: JobDefaultParameters = self.settings.job_default_parameters
         return [
             DestinationPath(defaults.destination_path),
@@ -263,8 +270,16 @@ pass_create_commands_context = click.make_pass_decorator(CreateCommandsContext)
 @click.pass_context
 @pass_anonapi_context
 def main(context: AnonAPIContext, ctx):
-    """create jobs"""
+    """Create jobs"""
     ctx.obj = CreateCommandsContext(context=context)
+
+
+def mock_create(*args, **kwargs):
+    """Job creation method that does not hit any server, just prints to console"""
+    click.echo("create was called with rows:")
+    click.echo("\n".join(args))
+    click.echo("\n".join(map(str, kwargs.items())))
+    return JobInfoFactory(job_id=-1)  # a mocked response
 
 
 @click.command()
@@ -276,8 +291,80 @@ def from_mapping(context: CreateCommandsContext, dry_run):
     """Create jobs from mapping in current folder"""
     if dry_run:
         click.echo("** Dry run, nothing will be sent to server **")
-    mapping = context.get_mapping()
 
+        # Make sure no jobs are actually created
+        context.client_tool.create_path_job = mock_create
+        context.client_tool.create_pacs_job = mock_create
+
+    job_sets = extract_job_sets(context, context.get_mapping())
+
+    # inspect project name and destination to present the next question to the user
+    project_names = set()
+    destination_paths = set()
+    for job_set in job_sets:
+        project_names.add(job_set.get_param_by_type(Project).value)
+        destination_paths.add(job_set.get_param_by_type(DestinationPath).value)
+
+    question = (
+        f"This will create {len(job_sets)} jobs on {context.get_active_server().name},"
+        f" for projects '{list(project_names)}', writing data to "
+        f"'{[str(x) for x in destination_paths]}'. Are you sure?"
+    )
+    if not click.confirm(question):
+        click.echo("Cancelled")
+        return
+
+    created_job_ids = create_jobs(context, job_sets)
+
+    if created_job_ids:
+        context.add_to_batch(created_job_ids)
+
+    click.echo("Done")
+
+
+def create_jobs(
+    context: CreateCommandsContext, job_sets: List[JobParameterSet]
+) -> List[str]:
+    """Create an anonymization job for each parameter set
+
+    Notes
+    -----
+    Will stop creating when hitting problems like not being able to reach the server
+    In that case results are returned for any created jobs up to the exception
+
+    Returns
+    -------
+    List[str]
+        Job ids for each created job
+    """
+    created_job_ids = []
+    for job_set in job_sets:
+        try:
+            job_id = context.create_job_for_element(job_set.parameters)
+            click.echo(f"Created job with id {job_id}")
+            created_job_ids.append(job_id)
+        except JobCreationException as e:
+            click.echo(str(e))
+            click.echo(
+                "Error will probably keep occurring. Stopping further job creation."
+            )
+            break
+    click.echo(f"created {len(created_job_ids)} jobs: {created_job_ids}")
+    return created_job_ids
+
+
+def extract_job_sets(context, mapping: Mapping) -> List[JobParameterSet]:
+    """Extract sets of parameters each creating one job
+
+    Raises
+    ------
+    JobSetValidationError
+        When mapping contains sets that can not be made into a job
+
+    Returns
+    -------
+    List[JobParameterSet]
+    """
     # add defaults to each row
     job_sets = [
         JobParameterSet(row, default_parameters=context.default_parameters())
@@ -289,52 +376,7 @@ def from_mapping(context: CreateCommandsContext, dry_run):
             job_set.validate()
         except JobSetValidationError as e:
             raise ClickException(f"Error validating parameters: {e}")
-
-    # inspect project name and destination to present the next question to the user
-    project_names = set()
-    destination_paths = set()
-    for job_set in job_sets:
-        project_names.add(job_set.get_param_by_type(Project).value)
-        destination_paths.add(job_set.get_param_by_type(DestinationPath).value)
-
-    question = (
-        f"This will create {len(mapping)} jobs on {context.get_active_server().name},"
-        f" for projects '{list(project_names)}', writing data to "
-        f"'{[str(x) for x in destination_paths]}'. Are you sure?"
-    )
-    if not click.confirm(question):
-        click.echo("Cancelled")
-        return
-
-    created_job_ids = []
-    for job_set in job_sets:
-        if dry_run:
-
-            def mock_create(*args, **kwargs):
-                click.echo("create was called with rows:")
-                click.echo("\n".join(args))
-                click.echo("\n".join(map(str, kwargs.items())))
-                return JobInfoFactory(job_id=-1)  # a mocked response
-
-            context.client_tool.create_path_job = mock_create
-            context.client_tool.create_pacs_job = mock_create
-        try:
-            job_id = context.create_job_for_element(job_set.parameters)
-            click.echo(f"Created job with id {job_id}")
-            created_job_ids.append(job_id)
-        except JobCreationException as e:
-            click.echo(str(e))
-            click.echo(
-                "Error will probably keep occurring. Stopping further job creation."
-            )
-            break
-
-    click.echo(f"created {len(created_job_ids)} jobs: {created_job_ids}")
-
-    if created_job_ids:
-        context.add_to_batch(created_job_ids)
-
-    click.echo("Done")
+    return job_sets
 
 
 @click.command()
@@ -370,7 +412,7 @@ def set_defaults(context: CreateCommandsContext):
 @click.command()
 @pass_create_commands_context
 def show_defaults(context: CreateCommandsContext):
-    """show project name used when creating jobs"""
+    """Show project name used when creating jobs"""
 
     job_default_parameters: JobDefaultParameters = context.settings.job_default_parameters
     click.echo(f"default IDIS project name: {job_default_parameters.project_name}")

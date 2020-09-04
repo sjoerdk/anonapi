@@ -1,5 +1,4 @@
-"""Click group and commands for the 'map' subcommand
-"""
+"""Click group and commands for the 'map' subcommand"""
 from pathlib import Path
 from typing import List, Optional
 
@@ -68,7 +67,7 @@ pass_map_command_context = click.make_pass_decorator(MapCommandContext)
 @click.pass_context
 @pass_anonapi_context
 def main(context: AnonAPIContext, ctx):
-    """map original data to anonymized name, id, etc."""
+    """Map original data to anonymized name, id, etc."""
 
     # both anonapi_context and base click ctx are passed to be able change ctx.obj
     ctx.obj = MapCommandContext(
@@ -88,7 +87,8 @@ def status(context: MapCommandContext):
 
 def get_initial_options(settings: AnonClientSettings) -> List[Parameter]:
     """Do the awkward determination of what initially to write in the options
-    section of a new mapping """
+    section of a new mapping
+    """
     defaults = settings.job_default_parameters
 
     default_project = "Wetenschap-Algemeen"
@@ -124,7 +124,7 @@ def init(context: MapCommandContext):
 @click.command()
 @pass_map_command_context
 def delete(context: MapCommandContext):
-    """delete mapping in current folder"""
+    """Delete mapping in current folder"""
     folder = context.get_current_mapping_folder()
     if not folder.has_mapping():
         raise ClickException("No mapping defined in current folder")
@@ -148,8 +148,7 @@ def get_mapping(context):
     "On by default",
 )
 def add_study_folder(context: MapCommandContext, path, check_dicom):
-    """Add all dicom files in given folder to map
-    """
+    """Add all dicom files in given folder to map"""
 
     mapping = add_path_to_mapping_click(
         Path(path),
@@ -167,6 +166,7 @@ def add_path_to_mapping_click(
     """Create a fileselection in the given path and add it to the given mapping
 
     Meant to be called from a click function. Contains calls to click.echo().
+
     Parameters
     ----------
     path: Path
@@ -226,8 +226,7 @@ def add_path_to_mapping_click(
     "On by default",
 )
 def add_all_study_folders(context: MapCommandContext, pattern, check_dicom):
-    """Add all folders matching pattern to mapping
-    """
+    """Add all folders matching pattern to mapping"""
     # Examples: **/* */1 */*/*2
     found = [
         x.relative_to(context.current_path)
@@ -260,8 +259,7 @@ def add_all_study_folders(context: MapCommandContext, pattern, check_dicom):
 @pass_map_command_context
 @click.argument("selection", type=FileSelectionFileParam())
 def add_selection(context: MapCommandContext, selection):
-    """Add selection file to mapping
-    """
+    """Add selection file to mapping"""
     mapping = get_mapping(context)
     identifier = SourceIdentifierFactory().get_source_identifier_for_obj(selection)
     # make identifier root_path relative to mapping
@@ -298,8 +296,7 @@ def add_selection(context: MapCommandContext, selection):
 @click.command()
 @pass_map_command_context
 def edit(context: MapCommandContext):
-    """Edit the current mapping in OS default editor
-    """
+    """Edit the current mapping in OS default editor"""
     mapping_folder = context.get_current_mapping_folder()
     if mapping_folder.has_mapping():
         click.launch(str(mapping_folder.full_path()))

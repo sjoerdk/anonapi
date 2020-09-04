@@ -23,5 +23,4 @@ def test_mock_anon_client_tool():
     ]
 
     # job id returned will always match whatever was requested
-    assert [x.job_id for x in tool.get_job_info_list(
-        server, [1, 4, 6])] == [1, 4, 6]
+    assert [x.job_id for x in tool.get_job_info_list(server, [1, 4, 6])] == [1, 4, 6]

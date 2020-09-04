@@ -27,8 +27,7 @@ def mock_main_runner_with_mapping(mock_main_runner, a_folder_with_mapping):
 
 @fixture
 def map_command_runner_mapping_dir(a_folder_with_mapping):
-    """A click CLIRunner that MapCommandContext pointing to a dir with some mapping
-    """
+    """A click CLIRunner that MapCommandContext pointing to a dir with some mapping"""
     return MockContextCliRunner(
         mock_context=MapCommandContext(
             current_path=a_folder_with_mapping, settings=DefaultAnonClientSettings()
@@ -58,7 +57,7 @@ def test_cli_map_add_selection(
 def test_cli_map(mock_main_runner, mock_cli_base_context, tmpdir):
     result = mock_main_runner.invoke(entrypoint.cli, "map init", catch_exceptions=False)
     with open(Path(tmpdir) / "anon_mapping.csv", "r") as f:
-        content = f.read()
+        f.read()
 
     assert result.exit_code == 0
 
@@ -77,7 +76,7 @@ def test_cli_map_init(mock_main_runner, mock_cli_base_context, tmpdir):
 
 
 def test_cli_map_info(mock_main_runner_with_mapping):
-    """running map info should give you a nice print of contents"""
+    """Running map info should give you a nice print of contents"""
     context = mock_main_runner_with_mapping.get_context()
     context.current_dir = RESOURCE_PATH / "test_cli"
 
@@ -89,8 +88,9 @@ def test_cli_map_info(mock_main_runner_with_mapping):
 
 
 def test_cli_map_info_empty_dir(mock_main_runner):
-    """running info on a directory not containing a mapping file should yield a
-    nice 'no mapping' message"""
+    """Running info on a directory not containing a mapping file should yield a
+    nice 'no mapping' message
+    """
     runner = mock_main_runner
     result = runner.invoke(entrypoint.cli, "map status")
 
@@ -99,7 +99,7 @@ def test_cli_map_info_empty_dir(mock_main_runner):
 
 
 def test_cli_map_info_load_exception(mock_main_runner, monkeypatch):
-    """running info with a corrupt mapping file should yield a nice message"""
+    """Running info with a corrupt mapping file should yield a nice message"""
     # make sure a valid mapping file is found
     context = mock_main_runner.get_context()
     context.current_dir = str(RESOURCE_PATH / "test_cli")
@@ -163,7 +163,9 @@ def test_cli_map_add_folder_no_check(mock_main_runner, folder_with_some_dicom_fi
 
     mock_main_runner.invoke(entrypoint.cli, f"map init")
     mapping_folder = MappingFolder(mock_main_runner.mock_context.current_dir)
-    assert len(mapping_folder.load_mapping().grid) == 4  # by default there are 4 example rows in mapping
+    assert (
+        len(mapping_folder.load_mapping().grid) == 4
+    )  # by default there are 4 example rows in mapping
 
     # dicom files should not have been selected yet currently
     assert not selection_folder.has_file_selection()
@@ -173,13 +175,14 @@ def test_cli_map_add_folder_no_check(mock_main_runner, folder_with_some_dicom_fi
     # but should be now
     assert result.exit_code == 0
     assert selection_folder.has_file_selection()
-    assert '--no-check-dicom was set' in result.output
+    assert "--no-check-dicom was set" in result.output
 
 
 @fixture
 def add_path_to_mapping_click_recorder(monkeypatch):
     """Add a decorator around the function that adds paths to mapping. Function
-    will still works as normal, but calls are recorded"""
+    will still works as normal, but calls are recorded
+    """
 
     recorder = Mock()
 
@@ -225,28 +228,33 @@ def test_cli_map_add_all_study_folders(
     assert add_path_to_mapping_click_recorder.call_count == 2
 
 
-def test_cli_map_add_all_study_folders_no_scan(map_command_runner_mapping_dir,
-                                       folder_with_mapping_and_some_dicom_files,
-                                       add_path_to_mapping_click_recorder,
-                                       monkeypatch):
+def test_cli_map_add_all_study_folders_no_scan(
+    map_command_runner_mapping_dir,
+    folder_with_mapping_and_some_dicom_files,
+    add_path_to_mapping_click_recorder,
+    monkeypatch,
+):
     """Add multiple study folders"""
     context: MapCommandContext = map_command_runner_mapping_dir.mock_context
     context.current_path = folder_with_mapping_and_some_dicom_files.path
-    monkeypatch.setattr("os.getcwd",
-                         lambda: str(folder_with_mapping_and_some_dicom_files.path))
+    monkeypatch.setattr(
+        "os.getcwd", lambda: str(folder_with_mapping_and_some_dicom_files.path)
+    )
 
     # now repeat and do not cancel
     result = map_command_runner_mapping_dir.invoke(
-        add_all_study_folders, "* --no-check-dicom",
-        input='Yes',
-        catch_exceptions=False, )
+        add_all_study_folders,
+        "* --no-check-dicom",
+        input="Yes",
+        catch_exceptions=False,
+    )
 
     assert add_path_to_mapping_click_recorder.call_count == 2
-    assert '--no-check-dicom was set' in result.output
+    assert "--no-check-dicom was set" in result.output
 
 
 def test_cli_map_delete(mock_main_runner, a_folder_with_mapping):
-    """running map info should give you a nice print of contents"""
+    """Running map info should give you a nice print of contents"""
     mock_main_runner.set_mock_current_dir(a_folder_with_mapping)
 
     mapping_folder = MappingFolder(a_folder_with_mapping)

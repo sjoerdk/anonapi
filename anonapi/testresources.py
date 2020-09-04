@@ -1,10 +1,9 @@
-"""Resources for testing external code that imports anonapi
-
+"""Resources for testing external code that imports anonapi.
 Generates realistic api call return values without actually calling or needing
 an IDIS server
 
-Example:
-
+Example
+-------
 from anonapi.responses import JobStatus
 from anonapi.testresources import MockAnonClientTool, JobInfoFactory, \
     RemoteAnonServerFactory
@@ -28,6 +27,7 @@ from anonapi.client import AnonClientTool
 from anonapi.objects import RemoteAnonServer
 from anonapi.responses import JobInfo, JobsInfoList, JobStatus
 
+
 class MockAnonClientTool(AnonClientTool):
     """A client tool that does not hit any server. Returns mocked responses
 
@@ -43,9 +43,7 @@ class MockAnonClientTool(AnonClientTool):
             Cycle through these when returning mock responses. Defaults to
             returning a single default JobInfo item over and over
         """
-        super(MockAnonClientTool, self).__init__(
-            username="mock_username", token="mock_token"
-        )
+        super().__init__(username="mock_username", token="mock_token")
         if not responses:
             responses = [JobInfoFactory()]
 
@@ -66,7 +64,7 @@ class MockAnonClientTool(AnonClientTool):
 
     def get_client(self, _):
         # Just to be sure. Client should never be invoked
-        raise NotImplemented("Mock client has no API client")
+        raise NotImplementedError("Mock client has no API client")
 
     def get_job_info(self, server: RemoteAnonServer, job_id: int) -> JobInfo:
         return self.get_response(job_id)
@@ -77,36 +75,36 @@ class MockAnonClientTool(AnonClientTool):
         return JobsInfoList([self.get_response(x) for x in job_ids])
 
     def create_path_job(
-            self,
-            server: RemoteAnonServer,
-            project_name,
-            source_path,
-            destination_path,
-            description,
-            anon_name=None,
-            anon_id=None,
-            pims_keyfile_id=None,
+        self,
+        server: RemoteAnonServer,
+        project_name,
+        source_path,
+        destination_path,
+        description,
+        anon_name=None,
+        anon_id=None,
+        pims_keyfile_id=None,
     ) -> JobInfo:
 
         return next(self.response_generator)
 
     def create_pacs_job(
-            self,
-            server: RemoteAnonServer,
-            source_instance_id,
-            project_name,
-            destination_path,
-            description,
-            anon_name=None,
-            anon_id=None,
-            pims_keyfile_id=None,
+        self,
+        server: RemoteAnonServer,
+        source_instance_id,
+        project_name,
+        destination_path,
+        description,
+        anon_name=None,
+        anon_id=None,
+        pims_keyfile_id=None,
     ) -> JobInfo:
 
         return next(self.response_generator)
 
 
 class JobInfoFactory(factory.Factory):
-    """The object that is returned by get_job_info and get_job_infos """
+    """The object that is returned by get_job_info and get_job_infos"""
 
     class Meta:
         model = JobInfo
@@ -137,7 +135,7 @@ class JobInfoFactory(factory.Factory):
 
 
 class RemoteAnonServerFactory(factory.Factory):
-    """The object that is returned by get_job_info and get_job_infos """
+    """The object that is returned by get_job_info and get_job_infos"""
 
     class Meta:
         model = RemoteAnonServer

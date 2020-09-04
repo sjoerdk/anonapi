@@ -64,15 +64,13 @@ class PathIdentifier(SourceIdentifier):
 
 
 class FolderIdentifier(PathIdentifier):
-    """Refers to a complete folder
-    """
+    """Refers to a complete folder"""
 
     key = "folder"
 
 
 class FileSelectionIdentifier(PathIdentifier):
-    """A file selection in a specific file
-    """
+    """A file selection in a specific file"""
 
     key = "fileselection"
     associated_object_class = FileSelectionFile
@@ -99,30 +97,25 @@ class FileSelectionIdentifier(PathIdentifier):
 
 
 class PACSResourceIdentifier(SourceIdentifier):
-    """A key to for some object in a PACS system
-
-    """
+    """A key to for some object in a PACS system"""
 
     key = "pacs_resource"
 
 
 class StudyInstanceUIDIdentifier(PACSResourceIdentifier):
-    """a DICOM StudyInstanceUID
-    """
+    """a DICOM StudyInstanceUID"""
 
     key = "study_instance_uid"
 
 
 class AccessionNumberIdentifier(PACSResourceIdentifier):
-    """A DICOM AccessionNumber
-    """
+    """A DICOM AccessionNumber"""
 
     key = "accession_number"
 
 
 class SourceIdentifierFactory:
-    """Creates SourceIdentifier objects based on key string
-    """
+    """Creates SourceIdentifier objects based on key string"""
 
     types = [
         SourceIdentifier,
@@ -187,8 +180,6 @@ class SourceIdentifierFactory:
         SourceIdentifier or subtype
             Idenfitier for the given object
         """
-        # get all indentifier types that can handle translation to and from objects
-        object_types = [x for x in self.types if hasattr(x, "associated_object_class")]
 
         object_identifier_class = None
         for x in self.types:
@@ -260,7 +251,7 @@ class PathParameter(Parameter):
     description = "A parameter describing a path"
 
     def __init__(self, value: PureWindowsPath = None):
-        super(PathParameter, self).__init__()
+        super().__init__()
         if value:
             self.value = PureWindowsPath(value)
         else:
@@ -306,12 +297,12 @@ class SourceIdentifierParameter(PathParameter):
             Valid source identifier string
 
         """
-        super(SourceIdentifierParameter, self).__init__()
+        super().__init__()
         self.value = SourceIdentifierFactory().get_source_identifier_for_key(str(value))
 
     @property
     def path(self) -> Optional[Path]:
-        """Return the path part of this identifier. """
+        """Return the path part of this identifier"""
         try:
             return Path(self.value.path)
         except AttributeError:  # identifier might be non-path, like a PACS uid
@@ -343,7 +334,8 @@ class SourceIdentifierParameter(PathParameter):
 
 class ParameterFactory:
     """Knows about all sort of rows and can convert between string and object
-    representation"""
+    representation
+    """
 
     @classmethod
     def parse_from_string(cls, string):
@@ -414,7 +406,8 @@ class ParameterSet:
 
     def get_param_by_type(self, type_in) -> Optional[Parameter]:
         """Return the first Parameter instance that is (or derives from) type
-         or None"""
+        or None
+        """
         return next((x for x in self.parameters if isinstance(x, type_in)), None)
 
     def get_params_by_type(self, type_in) -> List[Parameter]:
@@ -441,7 +434,7 @@ class ParameterSet:
 
 
 def is_unc_path(path: Path):
-    r"""Is this a unc path like \\server\share\things? """
+    r"""Is this a unc path like \\server\share\things?"""
 
     return PureWindowsPath(path).anchor.startswith(r"\\")
 

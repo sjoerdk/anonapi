@@ -1,8 +1,4 @@
-"""Settings used by anon console app
-
-"""
-from typing import List
-
+"""Settings used by anon console app"""
 import yaml
 
 from anonapi.exceptions import AnonAPIException
@@ -10,10 +6,16 @@ from anonapi.objects import RemoteAnonServer
 
 
 class AnonClientSettings:
-    """Settings used by anonymization web API client """
+    """Settings used by anonymization web API client"""
 
-    def __init__(self, servers, user_name, user_token, job_default_parameters=None,
-                 validate_ssl=True):
+    def __init__(
+        self,
+        servers,
+        user_name,
+        user_token,
+        job_default_parameters=None,
+        validate_ssl=True,
+    ):
         """
         Parameters
         ----------
@@ -44,9 +46,7 @@ class AnonClientSettings:
         self.validate_ssl = validate_ssl
 
     def to_datamap(self):
-        """Convert these settings to a dict that can be used by YAML
-
-        """
+        """Convert these settings to a dict that can be used by YAML"""
         datamap = {
             "servers": {x.name: x.url for x in self.servers},
             "user_name": self.user_name,
@@ -64,22 +64,21 @@ class AnonClientSettings:
         return yaml.dump(self.to_datamap(), default_flow_style=False)
 
     def save_to_file(self, filename):
-        """ Putting save to file method here in base class so I can write settings files generated from code
-
+        """Putting save to file method here in base class so I can write settings
+        files generated from code
         """
         datamap = self.to_datamap()
         with open(filename, "w") as f:
             yaml.dump(datamap, f, default_flow_style=False)
 
     def save(self):
-        """ Implementing save() here to fulfil settings object signature
-        """
+        """Implementing save() here to fulfil settings object signature"""
         pass  # can't really save anything
 
 
 class DefaultAnonClientSettings(AnonClientSettings):
-    """A settings object with some default values. For testing and for writing settings when none are available
-
+    """A settings object with some default values. For testing and for writing
+    settings when none are available
     """
 
     def __init__(self):
@@ -101,12 +100,12 @@ class DefaultAnonClientSettings(AnonClientSettings):
         )
 
 
-NOT_SET = 'NOT_SET12342t4'  # sorry
+NOT_SET = "NOT_SET12342t4"  # sorry
+
 
 class DataMap:
     """Structure to hold output from a yaml load(). Raises error when you cannot get()
-     an expected key Poor man's substitute for schema validation.
-
+    an expected key Poor man's substitute for schema validation.
     """
 
     def __init__(self, datamap):
@@ -126,9 +125,7 @@ class DataMap:
 
 
 class AnonClientSettingsFromFile(AnonClientSettings):
-    """ Settings which are bound to a file. Can load and save from there.
-
-    """
+    """Settings which are bound to a file. Can load and save from there"""
 
     def __init__(self, filename):
         self.filename = filename
@@ -170,7 +167,7 @@ class AnonClientSettingsFromFile(AnonClientSettings):
             user_name=user_name,
             user_token=user_token,
             job_default_parameters=create_job_defaults_parsed,
-            validate_ssl=validate_ssl
+            validate_ssl=validate_ssl,
         )
         # set active server
         if active_server_name is None:
@@ -190,11 +187,10 @@ class AnonClientSettingsFromFile(AnonClientSettings):
 
 
 class JobDefaultParameters:
-    """Parameters that generally remain the same when creating jobs
-    """
+    """Parameters that generally remain the same when creating jobs"""
 
     def __init__(self, project_name, destination_path):
-        """
+        """Create Default Parameters
 
         Parameters
         ----------

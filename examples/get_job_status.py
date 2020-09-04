@@ -2,9 +2,7 @@ from anonapi.client import WebAPIClient
 
 
 def get_job_status():
-    """Get information about a number of jobs
-
-    """
+    """Get information about a number of jobs"""
 
     # Create a client that will talk to the web API
     client = WebAPIClient(

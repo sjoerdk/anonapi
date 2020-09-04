@@ -2,9 +2,7 @@ from anonapi.client import WebAPIClient
 
 
 def anonymize_files_from_idc():
-    """Create an IDIS job that pulls files from the hospital information system
-
-    """
+    """Create an IDIS job that pulls files from the hospital information system"""
 
     # Create a client that will talk to the web API
     client = WebAPIClient(

@@ -113,7 +113,7 @@ def test_mapping_parse_exceptions(content):
 def test_load_pims_only():
     mapping_file = RESOURCE_PATH / "test_mapper" / "example_pims_only_mapping.csv"
     with open(mapping_file, "r") as f:
-        mapping = JobParameterGrid.load(f)
+        JobParameterGrid.load(f)
 
 
 @pytest.mark.parametrize(
@@ -127,14 +127,13 @@ def test_load_pims_only():
 )
 def test_load_exceptions(file_to_open, expected_exception):
     mapping_file = RESOURCE_PATH / "test_mapper" / file_to_open
-    with pytest.raises(expected_exception) as e:
+    with pytest.raises(expected_exception):
         with open(mapping_file, "r") as f:
             JobParameterGrid.load(f)
 
 
 def test_mapping_add_options():
-    """Options in a mapping should be added to each row, unless overwritten by
-    grid"""
+    """Options in a mapping should be added to each row, unless overwritten by grid"""
 
     # two rows, one containing a pims key parameter
     a_grid = [

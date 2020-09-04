@@ -12,16 +12,13 @@ from anonapi.cli.entrypoint import get_context
 from anonapi.client import APIClientException, ClientToolException
 from anonapi.context import AnonAPIContextException
 from anonapi.responses import APIParseResponseException
-from anonapi.testresources import JobInfoFactory
 from tests.factories import RequestsMock
 from tests.mock_responses import RequestsMockResponseExamples
 
 
 @pytest.fixture
 def anonapi_mock_cli_with_batch(anonapi_mock_cli):
-    """Returns AnonAPIContext object that has a batch defined
-
-    """
+    """Returns AnonAPIContext object that has a batch defined"""
 
     batch = JobBatch(
         job_ids=["1000", "1002", "5000", "100000"],
@@ -58,7 +55,8 @@ def mock_requests(monkeypatch):
 @pytest.fixture
 def mock_anonapi_current_dir(anonapi_mock_cli, tmpdir):
     """Anonapi instance with a tempdir current dir. So you can create,
-    read files in 'current dir'"""
+    read files in 'current dir'
+    """
     anonapi_mock_cli.current_dir = str(
         tmpdir
     )  # make mock_context thinks tmpdir is its working dir
@@ -75,7 +73,7 @@ def test_command_line_tool_basic(mock_main_runner):
 
 
 def test_command_line_tool_status_without_active_server(mock_main_runner):
-    """Error found live, making sure its fixed """
+    """Error found live, making sure its fixed"""
     mock_main_runner.get_context().settings.active_server = None
     runner = CliRunner()
 
@@ -88,7 +86,8 @@ def test_command_line_tool_status_without_active_server(mock_main_runner):
 
 def test_command_line_tool_add_remove_server(mock_main_runner):
     """Test commands to add, remove servers and see whether the number servers
-    that are known is correct"""
+    that are known is correct
+    """
 
     runner = mock_main_runner
     context = runner.get_context()
@@ -219,7 +218,8 @@ def test_command_line_tool_activate_server(mock_main_runner, mock_requests):
 def test_command_line_tool_job_functions(mock_main_runner, mock_requests):
     """Check a whole lot of commands without doing actual queries
 
-    Kind of a mop up test trying to get coverage up"""
+    Kind of a mop up test trying to get coverage up
+    """
     runner = mock_main_runner
 
     mock_requests.set_response_text(text=RequestsMockResponseExamples.JOB_INFO)
@@ -320,7 +320,8 @@ def test_command_line_tool_server_functions(
 ):
     """Check a whole lot of commands without doing actual queries
 
-    Kind of a mop up test trying to get coverage up"""
+    Kind of a mop up test trying to get coverage up
+    """
     runner = mock_main_runner
     mock_requests.set_response_text(text=server_response)
     result = runner.invoke(entrypoint.cli, command, catch_exceptions=False)
@@ -328,9 +329,7 @@ def test_command_line_tool_server_functions(
 
 
 def test_get_server_when_none_is_active(mock_main_runner):
-    """In certain cases active server can be None. handle this gracefully
-
-    """
+    """In certain cases active server can be None. handle this gracefully"""
     context = mock_main_runner.get_context()
     context.settings.active_server = None
     # Calling for server here should fail because there is no active server
@@ -390,8 +389,8 @@ def test_client_tool_exception_response(
     mock_requests_response,
     expected_output,
 ):
-    """The client that the command line tool is using might yield exceptions. Handle gracefully
-
+    """The client that the command line tool is using might yield exceptions.
+    Handle gracefully
     """
     runner = mock_main_runner_with_batch
 
@@ -506,7 +505,8 @@ def test_cli_batch_cancel(mock_main_runner_with_batch, mock_requests):
 
 def test_cli_batch_status_errors(mock_main_runner_with_batch, mock_requests):
     """Call server, but not all jobs exist. This should appear in the status
-    message to the user"""
+    message to the user
+    """
     runner = mock_main_runner_with_batch
 
     mock_requests.set_response_text(
@@ -553,7 +553,7 @@ def test_cli_batch_reset_error(mock_main_runner_with_batch, mock_requests):
     mock_requests.set_response_text(
         text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST_WITH_ERROR
     )
-    test = JobInfoFactory()
+
     # try a reset, answer 'Yes' to question
     result = runner.invoke(
         entrypoint.cli, "batch reset-error", input="Yes", catch_exceptions=False
@@ -579,7 +579,7 @@ def test_cli_batch_reset_error(mock_main_runner_with_batch, mock_requests):
 
 
 def test_cli_batch_id_range(mock_main_runner):
-    """check working with id ranges"""
+    """Check working with id ranges"""
 
     runner = mock_main_runner
     batch_dir = BatchFolder(mock_main_runner.get_context().current_dir)
@@ -611,7 +611,8 @@ def test_cli_batch_id_range(mock_main_runner):
 
 def test_cli_entrypoint(monkeypatch, tmpdir):
     """Call main entrypoint with empty homedir. This should create a default
-     settings file"""
+    settings file
+    """
     monkeypatch.setattr("anonapi.cli.entrypoint.pathlib.Path.home", lambda: tmpdir)
     parser = get_context()
     assert parser.settings.user_name == "username"
