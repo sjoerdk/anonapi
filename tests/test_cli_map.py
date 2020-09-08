@@ -170,12 +170,12 @@ def test_cli_map_add_folder_no_check(mock_main_runner, folder_with_some_dicom_fi
     # dicom files should not have been selected yet currently
     assert not selection_folder.has_file_selection()
     result = mock_main_runner.invoke(
-        entrypoint.cli, f"map add-study-folder {selection_folder.path} --no-check-dicom"
+        entrypoint.cli, f"map add-study-folder {selection_folder.path}"
     )
     # but should be now
     assert result.exit_code == 0
     assert selection_folder.has_file_selection()
-    assert "--no-check-dicom was set" in result.output
+    assert "that look like DICOM" in result.output
 
 
 @fixture
@@ -243,14 +243,11 @@ def test_cli_map_add_all_study_folders_no_scan(
 
     # now repeat and do not cancel
     result = map_command_runner_mapping_dir.invoke(
-        add_all_study_folders,
-        "* --no-check-dicom",
-        input="Yes",
-        catch_exceptions=False,
+        add_all_study_folders, "*", input="Yes", catch_exceptions=False,
     )
 
     assert add_path_to_mapping_click_recorder.call_count == 2
-    assert "--no-check-dicom was set" in result.output
+    assert "that look like DICOM" in result.output
 
 
 def test_cli_map_delete(mock_main_runner, a_folder_with_mapping):

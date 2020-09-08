@@ -142,10 +142,12 @@ def get_mapping(context):
 @click.argument("path", type=click.Path(exists=True))
 @click.option(
     "--check-dicom/--no-check-dicom",
-    default=True,
-    help="Open each file to check whether it is valid DICOM. Turning this off is "
-    "faster, but the anonymization fails if non-DICOM files are included. "
-    "On by default",
+    default=False,
+    help="--check-dicom: Open each file to check whether it is valid DICOM. "
+    "--no-check-dicom: Add all files that look like DICOM (exclude files with"
+    " known file extensions like .txt or .xml)"
+    " Not checking is faster, but the anonymization fails if non-DICOM files"
+    " are included. off by default",
 )
 def add_study_folder(context: MapCommandContext, path, check_dicom):
     """Add all dicom files in given folder to map"""
@@ -220,10 +222,12 @@ def add_path_to_mapping_click(
 @click.argument("pattern")
 @click.option(
     "--check-dicom/--no-check-dicom",
-    default=True,
-    help="Open each file to check whether it is valid DICOM. Turning this off is "
-    "faster, but the anonymization fails if non-DICOM files are included. "
-    "On by default",
+    default=False,
+    help="--check-dicom: Open each file to check whether it is valid DICOM. "
+    "--no-check-dicom: Add all files that look like DICOM (exclude files with"
+    " known file extensions like .txt or .xml)"
+    " Not checking is faster, but the anonymization fails if non-DICOM files"
+    " are included. off by default",
 )
 def add_all_study_folders(context: MapCommandContext, pattern, check_dicom):
     """Add all folders matching pattern to mapping"""

@@ -1,5 +1,7 @@
 """Click group and commands for the 'select' subcommand"""
 import os
+import re
+
 import click
 from click.exceptions import ClickException
 
@@ -161,6 +163,21 @@ def edit(context: SelectCommandContext):
         click.launch(str(selection_folder.get_data_file_path()))
 
 
+def looks_like_dicom_file(path):
+    """Does this file path look like a DICOM file?
+
+    For doing a first quick selection of which files to include for deidentification
+    """
+
+    if Path(path).suffix.lower() in (".dicom", ".dcm"):
+        return True
+    elif re.match(r"^(\.[0-9]*)*$", Path(path).suffix):
+        # there are only numbers in the extension. This might be a DICOM file
+        return True
+    else:
+        return False
+
+
 def create_dicom_selection_click(path, check_dicom=True):
     """Find all DICOM files path (recursive) and save them a FileSelectionFile.
 
@@ -189,11 +206,8 @@ def create_dicom_selection_click(path, check_dicom=True):
             x for x in tqdm(files) if open_as_dicom(x, read_pixel_data=False)
         ]
     else:
-        click.echo(
-            f"Found {len(files)} files. Adding all without check because "
-            f"--no-check-dicom was set"
-        )
-        dicom_files = files
+        click.echo(f"Found {len(files)} files. Adding all that look like DICOM")
+        dicom_files = [x for x in files if looks_like_dicom_file(x)]
 
     click.echo(f"Found {len(dicom_files)} DICOM files")
     # record dicom files as fileselection
