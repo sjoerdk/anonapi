@@ -3,6 +3,7 @@ python:
 - 3.6
 before_install:
 - pip install codecov pytest-cov pyyaml factory_boy click pydicom fileselection tqdm tabulate
+- sudo apt-get update && sudo apt-get --reinstall install -qq language-pack-en language-pack-nl
 install:
 - pip install -U tox-travis
 script:
