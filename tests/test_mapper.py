@@ -5,12 +5,14 @@ from unittest.mock import Mock
 import pytest
 from fileselection.fileselection import FileSelectionFile
 
+from anonapi.exceptions import AnonAPIException
 from anonapi.mapper import (
     JobParameterGrid,
     MappingLoadError,
     MappingFolder,
     MapperException,
     Mapping,
+    sniff_dialect,
 )
 from anonapi.parameters import (
     SourceIdentifierFactory,
@@ -25,8 +27,16 @@ from tests.factories import (
 )
 from tests import RESOURCE_PATH
 from tests.resources.test_mapper.example_mapping_inputs import (
-    CAN_BE_PARSED_AS_MAPPING,
+    BASIC_MAPPING,
+    BASIC_MAPPING_LOWER,
+    COLON_SEPARATED,
     CAN_NOT_BE_PARSED_AS_MAPPING,
+)
+
+from tests.resources.test_mapper.example_sniffer_inputs import (
+    BASIC_INPUT,
+    SEPARATOR_LATE_IN_TEXT,
+    VERY_SHORT_INPUT,
 )
 
 
@@ -71,6 +81,13 @@ def test_job_parameter_grid_load():
     assert len(grid.rows) == 20
 
 
+def test_job_parameter_grid_load_colon():
+    mapping_file = RESOURCE_PATH / "test_mapper" / "example_mapping_colon.csv"
+    with open(mapping_file, "r", newline="") as f:
+        grid = JobParameterGrid.load(f)
+    assert len(grid.rows) == 4
+
+
 def test_mapping_load_save():
     """Load file with CSV part and general part"""
     mapping_file = RESOURCE_PATH / "test_mapper" / "with_mapping_wide_settings.csv"
@@ -93,21 +110,30 @@ def test_mapping_load_save():
     ]
 
 
-@pytest.mark.parametrize("content", CAN_BE_PARSED_AS_MAPPING)
+@pytest.mark.parametrize(
+    "content", [BASIC_MAPPING, BASIC_MAPPING_LOWER, COLON_SEPARATED]
+)
 def test_mapping_parse(content):
-    """Parse into sections"""
+    """Content that can be parsed to a mapping"""
 
     stream = StringIO(initial_value=content)
-    parsed = Mapping.parse_sections(stream)
-    assert len(parsed) == 3
+    Mapping.load(stream)
 
 
 @pytest.mark.parametrize("content", CAN_NOT_BE_PARSED_AS_MAPPING)
 def test_mapping_parse_exceptions(content):
-    """For  these cases parsing should fail"""
+    """For these cases parsing should fail"""
     stream = StringIO(initial_value=content)
     with pytest.raises(MappingLoadError):
         _ = Mapping.parse_sections(stream)
+
+
+def test_mapping_parse_colon_separated():
+    """Excel in certain locales will save with colons. Make sure this works"""
+
+    stream = StringIO(initial_value=COLON_SEPARATED)
+    mapping = Mapping.load(stream)
+    assert len(mapping.grid) == 4
 
 
 def test_load_pims_only():
@@ -251,3 +277,25 @@ def test_open_file():
             _ = Mapping.load(f)
 
         assert "opened in any editor?" in str(e)
+
+
+@pytest.mark.parametrize(
+    "content, delimiter",
+    [
+        (BASIC_INPUT, ","),
+        (COLON_SEPARATED, ";"),
+        (SEPARATOR_LATE_IN_TEXT, ","),
+        (VERY_SHORT_INPUT, ","),
+    ],
+)
+def test_sniff_dialect(content, delimiter):
+    stream = StringIO(initial_value=content)
+    dialect = sniff_dialect(stream)
+    assert dialect.delimiter == delimiter
+
+
+def test_sniff_dialect_exception():
+    stream = StringIO(initial_value="Just not a csv file.")
+    with pytest.raises(AnonAPIException) as e:
+        sniff_dialect(stream)
+    assert "Could not determine dialect" in str(e)

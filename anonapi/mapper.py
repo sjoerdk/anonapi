@@ -7,6 +7,7 @@ Excel, maybe notepad
 """
 import csv
 import os
+from typing import TextIO
 
 from tabulate import tabulate
 
@@ -114,7 +115,7 @@ class Mapping:
 
     @classmethod
     def parse_sections(cls, f):
-        """A mapping csv file consists of three sections devided by headers.
+        """A mapping csv file consists of three sections divided by headers.
          Try to parse each one. Also cleans each line
 
         Parameters
@@ -139,7 +140,7 @@ class Mapping:
         header_to_find = headers_to_find.pop(0)
         current_header = None
         for line in f.readlines():
-            line = line.replace("\r", "").replace("\n", "").rstrip(",")
+            line = line.replace("\r", "").replace("\n", "").rstrip(",").rstrip(";")
             if not line:  # skip empty lines
                 continue
             if header_to_find.lower() in line.lower():
@@ -200,6 +201,31 @@ class Mapping:
         return output
 
 
+def sniff_dialect(f: TextIO):
+    """Try to find out the separator character etc. from given opened csv file
+    Try the first three lines. If dialect is still not found. Raise exception
+
+    Raises
+    ------
+    AnonAPIException
+        When dialect cannot be determined
+    """
+    tried = 0
+    for line in f:
+        tried += 1
+        try:
+            dialect = csv.Sniffer().sniff(line, delimiters=";,")
+            f.seek(0)
+            return dialect
+        except csv.Error as e:
+            if tried < 3:
+                continue
+            else:
+                raise AnonAPIException(e)
+
+    raise AnonAPIException("Could not determine dialect for csv file")
+
+
 class JobParameterGrid:
     """A persistable 2D grid of job rows. Each row belongs to one job"""
 
@@ -241,7 +267,7 @@ class JobParameterGrid:
 
     @classmethod
     def load(cls, f):
-        """Load a  instance from open file handle
+        """Load an instance from open file handle
 
         Parameters
         ----------
@@ -259,7 +285,8 @@ class JobParameterGrid:
             If mapping could not be loaded
 
         """
-        reader = csv.DictReader(f)
+        dialect = sniff_dialect(f)
+        reader = csv.DictReader(f, dialect=dialect)
         parameters = []
         try:
             for row in reader:
