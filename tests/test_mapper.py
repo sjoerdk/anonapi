@@ -1,3 +1,4 @@
+import locale
 from io import StringIO
 from pathlib import Path
 from unittest.mock import Mock
@@ -5,6 +6,7 @@ from unittest.mock import Mock
 import pytest
 from fileselection.fileselection import FileSelectionFile
 
+from anonapi.cli.map_commands import create_example_mapping
 from anonapi.exceptions import AnonAPIException
 from anonapi.mapper import (
     JobParameterGrid,
@@ -289,6 +291,7 @@ def test_open_file():
     ],
 )
 def test_sniff_dialect(content, delimiter):
+    """Find out whether this file has commas or colons as delimiters"""
     stream = StringIO(initial_value=content)
     dialect = sniff_dialect(stream)
     assert dialect.delimiter == delimiter
@@ -318,3 +321,19 @@ def test_read_write_dialect(content, delimiter):
     assert sniff_dialect(temp_file, max_lines=10).delimiter == delimiter
     temp_file.seek(0)
     Mapping.load(temp_file)  # Mapping should still be valid
+
+
+@pytest.mark.parametrize(
+    "locale_setting, delimiter", [(("nl_nl", "UTF8"), ";"), (("en_us", "UTF8"), ",")],
+)
+def test_write_new_mapping(monkeypatch, locale_setting, delimiter):
+    """When writing a mapping from scratch, for example with 'map init', use
+    the best guess at the current dialect and write csv files with comma or
+    colon accordingly
+    """
+    with monkeypatch.context():
+        locale.setlocale(locale.LC_ALL, locale_setting)
+        temp_file = StringIO()
+        create_example_mapping().save(temp_file)
+        temp_file.seek(0)
+        assert sniff_dialect(temp_file, max_lines=10).delimiter == delimiter

@@ -1,4 +1,8 @@
 """Click group and commands for the 'map' subcommand"""
+import csv
+import locale
+import os
+from csv import Dialect
 from pathlib import Path
 from typing import List, Optional
 
@@ -32,7 +36,7 @@ from anonapi.parameters import (
     Parameter,
     FileSelectionIdentifier,
 )
-from anonapi.settings import AnonClientSettings
+from anonapi.settings import AnonClientSettings, DefaultAnonClientSettings
 
 
 class MapCommandContext:
@@ -108,6 +112,42 @@ def init(context: MapCommandContext):
     """Save a default mapping in the current folder"""
     folder = context.get_current_mapping_folder()
 
+    mapping = create_example_mapping(context)
+    folder.save_mapping(mapping)
+    click.echo(f"Initialised example mapping in {folder.DEFAULT_FILENAME}")
+
+
+class ColonDelimited(csv.excel):
+    """Excel csv dialect, but with colon ';' delimiter"""
+
+    delimiter = ";"
+
+
+def get_local_dialect() -> Dialect:
+    """Try to obtain best match for local CSV dialect
+
+    Uses the heuristic that decimal separator comma goes together with
+    list separator colon
+    """
+    if locale.localeconv()["decimal_point"] == ",":
+        return ColonDelimited()
+    else:
+        return csv.excel
+
+
+def create_example_mapping(context: MapCommandContext = None) -> Mapping:
+    """A default mapping with some example parameters
+
+    Parameters
+    ----------
+    context: MapCommandContext, optional
+        set default options according to this context. Defaults to built-in
+        defaults
+    """
+    if not context:
+        context = MapCommandContext(
+            current_path=os.getcwd(), settings=DefaultAnonClientSettings()
+        )
     options = [RootSourcePath(context.current_path)] + get_initial_options(
         context.settings
     )
@@ -116,9 +156,9 @@ def init(context: MapCommandContext):
         options=options,
         description=f"Mapping created {datetime.date.today().strftime('%B %d %Y')} "
         f"by {getpass.getuser()}\n",
+        dialect=get_local_dialect(),
     )
-    folder.save_mapping(mapping)
-    click.echo(f"Initialised example mapping in {folder.DEFAULT_FILENAME}")
+    return mapping
 
 
 @click.command()
