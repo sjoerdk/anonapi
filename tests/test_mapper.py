@@ -29,12 +29,12 @@ from tests import RESOURCE_PATH
 from tests.resources.test_mapper.example_mapping_inputs import (
     BASIC_MAPPING,
     BASIC_MAPPING_LOWER,
-    COLON_SEPARATED,
+    COLON_SEPARATED_MAPPING,
     CAN_NOT_BE_PARSED_AS_MAPPING,
 )
 
 from tests.resources.test_mapper.example_sniffer_inputs import (
-    BASIC_INPUT,
+    BASIC_CSV_INPUT,
     SEPARATOR_LATE_IN_TEXT,
     VERY_SHORT_INPUT,
 )
@@ -111,7 +111,7 @@ def test_mapping_load_save():
 
 
 @pytest.mark.parametrize(
-    "content", [BASIC_MAPPING, BASIC_MAPPING_LOWER, COLON_SEPARATED]
+    "content", [BASIC_MAPPING, BASIC_MAPPING_LOWER, COLON_SEPARATED_MAPPING]
 )
 def test_mapping_parse(content):
     """Content that can be parsed to a mapping"""
@@ -131,7 +131,7 @@ def test_mapping_parse_exceptions(content):
 def test_mapping_parse_colon_separated():
     """Excel in certain locales will save with colons. Make sure this works"""
 
-    stream = StringIO(initial_value=COLON_SEPARATED)
+    stream = StringIO(initial_value=COLON_SEPARATED_MAPPING)
     mapping = Mapping.load(stream)
     assert len(mapping.grid) == 4
 
@@ -282,8 +282,8 @@ def test_open_file():
 @pytest.mark.parametrize(
     "content, delimiter",
     [
-        (BASIC_INPUT, ","),
-        (COLON_SEPARATED, ";"),
+        (BASIC_CSV_INPUT, ","),
+        (COLON_SEPARATED_MAPPING, ";"),
         (SEPARATOR_LATE_IN_TEXT, ","),
         (VERY_SHORT_INPUT, ","),
     ],
@@ -295,7 +295,26 @@ def test_sniff_dialect(content, delimiter):
 
 
 def test_sniff_dialect_exception():
-    stream = StringIO(initial_value="Just not a csv file.")
     with pytest.raises(AnonAPIException) as e:
-        sniff_dialect(stream)
+        sniff_dialect(StringIO(initial_value="Just not a csv file."))
     assert "Could not determine dialect" in str(e)
+
+    with pytest.raises(AnonAPIException) as e:
+        sniff_dialect(
+            StringIO(initial_value="\n".join(["line1", "line2", "line3", "line4"]))
+        )
+    assert "Could not determine delimiter" in str(e)
+
+
+@pytest.mark.parametrize(
+    "content, delimiter", [(BASIC_MAPPING, ","), (COLON_SEPARATED_MAPPING, ";")],
+)
+def test_read_write_dialect(content, delimiter):
+    """The csv dialect in a mapping should not change when reading and writing"""
+
+    temp_file = StringIO()
+    Mapping.load(StringIO(initial_value=content)).save(temp_file)
+    temp_file.seek(0)
+    assert sniff_dialect(temp_file, max_lines=10).delimiter == delimiter
+    temp_file.seek(0)
+    Mapping.load(temp_file)  # Mapping should still be valid

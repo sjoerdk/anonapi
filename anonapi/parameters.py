@@ -234,7 +234,10 @@ class Parameter:
         self.value = str(value)
 
     def __str__(self):
-        return f"{self.field_name},{self.value}"
+        return self.to_string()
+
+    def to_string(self, delimiter=","):
+        return f"{self.field_name}{delimiter}{self.value}"
 
 
 class PatientID(Parameter):

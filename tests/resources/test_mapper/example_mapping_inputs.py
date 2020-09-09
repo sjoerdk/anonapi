@@ -30,7 +30,7 @@ folder:/folder/file0,patient0,patientName0,test description
 
 # After saving in excel with a locale with colon list separator.
 # Tricky things here are colons and the empty lines with ;;; content
-COLON_SEPARATED = r"""
+COLON_SEPARATED_MAPPING = r"""
 ## Description ##;;;
 Mapping created September 09 2020 by user;;;
 ;;;

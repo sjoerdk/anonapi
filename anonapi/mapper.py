@@ -7,7 +7,8 @@ Excel, maybe notepad
 """
 import csv
 import os
-from typing import TextIO
+from csv import Dialect
+from typing import List, Optional, TextIO, Union
 
 from tabulate import tabulate
 
@@ -15,6 +16,7 @@ from anonapi.exceptions import AnonAPIException
 from anonapi.parameters import (
     FolderIdentifier,
     FileSelectionIdentifier,
+    Parameter,
     StudyInstanceUIDIdentifier,
     AccessionNumberIdentifier,
     SourceIdentifierParameter,
@@ -44,7 +46,13 @@ class Mapping:
     GRID_HEADER = "## Mapping ##"
     ALL_HEADERS = [DESCRIPTION_HEADER, OPTIONS_HEADER, GRID_HEADER]
 
-    def __init__(self, grid, options=None, description=""):
+    def __init__(
+        self,
+        grid: "JobParameterGrid",
+        options: Optional[List[Parameter]] = None,
+        description="",
+        dialect: Union[str, Dialect] = "excel",
+    ):
         """
 
         Parameters
@@ -56,30 +64,42 @@ class Mapping:
         description: str, optional
             Human readable description of this mapping. Can contain newline chars.
             Defaults to empty string
+        dialect: Union[str, Dialect], optional
+            CSV dialect. Which line separator to use etc. Any Dialect or a string
+            returned by the list_dialects() function.
+            Defaults to 'excel'
         """
         self.grid = grid
         if options is None:
             options = []
         self.options = options
         self.description = description
+        if type(dialect) == str:
+            self.dialect = csv.get_dialect(dialect)
+        else:
+            self.dialect = dialect
 
     def __len__(self):
         return len(self.grid)
 
     def save(self, f):
         # write description
-        f.write(self.DESCRIPTION_HEADER + os.linesep)
+        f.write(self.DESCRIPTION_HEADER + self.dialect.lineterminator)
         f.write(self.description)
-        f.write(os.linesep)
+        f.write(self.dialect.lineterminator)
 
         # write options
-        f.write(self.OPTIONS_HEADER + os.linesep)
-        f.write(os.linesep.join([str(x) for x in self.options]))
-        f.write(os.linesep)
-        f.write(os.linesep)
+        f.write(self.OPTIONS_HEADER + self.dialect.lineterminator)
+        f.write(
+            self.dialect.lineterminator.join(
+                [x.to_string(delimiter=self.dialect.delimiter) for x in self.options]
+            )
+        )
+        f.write(self.dialect.lineterminator)
+        f.write(self.dialect.lineterminator)
 
         # write mapping
-        f.write(self.GRID_HEADER + os.linesep)
+        f.write(self.GRID_HEADER + self.dialect.lineterminator)
         mapping_content = StringIO()
         self.grid.save(mapping_content)
         mapping_content.seek(0)
@@ -110,8 +130,9 @@ class Mapping:
         ]
 
         grid_content = StringIO(os.linesep.join(sections[cls.GRID_HEADER]))
+        dialect = sniff_dialect(grid_content)
         grid = JobParameterGrid.load(grid_content)
-        return cls(grid=grid, options=options, description=description)
+        return cls(grid=grid, options=options, description=description, dialect=dialect)
 
     @classmethod
     def parse_sections(cls, f):
@@ -201,14 +222,22 @@ class Mapping:
         return output
 
 
-def sniff_dialect(f: TextIO):
+def sniff_dialect(f: TextIO, max_lines: int = 3) -> Dialect:
     """Try to find out the separator character etc. from given opened csv file
-    Try the first three lines. If dialect is still not found. Raise exception
+
+    Parameters
+    ----------
+    f: TextIO
+        Open file handle to csv file
+    max_lines: int, optional
+        sniff this many lines. If dialect is still not found then,
+        Raise exception. Defaults to 3
 
     Raises
     ------
-    AnonAPIException
+    AnonAPIException:
         When dialect cannot be determined
+
     """
     tried = 0
     for line in f:
@@ -218,7 +247,7 @@ def sniff_dialect(f: TextIO):
             f.seek(0)
             return dialect
         except csv.Error as e:
-            if tried < 3:
+            if tried < max_lines:
                 continue
             else:
                 raise AnonAPIException(e)
@@ -242,24 +271,27 @@ class JobParameterGrid:
     def __len__(self):
         return len(self.rows)
 
-    def save(self, f):
+    def save(self, f: TextIO, dialect: Union[str, Dialect] = "excel"):
         """Write rows as CSV. Will omit columns where each value is none
 
         Parameters
         ----------
-        f: stream
+        f: TextIO
             Write to this
+        dialect: Union[str, Dialect], optional
+            CSV dialect. Which line separator to use etc. Any Dialect or a string
+            returned by the list_dialects() function.
+            Defaults to 'excel'
 
         """
+        if type(dialect) == str:  # cast to Dialect instance if needed
+            dialect = csv.get_dialect(dialect)
+
         # Which parameter types are there?
         params = self.parameter_types()
 
         writer = csv.DictWriter(
-            f,
-            delimiter=",",
-            quotechar='"',
-            quoting=csv.QUOTE_MINIMAL,
-            fieldnames=[x.field_name for x in params],
+            f, dialect=dialect, fieldnames=[x.field_name for x in params],
         )
         writer.writeheader()
         for row in self.rows:
@@ -419,9 +451,9 @@ class MappingFolder:
         """Is there a mapping file in this folder?"""
         return self.full_path().exists()
 
-    def save_mapping(self, mapping_list):
+    def save_mapping(self, mapping: Mapping):
         with open(self.full_path(), "w", newline="") as f:
-            mapping_list.save(f)
+            mapping.save(f)
 
     def load_mapping(self):
         """Load Mapping from default location in this folder

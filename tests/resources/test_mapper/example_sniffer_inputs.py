@@ -1,6 +1,6 @@
 """Example .csv file contents for sniffing the type of csv"""
 
-BASIC_INPUT = r"""
+BASIC_CSV_INPUT = r"""
 destination_path,\\someserver\share\folder1
 pims_key,555
 """
