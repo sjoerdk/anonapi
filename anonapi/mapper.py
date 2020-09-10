@@ -271,6 +271,10 @@ class JobParameterGrid:
     def __len__(self):
         return len(self.rows)
 
+    def width(self) -> int:
+        """Maximum number of columns in this grid"""
+        return max([len(x) for x in self.rows])
+
     def save(self, f: TextIO, dialect: Union[str, Dialect] = "excel"):
         """Write rows as CSV. Will omit columns where each value is none
 
