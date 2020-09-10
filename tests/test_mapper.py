@@ -339,5 +339,5 @@ def test_write_new_mapping(monkeypatch, locale_setting, delimiter):
         assert sniff_dialect(temp_file, max_lines=10).delimiter == delimiter
 
         # Check that the correct delimiter is used in different parts of mapping
-        last_lines = StringIO("".join(temp_file.readlines()[11:14]))
+        last_lines = StringIO("".join(temp_file.readlines()[10:12]))
         assert sniff_dialect(last_lines).delimiter == delimiter
