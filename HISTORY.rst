@@ -2,7 +2,7 @@
 History
 =======
 
-1.1.7 (2020-09-09)
+1.2.2 (2020-09-10)
 ------------------
 
 * Mapping files can now be either comma or colon-delimited

@@ -101,7 +101,7 @@ class Mapping:
         # write mapping
         f.write(self.GRID_HEADER + self.dialect.lineterminator)
         mapping_content = StringIO()
-        self.grid.save(mapping_content)
+        self.grid.save(mapping_content, dialect=self.dialect)
         mapping_content.seek(0)
         f.write(mapping_content.read())
 
