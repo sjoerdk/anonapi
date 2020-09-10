@@ -337,3 +337,7 @@ def test_write_new_mapping(monkeypatch, locale_setting, delimiter):
         create_example_mapping().save(temp_file)
         temp_file.seek(0)
         assert sniff_dialect(temp_file, max_lines=10).delimiter == delimiter
+
+        # Check that the correct delimiter is used in different parts of mapping
+        last_lines = StringIO("".join(temp_file.readlines()[11:14]))
+        assert sniff_dialect(last_lines).delimiter == delimiter
