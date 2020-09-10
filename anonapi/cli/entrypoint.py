@@ -1,4 +1,5 @@
 """Entrypoint for calling CLI with click."""
+import locale
 import os
 import pathlib
 
@@ -20,7 +21,7 @@ from anonapi.settings import AnonClientSettingsFromFile, DefaultAnonClientSettin
 
 
 def get_context():
-    """Create a default mock_context instance
+    """Collect info about settings, current dir that is passed to all anonapi commands
 
     Returns
     -------
@@ -53,6 +54,7 @@ def cli(ctx):
     Controls remote anonymization servers
     Use the commands below with -h for more info
     """
+    locale.setlocale(locale.LC_ALL, "")  # use local instead of default 'C' locale
     ctx.obj = get_context()
 
 
