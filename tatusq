@@ -1,0 +1,335 @@
+[1mdiff --git a/anonapi/cli/map_commands.py b/anonapi/cli/map_commands.py[m
+[1mindex eeab1f3..eb89a3b 100644[m
+[1m--- a/anonapi/cli/map_commands.py[m
+[1m+++ b/anonapi/cli/map_commands.py[m
+[36m@@ -179,7 +179,7 @@[m [mdef get_mapping(context):[m
+ [m
+ @click.command()[m
+ @pass_map_command_context[m
+[31m-@click.argument("path", type=click.Path(exists=True))[m
+[32m+[m[32m@click.argument("paths", type=click.Path(exists=True), nargs=-1)[m
+ @click.option([m
+     "--check-dicom/--no-check-dicom",[m
+     default=False,[m
+[36m@@ -189,17 +189,18 @@[m [mdef get_mapping(context):[m
+     " Not checking is faster, but the anonymization fails if non-DICOM files"[m
+     " are included. off by default",[m
+ )[m
+[31m-def add_study_folder(context: MapCommandContext, path, check_dicom):[m
+[32m+[m[32mdef add_study_folders(context: MapCommandContext, paths, check_dicom):[m
+     """Add all dicom files in given folder to map"""[m
+ [m
+[31m-    mapping = add_path_to_mapping_click([m
+[31m-        Path(path),[m
+[31m-        get_mapping(context),[m
+[31m-        cwd=context.current_path,[m
+[31m-        check_dicom=check_dicom,[m
+[31m-    )[m
+[31m-    context.get_current_mapping_folder().save_mapping(mapping)[m
+[31m-    click.echo(f"Done. Added '{path}' to mapping")[m
+[32m+[m[32m    for path in paths:[m
+[32m+[m[32m        mapping = add_path_to_mapping_click([m
+[32m+[m[32m            Path(path),[m
+[32m+[m[32m            get_mapping(context),[m
+[32m+[m[32m            cwd=context.current_path,[m
+[32m+[m[32m            check_dicom=check_dicom,[m
+[32m+[m[32m        )[m
+[32m+[m[32m        context.get_current_mapping_folder().save_mapping(mapping)[m
+[32m+[m[32m    click.echo(f"Done. Added '{paths}' to mapping")[m
+ [m
+ [m
+ def add_path_to_mapping_click([m
+[36m@@ -352,7 +353,7 @@[m [mfor func in [[m
+     status,[m
+     init,[m
+     delete,[m
+[31m-    add_study_folder,[m
+[32m+[m[32m    add_study_folders,[m
+     add_all_study_folders,[m
+     edit,[m
+     add_selection,[m
+[1mdiff --git a/docs/generator/templates/command_reference_base.rst b/docs/generator/templates/command_reference_base.rst[m
+[1mindex d369825..7160fbb 100644[m
+[1m--- a/docs/generator/templates/command_reference_base.rst[m
+[1m+++ b/docs/generator/templates/command_reference_base.rst[m
+[36m@@ -153,21 +153,21 @@[m [mOverview of map functions:[m
+ [m
+ .. _map_add_study_folder:[m
+ [m
+[31m-add-study-folder[m
+[31m-----------------[m
+[32m+[m[32madd-study-folders[m
+[32m+[m[32m-----------------[m
+ [m
+ Add the given folder to :ref:`mapping <concepts_mapping>`. This is done by finding all dicom files in the folder and any folders below it, adding[m
+ those to a :ref:`file selection <concepts_selection>`, and then adding the file selection to the mapping.[m
+ [m
+ Options:[m
+ [m
+[31m-{{ context.click.root.map.add_study_folder.options }}[m
+[32m+[m[32m{{ context.click.root.map.add_study_folders.options }}[m
+ [m
+ Example:[m
+ [m
+ .. code-block:: console[m
+ [m
+[31m-    $ anon map add-study-folder folder1/[m
+[32m+[m[32m    $ anon map add-study-folders folder1/[m
+     > Adding 'folder1' to mapping[m
+     > Finding all files in folder1[m
+     > 1it [12:01, 145.41it/s][m
+[36m@@ -179,20 +179,20 @@[m [mExample:[m
+ To find out which files are DICOM, each file is opened as DICOM. If this succeeds the file is added. This makes[m
+ sure that only valid DICOM is sent to the anonymization server.[m
+ [m
+[31m-Running the command ``anon map add-study-folder <folder>`` is equivalent to running ``anon select add <folder>`` and then[m
+[32m+[m[32mRunning the command ``anon map add-study-folders <folder>`` is equivalent to running ``anon select add <folder>`` and then[m
+ ``anon map add-selection-file <folder>/fileselection.txt``[m
+ [m
+ [m
+ .. note::[m
+ [m
+[31m-    For folders with many files, add-study-folder might take several seconds up to a minute to complete.[m
+[32m+[m[32m    For folders with many files, add-study-folders might take several seconds up to a minute to complete.[m
+ [m
+ .. _map_add_all_study_folders:[m
+ [m
+ add-all-study-folders[m
+ ---------------------[m
+ [m
+[31m-Runs :ref:`add-study-folder <map_add_study_folder>` on all folders that match pattern. The pattern can include ``*``[m
+[32m+[m[32mRuns :ref:`add-study-folders <map_add_study_folder>` on all folders that match pattern. The pattern can include ``*``[m
+ to match part of a file or folder and ``**`` to match any combination of folders and filenames.[m
+ [m
+ Options:[m
+[1mdiff --git a/docs/generator/templates/concepts_base.rst b/docs/generator/templates/concepts_base.rst[m
+[1mindex 3add77b..b81b1d4 100644[m
+[1m--- a/docs/generator/templates/concepts_base.rst[m
+[1m+++ b/docs/generator/templates/concepts_base.rst[m
+[36m@@ -119,7 +119,7 @@[m [mFile Selection[m
+ [m
+ A file typically called ``fileselection.txt`` that contains a list of paths. A selection can be a data source for a job.[m
+ It makes it possible to exactly define which files should be sent for anonymization and which should not. Methods like[m
+[31m-:ref:`add-study-folder <map_add_study_folder>` and :ref:`select_add` will only include valid DICOM files in a selection.[m
+[32m+[m[32m:ref:`add-study-folders <map_add_study_folders>` and :ref:`select_add` will only include valid DICOM files in a selection.[m
+ [m
+ The contents of a typical file selection that contains 4 file paths::[m
+ [m
+[1mdiff --git a/docs/sphinx/command_reference.rst b/docs/sphinx/command_reference.rst[m
+[1mindex bcae2a7..a2adb2b 100644[m
+[1m--- a/docs/sphinx/command_reference.rst[m
+[1m+++ b/docs/sphinx/command_reference.rst[m
+[36m@@ -30,7 +30,7 @@[m [mCommand  Description[m
+ activate Commands will use given server by default                               [m
+ add      Add a server to the list of servers in settings                         [m
+ jobs     List latest 100 jobs for active server                                  [m
+[31m-list     show all servers in settings                                            [m
+[32m+[m[32mlist     Show all servers in settings[m[41m                                            [m
+ remove   Remove a server from list in settings                                   [m
+ status   Check whether active server is online and responding                    [m
+ ======== ========================================================================[m
+[36m@@ -43,14 +43,15 @@[m [mWork with single jobs. Get extended info, reset, restart a job[m
+ [m
+ Overview of job functions:[m
+ [m
+[31m-======= =========================================================================[m
+[31m-Command Description                                                              [m
+[31m-======= =========================================================================[m
+[31m-cancel  set job status to inactive                                               [m
+[31m-info    print job info                                                           [m
+[31m-list    list info for multiple jobs                                              [m
+[31m-reset   reset job, process again                                                 [m
+[31m-======= =========================================================================[m
+[32m+[m[32m================== ==============================================================[m
+[32m+[m[32mCommand            Description[m[41m                                                   [m
+[32m+[m[32m================== ==============================================================[m
+[32m+[m[32mcancel             Set job status to inactive[m[41m                                    [m
+[32m+[m[32minfo               Print job info[m[41m                                                [m
+[32m+[m[32mlist               List info for multiple jobs[m[41m                                   [m
+[32m+[m[32mreset              Reset job, process again[m[41m                                      [m
+[32m+[m[32mset-opt-out-ignore Set opt-out ignore with given reason for job_id[m[41m               [m
+[32m+[m[32m================== ==============================================================[m
+ [m
+ [m
+ settings[m
+[36m@@ -62,7 +63,7 @@[m [mView and edit local settings for this anonapi instance. Credentials that are use[m
+ Command      Description                                                         [m
+ ============ ====================================================================[m
+ get-token    Obtain a security token                                             [m
+[31m-info         show current credentials                                            [m
+[32m+[m[32minfo         Show current credentials[m[41m                                            [m
+ set-username Set the given username in settings                                  [m
+ ============ ====================================================================[m
+ [m
+[36m@@ -114,7 +115,7 @@[m [mCommand     Description[m
+ =========== =====================================================================[m
+ add         Add ids to current batch. Space-separated (1 2 3) or range (1-40)    [m
+ cancel      Cancel every job in the current batch                                [m
+[31m-delete      delete batch in current folder                                       [m
+[32m+[m[32mdelete      Delete batch in current folder[m[41m                                       [m
+ info        Show batch in current directory                                      [m
+ init        Save an empty batch in the current folder, for current server        [m
+ remove      Remove ids from current batch. Space-separated (1 2 3) or range (1-40[m
+[36m@@ -189,8 +190,8 @@[m [mCommand               Description[m
+ ===================== ===========================================================[m
+ add-all-study-folders Add all folders matching pattern to mapping                [m
+ add-selection         Add selection file to mapping                              [m
+[31m-add-study-folder      Add all dicom files in given folder to map                 [m
+[31m-delete                delete mapping in current folder                           [m
+[32m+[m[32madd-study-folders     Add all dicom files in given folder to map[m[41m                 [m
+[32m+[m[32mdelete                Delete mapping in current folder[m[41m                           [m
+ edit                  Edit the current mapping in OS default editor              [m
+ init                  Save a default mapping in the current folder               [m
+ status                Show mapping in current directory                          [m
+[36m@@ -198,8 +199,8 @@[m [mstatus                Show mapping in current directory[m
+ [m
+ .. _map_add_study_folder:[m
+ [m
+[31m-add-study-folder[m
+[31m-----------------[m
+[32m+[m[32madd-study-folders[m
+[32m+[m[32m-----------------[m
+ [m
+ Add the given folder to :ref:`mapping <concepts_mapping>`. This is done by finding all dicom files in the folder and any folders below it, adding[m
+ those to a :ref:`file selection <concepts_selection>`, and then adding the file selection to the mapping.[m
+[36m@@ -207,13 +208,13 @@[m [mthose to a :ref:`file selection <concepts_selection>`, and then adding the file[m
+ Options:[m
+ [m
+ --check-dicom/ --no-check-dicom[m
+[31m-	Open each file to check whether it is valid DICOM. Turning this off is faster, but the anonymization fails if non-DICOM files are included. On by default[m
+[32m+[m	[32m--check-dicom: Open each file to check whether it is valid DICOM. --no-check-dicom: Add all files that look like DICOM (exclude files with known file extensions like .txt or .xml) Not checking is faster, but the anonymization fails if non-DICOM files are included. off by default[m
+ [m
+ Example:[m
+ [m
+ .. code-block:: console[m
+ [m
+[31m-    $ anon map add-study-folder folder1/[m
+[32m+[m[32m    $ anon map add-study-folders folder1/[m
+     > Adding 'folder1' to mapping[m
+     > Finding all files in folder1[m
+     > 1it [12:01, 145.41it/s][m
+[36m@@ -225,26 +226,26 @@[m [mExample:[m
+ To find out which files are DICOM, each file is opened as DICOM. If this succeeds the file is added. This makes[m
+ sure that only valid DICOM is sent to the anonymization server.[m
+ [m
+[31m-Running the command ``anon map add-study-folder <folder>`` is equivalent to running ``anon select add <folder>`` and then[m
+[32m+[m[32mRunning the command ``anon map add-study-folders <folder>`` is equivalent to running ``anon select add <folder>`` and then[m
+ ``anon map add-selection-file <folder>/fileselection.txt``[m
+ [m
+ [m
+ .. note::[m
+ [m
+[31m-    For folders with many files, add-study-folder might take several seconds up to a minute to complete.[m
+[32m+[m[32m    For folders with many files, add-study-folders might take several seconds up to a minute to complete.[m
+ [m
+ .. _map_add_all_study_folders:[m
+ [m
+ add-all-study-folders[m
+ ---------------------[m
+ [m
+[31m-Runs :ref:`add-study-folder <map_add_study_folder>` on all folders that match pattern. The pattern can include ``*``[m
+[32m+[m[32mRuns :ref:`add-study-folders <map_add_study_folder>` on all folders that match pattern. The pattern can include ``*``[m
+ to match part of a file or folder and ``**`` to match any combination of folders and filenames.[m
+ [m
+ Options:[m
+ [m
+ --check-dicom/ --no-check-dicom[m
+[31m-	Open each file to check whether it is valid DICOM. Turning this off is faster, but the anonymization fails if non-DICOM files are included. On by default[m
+[32m+[m	[32m--check-dicom: Open each file to check whether it is valid DICOM. --no-check-dicom: Add all files that look like DICOM (exclude files with known file extensions like .txt or .xml) Not checking is faster, but the anonymization fails if non-DICOM files are included. off by default[m
+ [m
+ For example, given the following folder structure::[m
+ [m
+[36m@@ -403,7 +404,7 @@[m [mCommand       Description[m
+ ============= ===================================================================[m
+ from-mapping  Create jobs from mapping in current folder                         [m
+ set-defaults  Set project name used when creating jobs                           [m
+[31m-show-defaults show project name used when creating jobs                          [m
+[32m+[m[32mshow-defaults Show project name used when creating jobs[m[41m                          [m
+ ============= ===================================================================[m
+ [m
+ .. _create_from_mapping:[m
+[1mdiff --git a/docs/sphinx/concepts.rst b/docs/sphinx/concepts.rst[m
+[1mindex 8886ebb..f1d0ea9 100644[m
+[1m--- a/docs/sphinx/concepts.rst[m
+[1m+++ b/docs/sphinx/concepts.rst[m
+[36m@@ -133,7 +133,7 @@[m [mFile Selection[m
+ [m
+ A file typically called ``fileselection.txt`` that contains a list of paths. A selection can be a data source for a job.[m
+ It makes it possible to exactly define which files should be sent for anonymization and which should not. Methods like[m
+[31m-:ref:`add-study-folder <map_add_study_folder>` and :ref:`select_add` will only include valid DICOM files in a selection.[m
+[32m+[m[32m:ref:`add-study-folders <map_add_study_folders>` and :ref:`select_add` will only include valid DICOM files in a selection.[m
+ [m
+ The contents of a typical file selection that contains 4 file paths::[m
+ [m
+[1mdiff --git a/docs/sphinx/usage.rst b/docs/sphinx/usage.rst[m
+[1mindex 8ca03ac..189b3aa 100644[m
+[1m--- a/docs/sphinx/usage.rst[m
+[1m+++ b/docs/sphinx/usage.rst[m
+[36m@@ -193,9 +193,9 @@[m [mQuick example[m
+     $ anon map init            # create a mapping at the source of the data[m
+     $ anon map edit            # set correct paths, remove example rows[m
+ [m
+[31m-    $ anon map add-study-folder patient1/study        # add study1 to mapping[m
+[31m-    $ anon map add-study-folder patient2/study        # add study2[m
+[31m-    $ anon map add-study-folder patient3/study_fixed  # add study3[m
+[32m+[m[32m    $ anon map add-study-folders patient1/study        # add study1 to mapping[m
+[32m+[m[32m    $ anon map add-study-folders patient2/study        # add study2[m
+[32m+[m[32m    $ anon map add-study-folders patient3/study_fixed  # add study3[m
+ [m
+     $ anon map edit            # now set the anonymized names for the added studies[m
+     $ anon create from-mapping # create jobs on anonymization server[m
+[36m@@ -280,9 +280,9 @@[m [mNow we will add each of the studies we want to anonymize. Make sure you close th[m
+ [m
+ .. code-block:: console[m
+ [m
+[31m-    $ anon map add-study-folder patient1/study[m
+[31m-    $ anon map add-study-folder patient2/study[m
+[31m-    $ anon map add-study-folder patient3/study_fixed[m
+[32m+[m[32m    $ anon map add-study-folders patient1/study[m
+[32m+[m[32m    $ anon map add-study-folders patient2/study[m
+[32m+[m[32m    $ anon map add-study-folders patient3/study_fixed[m
+ [m
+ All DICOM files in these folders have now been selected and added as rows in the mapping. Now edit the rows to suit your[m
+ needs, setting the patient ID and name you want.[m
+[1mdiff --git a/tests/test_cli_map.py b/tests/test_cli_map.py[m
+[1mindex aa8cdab..a449d5e 100644[m
+[1m--- a/tests/test_cli_map.py[m
+[1m+++ b/tests/test_cli_map.py[m
+[36m@@ -124,7 +124,7 @@[m [mdef test_cli_map_add_folder(mock_main_runner, folder_with_some_dicom_files):[m
+     # Add this folder to mapping[m
+     result = mock_main_runner.invoke([m
+         entrypoint.cli,[m
+[31m-        f"map add-study-folder {selection_folder.path}",[m
+[32m+[m[32m        f"map add-study-folders {selection_folder.path}",[m
+         catch_exceptions=False,[m
+     )[m
+ [m
+[36m@@ -141,7 +141,7 @@[m [mdef test_cli_map_add_folder(mock_main_runner, folder_with_some_dicom_files):[m
+     # dicom files should not have been selected yet currently[m
+     assert not selection_folder.has_file_selection()[m
+     result = mock_main_runner.invoke([m
+[31m-        entrypoint.cli, f"map add-study-folder {selection_folder.path}"[m
+[32m+[m[32m        entrypoint.cli, f"map add-study-folders {selection_folder.path}"[m
+     )[m
+     # but should be now[m
+     assert result.exit_code == 0[m
+[36m@@ -170,7 +170,7 @@[m [mdef test_cli_map_add_folder_no_check(mock_main_runner, folder_with_some_dicom_fi[m
+     # dicom files should not have been selected yet currently[m
+     assert not selection_folder.has_file_selection()[m
+     result = mock_main_runner.invoke([m
+[31m-        entrypoint.cli, f"map add-study-folder {selection_folder.path}"[m
+[32m+[m[32m        entrypoint.cli, f"map add-study-folders {selection_folder.path}"[m
+     )[m
+     # but should be now[m
+     assert result.exit_code == 0[m
+[1mdiff --git a/tests/test_mapper.py b/tests/test_mapper.py[m
+[1mindex 168d459..93544ee 100644[m
+[1m--- a/tests/test_mapper.py[m
+[1m+++ b/tests/test_mapper.py[m
+[36m@@ -336,4 +336,4 @@[m [mdef test_write_new_mapping(monkeypatch, locale_setting, delimiter):[m
+         temp_file = StringIO()[m
+         create_example_mapping().save(temp_file)[m
+         temp_file.seek(0)[m
+[31m-        assert sniff_dialect(temp_file, max_lines=10).delimiter == delimiter[m
+[32m+[m[32m        assert sniff_dialect(temp_file, max_lines=10).delimiter == delimiter[m
+\ No newline at end of file[m

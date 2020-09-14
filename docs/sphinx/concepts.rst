@@ -133,7 +133,7 @@ File Selection
 
 A file typically called ``fileselection.txt`` that contains a list of paths. A selection can be a data source for a job.
 It makes it possible to exactly define which files should be sent for anonymization and which should not. Methods like
-:ref:`add-study-folder <map_add_study_folder>` and :ref:`select_add` will only include valid DICOM files in a selection.
+:ref:`add-study-folders <map_add_study_folders>` and :ref:`select_add` will only include valid DICOM files in a selection.
 
 The contents of a typical file selection that contains 4 file paths::
 

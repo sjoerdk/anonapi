@@ -179,7 +179,7 @@ def get_mapping(context):
 
 @click.command()
 @pass_map_command_context
-@click.argument("path", type=click.Path(exists=True))
+@click.argument("paths", type=click.Path(exists=True), nargs=-1)
 @click.option(
     "--check-dicom/--no-check-dicom",
     default=False,
@@ -189,17 +189,18 @@ def get_mapping(context):
     " Not checking is faster, but the anonymization fails if non-DICOM files"
     " are included. off by default",
 )
-def add_study_folder(context: MapCommandContext, path, check_dicom):
+def add_study_folders(context: MapCommandContext, paths, check_dicom):
     """Add all dicom files in given folder to map"""
 
-    mapping = add_path_to_mapping_click(
-        Path(path),
-        get_mapping(context),
-        cwd=context.current_path,
-        check_dicom=check_dicom,
-    )
-    context.get_current_mapping_folder().save_mapping(mapping)
-    click.echo(f"Done. Added '{path}' to mapping")
+    for path in paths:
+        mapping = add_path_to_mapping_click(
+            Path(path),
+            get_mapping(context),
+            cwd=context.current_path,
+            check_dicom=check_dicom,
+        )
+        context.get_current_mapping_folder().save_mapping(mapping)
+    click.echo(f"Done. Added '{paths}' to mapping")
 
 
 def add_path_to_mapping_click(
@@ -352,7 +353,7 @@ for func in [
     status,
     init,
     delete,
-    add_study_folder,
+    add_study_folders,
     add_all_study_folders,
     edit,
     add_selection,

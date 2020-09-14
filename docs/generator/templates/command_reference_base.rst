@@ -153,21 +153,21 @@ Overview of map functions:
 
 .. _map_add_study_folder:
 
-add-study-folder
-----------------
+add-study-folders
+-----------------
 
 Add the given folder to :ref:`mapping <concepts_mapping>`. This is done by finding all dicom files in the folder and any folders below it, adding
 those to a :ref:`file selection <concepts_selection>`, and then adding the file selection to the mapping.
 
 Options:
 
-{{ context.click.root.map.add_study_folder.options }}
+{{ context.click.root.map.add_study_folders.options }}
 
 Example:
 
 .. code-block:: console
 
-    $ anon map add-study-folder folder1/
+    $ anon map add-study-folders folder1/
     > Adding 'folder1' to mapping
     > Finding all files in folder1
     > 1it [12:01, 145.41it/s]
@@ -179,20 +179,20 @@ Example:
 To find out which files are DICOM, each file is opened as DICOM. If this succeeds the file is added. This makes
 sure that only valid DICOM is sent to the anonymization server.
 
-Running the command ``anon map add-study-folder <folder>`` is equivalent to running ``anon select add <folder>`` and then
+Running the command ``anon map add-study-folders <folder>`` is equivalent to running ``anon select add <folder>`` and then
 ``anon map add-selection-file <folder>/fileselection.txt``
 
 
 .. note::
 
-    For folders with many files, add-study-folder might take several seconds up to a minute to complete.
+    For folders with many files, add-study-folders might take several seconds up to a minute to complete.
 
 .. _map_add_all_study_folders:
 
 add-all-study-folders
 ---------------------
 
-Runs :ref:`add-study-folder <map_add_study_folder>` on all folders that match pattern. The pattern can include ``*``
+Runs :ref:`add-study-folders <map_add_study_folder>` on all folders that match pattern. The pattern can include ``*``
 to match part of a file or folder and ``**`` to match any combination of folders and filenames.
 
 Options:

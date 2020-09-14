@@ -193,9 +193,9 @@ Quick example
     $ anon map init            # create a mapping at the source of the data
     $ anon map edit            # set correct paths, remove example rows
 
-    $ anon map add-study-folder patient1/study        # add study1 to mapping
-    $ anon map add-study-folder patient2/study        # add study2
-    $ anon map add-study-folder patient3/study_fixed  # add study3
+    $ anon map add-study-folders patient1/study        # add study1 to mapping
+    $ anon map add-study-folders patient2/study        # add study2
+    $ anon map add-study-folders patient3/study_fixed  # add study3
 
     $ anon map edit            # now set the anonymized names for the added studies
     $ anon create from-mapping # create jobs on anonymization server
@@ -280,9 +280,9 @@ Now we will add each of the studies we want to anonymize. Make sure you close th
 
 .. code-block:: console
 
-    $ anon map add-study-folder patient1/study
-    $ anon map add-study-folder patient2/study
-    $ anon map add-study-folder patient3/study_fixed
+    $ anon map add-study-folders patient1/study
+    $ anon map add-study-folders patient2/study
+    $ anon map add-study-folders patient3/study_fixed
 
 All DICOM files in these folders have now been selected and added as rows in the mapping. Now edit the rows to suit your
 needs, setting the patient ID and name you want.

@@ -124,7 +124,7 @@ def test_cli_map_add_folder(mock_main_runner, folder_with_some_dicom_files):
     # Add this folder to mapping
     result = mock_main_runner.invoke(
         entrypoint.cli,
-        f"map add-study-folder {selection_folder.path}",
+        f"map add-study-folders {selection_folder.path}",
         catch_exceptions=False,
     )
 
@@ -141,7 +141,7 @@ def test_cli_map_add_folder(mock_main_runner, folder_with_some_dicom_files):
     # dicom files should not have been selected yet currently
     assert not selection_folder.has_file_selection()
     result = mock_main_runner.invoke(
-        entrypoint.cli, f"map add-study-folder {selection_folder.path}"
+        entrypoint.cli, f"map add-study-folders {selection_folder.path}"
     )
     # but should be now
     assert result.exit_code == 0
@@ -170,7 +170,7 @@ def test_cli_map_add_folder_no_check(mock_main_runner, folder_with_some_dicom_fi
     # dicom files should not have been selected yet currently
     assert not selection_folder.has_file_selection()
     result = mock_main_runner.invoke(
-        entrypoint.cli, f"map add-study-folder {selection_folder.path}"
+        entrypoint.cli, f"map add-study-folders {selection_folder.path}"
     )
     # but should be now
     assert result.exit_code == 0
