@@ -2,6 +2,12 @@
 History
 =======
 
+1.3.0 (2020-09-20)
+------------------
+
+* Removes add-all-study-folders, add-study-folders now accepts wildcards
+
+
 1.2.2 (2020-09-10)
 ------------------
 
