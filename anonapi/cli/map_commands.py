@@ -195,7 +195,7 @@ def add_study_folders(context: MapCommandContext, paths, check_dicom):
 
     # flatten paths, which is a tuple (due to nargs -1) of lists (due to wildcards)
     paths = [path for wildcard in paths for path in wildcard]
-    click.echo(f"Adding {len(paths)}' paths to mapping")
+    click.echo(f"Adding {len(paths)} paths to mapping")
 
     for path in paths:
         mapping = add_path_to_mapping_click(
@@ -205,6 +205,7 @@ def add_study_folders(context: MapCommandContext, paths, check_dicom):
             check_dicom=check_dicom,
         )
         context.get_current_mapping_folder().save_mapping(mapping)
+        click.echo("")  # make adding of separate folders more readable
     click.echo(f"Done. Added '{paths}' to mapping")
 
 
