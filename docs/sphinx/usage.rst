@@ -204,8 +204,8 @@ Quick example
 
 
 .. tip::
-    The example above adds each study folder individually. To add many study folders at once, use
-    ``anon map add-all-study-folders *`` . See :ref:`add-all-study-folders <map_add_all_study_folders>` for more info
+    The example above adds each study folder individually. To add many study folders at once you can use
+    ``anon map add-study-folders *`` . See :ref:`add-study-folders <map_add_study_folders>` wildcards for more info
 
 
 Detailed example

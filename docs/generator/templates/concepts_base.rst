@@ -90,7 +90,7 @@ File selection
 
     Refers to all the paths listed in the :ref:`fileselection file<concepts_selection>`. Contrary to the Folder identifier, file selection can be
     used in a folder where there are non-DICOM files or where only part of the files should be anonymized.
-    When creating a fileselection with :ref:`map_add_study_folder` or :ref:`select_add`, non-DICOM files can be excluded
+    When creating a fileselection with :ref:`map_add_study_folders` or :ref:`select_add`, non-DICOM files can be excluded
     automatically
 
 Study instance UID

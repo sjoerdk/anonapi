@@ -14,6 +14,7 @@ import string
 
 from click.exceptions import BadParameter, ClickException
 
+from anonapi.cli.click_parameters import WildcardFolder
 from anonapi.cli.click_types import FileSelectionFileParam
 from anonapi.cli.select_commands import create_dicom_selection_click
 from anonapi.context import AnonAPIContext
@@ -179,7 +180,7 @@ def get_mapping(context):
 
 @click.command()
 @pass_map_command_context
-@click.argument("paths", type=click.Path(exists=True), nargs=-1)
+@click.argument("paths", type=WildcardFolder(exists=True), nargs=-1)
 @click.option(
     "--check-dicom/--no-check-dicom",
     default=False,
@@ -191,6 +192,10 @@ def get_mapping(context):
 )
 def add_study_folders(context: MapCommandContext, paths, check_dicom):
     """Add all dicom files in given folder to map"""
+
+    # flatten paths, which is a tuple (due to nargs -1) of lists (due to wildcards)
+    paths = [path for wildcard in paths for path in wildcard]
+    click.echo(f"Adding {len(paths)}' paths to mapping")
 
     for path in paths:
         mapping = add_path_to_mapping_click(
@@ -260,48 +265,6 @@ def add_path_to_mapping_click(
 
 @click.command()
 @pass_map_command_context
-@click.argument("pattern")
-@click.option(
-    "--check-dicom/--no-check-dicom",
-    default=False,
-    help="--check-dicom: Open each file to check whether it is valid DICOM. "
-    "--no-check-dicom: Add all files that look like DICOM (exclude files with"
-    " known file extensions like .txt or .xml)"
-    " Not checking is faster, but the anonymization fails if non-DICOM files"
-    " are included. off by default",
-)
-def add_all_study_folders(context: MapCommandContext, pattern, check_dicom):
-    """Add all folders matching pattern to mapping"""
-    # Examples: **/* */1 */*/*2
-    found = [
-        x.relative_to(context.current_path)
-        for x in Path(context.current_path).glob(pattern)
-        if x.is_dir()
-    ]
-    click.echo(
-        f"Pattern '{pattern}' matches the following paths"
-        f"matches the following paths:"
-    )
-    click.echo("\n".join([str(x) for x in found]))
-    if not click.confirm(
-        f"This will add the {len(found)} folders listed above "
-        f"to mapping. Are you sure?"
-    ):
-        click.echo("Cancelled")
-        return
-    else:
-        mapping = get_mapping(context)
-        for path in found:
-            mapping = add_path_to_mapping_click(
-                Path(path), mapping, cwd=context.current_path, check_dicom=check_dicom
-            )
-
-        context.get_current_mapping_folder().save_mapping(mapping)
-        click.echo("Done")
-
-
-@click.command()
-@pass_map_command_context
 @click.argument("selection", type=FileSelectionFileParam())
 def add_selection(context: MapCommandContext, selection):
     """Add selection file to mapping"""
@@ -354,7 +317,6 @@ for func in [
     init,
     delete,
     add_study_folders,
-    add_all_study_folders,
     edit,
     add_selection,
 ]:
