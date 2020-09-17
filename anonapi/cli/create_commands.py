@@ -32,7 +32,7 @@ from anonapi.testresources import JobInfoFactory
 
 
 class JobParameterSet(ParameterSet):
-    """A collection of parameters that should create one job.
+    """A collection of parameter_types that should create one job.
 
     Offers validation and mapping to job-creation function keywords
     """
@@ -47,7 +47,7 @@ class JobParameterSet(ParameterSet):
         PIMSKey: "pims_keyfile_id",
     }
 
-    # these types of parameters are never sent to a function directly. They
+    # these types of parameter_types are never sent to a function directly. They
     # should be ignored when casting to kwargs
     NON_KEYWORD_PARAMETERS = [RootSourcePath]
 
@@ -66,7 +66,7 @@ class JobParameterSet(ParameterSet):
         Raises
         ------
         ParameterMappingException
-            If not all parameters can be mapped
+            If not all parameter_types can be mapped
 
         Returns
         -------
@@ -188,7 +188,7 @@ class CreateCommandsContext(AnonAPIContext):
         )
 
     def default_parameters(self) -> List[Parameter]:
-        """Default parameters from settings"""
+        """Default parameter_types from settings"""
         defaults: JobDefaultParameters = self.settings.job_default_parameters
         return [
             DestinationPath(defaults.destination_path),
@@ -196,12 +196,12 @@ class CreateCommandsContext(AnonAPIContext):
         ]
 
     def create_job_for_element(self, parameters: List[Parameter]):
-        """Create a job for the given parameters
+        """Create a job for the given parameter_types
 
         Parameters
         ----------
         parameters: List[Parameter]
-            The parameters to use
+            The parameter_types to use
 
         Raises
         ------
@@ -354,7 +354,7 @@ def create_jobs(
 
 
 def extract_job_sets(context, mapping: Mapping) -> List[JobParameterSet]:
-    """Extract sets of parameters each creating one job
+    """Extract sets of parameter_types each creating one job
 
     Raises
     ------
@@ -375,7 +375,7 @@ def extract_job_sets(context, mapping: Mapping) -> List[JobParameterSet]:
         try:
             job_set.validate()
         except JobSetValidationError as e:
-            raise ClickException(f"Error validating parameters: {e}")
+            raise ClickException(f"Error validating parameter_types: {e}")
     return job_sets
 
 

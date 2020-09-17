@@ -15,7 +15,7 @@ tool = MockAnonClientTool(
 
 info = tool.get_job_info(server=RemoteAnonServerFactory(), job_id=100)
 info.status  # DONE
-info.job_id  # 100  (matches whatever you put in it)
+info.job_id  # 100  (matches_header whatever you put in it)
 
 """
 from itertools import cycle

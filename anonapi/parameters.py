@@ -1,5 +1,5 @@
 """Parameters that are used to create jobs. Some are quite simple, like 'description'
-which is just a string. Others are more complex, such as 'source' which has its own
+which is just a input. Others are more complex, such as 'source' which has its own
 type family and validation.
 
 Put these in separate module because rows appear in several guises throughout
@@ -7,7 +7,7 @@ the job creation process and I want a unified type
 
 """
 from copy import copy
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Type
 
 from anonapi.exceptions import AnonAPIException
 from fileselection.fileselection import FileSelectionFile
@@ -15,7 +15,7 @@ from pathlib import Path, PureWindowsPath
 
 
 class SourceIdentifier:
-    """A string representing a place where data is coming from
+    """A input representing a place where data is coming from
 
     Attributes
     ----------
@@ -41,7 +41,7 @@ class SourceIdentifier:
         Returns
         -------
         str
-            cleaned identifier string
+            cleaned identifier input
 
         Raises
         ------
@@ -135,7 +135,7 @@ class AccessionNumberIdentifier(PACSResourceIdentifier):
 
 
 class SourceIdentifierFactory:
-    """Creates SourceIdentifier objects based on key string"""
+    """Creates SourceIdentifier objects based on key input"""
 
     types = [
         SourceIdentifier,
@@ -146,7 +146,7 @@ class SourceIdentifierFactory:
     ]
 
     def get_source_identifier_for_key(self, key):
-        """Cast given key string back to identifier object
+        """Cast given key input back to identifier object
 
         Parameters
         ----------
@@ -218,7 +218,7 @@ class SourceIdentifierFactory:
 
 
 class Parameter:
-    """A typed, human readable,  persistable key-value pair that means something
+    """A typed, human readable, persistable key-value pair that means something
     in anonapi
 
     Made this because the mapping csv file contains rows in different
@@ -237,7 +237,11 @@ class Parameter:
         return self.to_string()
 
     def to_string(self, delimiter=","):
-        return f"{self.field_name}{delimiter}{self.value}"
+        """Parameter as string
+
+        Separate method from __str__ to allow both comma and colon separators
+        """
+        return f"{self.field_name}{delimiter}{str(self.value)}"
 
 
 class PatientID(Parameter):
@@ -317,7 +321,7 @@ class SourceIdentifierParameter(PathParameter):
         Parameters
         ----------
         value: str
-            Valid source identifier string
+            Valid source identifier input
 
         """
         super().__init__()
@@ -355,8 +359,15 @@ class SourceIdentifierParameter(PathParameter):
                 return SourceIdentifierParameter(identifier_copy)
 
 
+class AccessionNumber(Parameter):
+    """An accession number from PACS as a data source"""
+
+    field_name = "accession_number"
+    description = "Data to anonymize comes from this accession number"
+
+
 class ParameterFactory:
-    """Knows about all sort of rows and can convert between string and object
+    """Knows about all sort of rows and can convert between input and object
     representation
     """
 
@@ -367,17 +378,17 @@ class ParameterFactory:
         Parameters
         ----------
         string: str
-            A valid string representation of Parameter
+            A valid input representation of Parameter
 
         Returns
         -------
         Parameter
-            An instance, instantiated with a value, if any was found in the string
+            An instance, instantiated with a value, if any was found in the input
 
         Raises
         ------
         ParameterParsingError
-            If the string cannot be parsed as any known parameter
+            If the input cannot be parsed as any known parameter
 
         """
         try:
@@ -392,9 +403,37 @@ class ParameterFactory:
                 )
         return cls.parse_from_key_value(key=key, value=value)
 
-    @classmethod
-    def parse_from_key_value(cls, key, value):
-        for param_type in ALL_PARAMETERS:
+    @staticmethod
+    def parse_from_key_value(
+        key, value, parameter_types: Optional[List[Type[Parameter]]] = None
+    ) -> Parameter:
+        """
+
+        Parameters
+        ----------
+        key: str
+            Parameter.key value indicating the type of parameter,
+            like 'accesion_number'
+        value: str
+            The value of the parameter, like '12345.234343'
+        parameter_types: Optional[Type[Parameter]], optional
+            List of all Parameter types that will be tried for parsing. Defaults
+            to parameter_classes.ALL_PARAMETERS
+
+        Raises
+        ------
+        ParameterParsingError
+            If parsing fails for any reason
+
+        Returns
+        -------
+        Parameter
+            A parameter instance of on of the classes parsed from key, value
+
+        """
+        if parameter_types is None:
+            parameter_types = ALL_PARAMETERS
+        for param_type in parameter_types:
             if param_type.field_name == key:
                 try:
                     return param_type(value)
@@ -407,8 +446,8 @@ class ParameterFactory:
 
 
 class ParameterSet:
-    """A collection of parameters with some convenient methods for checking
-    existence of specific parameters etc..
+    """A collection of parameter_types with some convenient methods for checking
+    existence of specific parameter_types etc..
 
     """
 
@@ -420,9 +459,9 @@ class ParameterSet:
         Parameters
         ----------
         parameters: List[Parameter]
-            The parameters in this set
+            The parameter_types in this set
         default_parameters: List[Parameter]
-            Include these parameters, unless overwritten in parameters
+            Include these parameter_types, unless overwritten in parameter_types
         """
         if not default_parameters:
             default_parameters = []
@@ -437,7 +476,7 @@ class ParameterSet:
         return next((x for x in self.parameters if isinstance(x, type_in)), None)
 
     def get_params_by_type(self, type_in) -> List[Parameter]:
-        """Return all parameters that are type or subtype, or empty list"""
+        """Return all parameter_types that are type or subtype, or empty list"""
         return [x for x in self.parameters if isinstance(x, type_in)]
 
     @staticmethod
@@ -478,7 +517,7 @@ def get_legacy_idis_value(identifier: SourceIdentifier) -> str:
     Parameters
     ----------
     identifier: anonapi.parameters.SourceIdentifier
-        The identifier for which to get the id string
+        The identifier for which to get the id input
 
     Returns
     -------

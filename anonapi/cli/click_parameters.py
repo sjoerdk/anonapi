@@ -1,4 +1,4 @@
-"""Custom parameters for click command line"""
+"""Custom parameter_types for click command line"""
 import os
 from pathlib import Path
 from typing import List

@@ -137,7 +137,7 @@ def get_local_dialect() -> Dialect:
 
 
 def create_example_mapping(context: MapCommandContext = None) -> Mapping:
-    """A default mapping with some example parameters
+    """A default mapping with some example parameter_types
 
     Parameters
     ----------
