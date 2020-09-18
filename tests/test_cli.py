@@ -174,6 +174,19 @@ def test_command_line_tool_job_info(mock_main_runner, mock_requests):
     assert "'user_name', 'z123sandbox'" in result.output
 
 
+def test_command_line_tool_job_info_multiple(mock_main_runner, mock_requests):
+    """Test checking status"""
+    runner = mock_main_runner
+
+    result = runner.invoke(entrypoint.cli, "server activate testserver")
+    assert "Set active server to" in result.output
+
+    mock_requests.set_response_text(RequestsMockResponseExamples.JOB_INFO)
+    result = runner.invoke(entrypoint.cli, "job info 3 2 4")
+    assert "job 3 on testserver" in result.output
+    assert "'user_name', 'z123sandbox'" in result.output
+
+
 def test_cli_job_list(mock_main_runner, mock_requests):
     """Try operations actually calling server"""
     runner = mock_main_runner
