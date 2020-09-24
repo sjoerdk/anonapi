@@ -1,5 +1,6 @@
 """Custom click parameter types"""
 import re
+from typing import List
 
 from click.types import ParamType
 from pathlib import Path
@@ -17,7 +18,7 @@ class JobIDRangeParamType(ParamType):
 
     name = "job_id"
 
-    def convert(self, value, param, ctx):
+    def convert(self, value, param, ctx) -> List[str]:
         """If it looks like 'int-int' try to turn into range. Otherwise just leave as is and put in list
 
         Returns
