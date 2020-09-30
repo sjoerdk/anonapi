@@ -341,3 +341,14 @@ def test_write_new_mapping(monkeypatch, locale_setting, delimiter):
         # Check that the correct delimiter is used in different parts of mapping
         last_lines = StringIO("".join(temp_file.readlines()[10:12]))
         assert sniff_dialect(last_lines).delimiter == delimiter
+
+
+def test_example_mapping_save_correct_csv():
+    """The initial mapping should be easily parsed as a csv. This means adding
+    empty delimiters at the end of comments and section headers
+    """
+    temp_file = StringIO()
+    create_example_mapping().save(temp_file)
+    temp_file.seek(0)
+    line = temp_file.readline()
+    assert line
