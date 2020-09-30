@@ -201,7 +201,7 @@ def test_cli_job_list(mock_main_runner, mock_requests):
 
 
 def test_cli_job_list_errors(mock_main_runner, mock_requests):
-    """Giving no rows should yield helpful error string. Not python stacktrace"""
+    """Giving no rows should yield helpful error input. Not python stacktrace"""
     runner = mock_main_runner
     mock_requests.set_response_text(
         text=RequestsMockResponseExamples.REQUIRED_PARAMETER_NOT_SUPPLIED,
@@ -311,7 +311,7 @@ def test_job_id_parameter_type(mock_main_runner, mock_requests):
         "5",
     ]
 
-    # test range and weird string argument (not sure whether this is a good idea to allow)
+    # test range and weird input argument (not sure whether this is a good idea to allow)
     get_job_info_mock.reset()
     runner.invoke(entrypoint.cli, "job list 1-4 hallo")
     assert get_job_info_mock.call_args[1]["job_ids"] == ["1", "2", "3", "4", "hallo"]

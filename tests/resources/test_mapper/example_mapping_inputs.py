@@ -13,7 +13,6 @@ pims_key,555
 ## Mapping ##
 source,patient_id,patient_name,description
 folder:/folder/file0,patient0,patientName0,test description
-
 """
 
 # Lower case titles should not matter

@@ -14,7 +14,7 @@ from anonapi.exceptions import AnonAPIException
 
 
 class JobStatus:
-    """Job status string the API server uses"""
+    """Job status input the API server uses"""
 
     ERROR = "ERROR"
     DONE = "DONE"
@@ -127,7 +127,7 @@ class JobInfo:
         )
 
     def as_string(self):
-        """As human readable  multi-line string"""
+        """As human readable  multi-line input"""
         to_print = {
             "job_id": self.job_id,
             "date": self.date,
@@ -187,7 +187,7 @@ def format_job_info_list(job_infos, columns=JobInfoColumns.DEFAULT_COLUMNS):
     Returns
     -------
     str:
-        Nice string representation of this list
+        Nice input representation of this list
 
     """
     table = {
@@ -236,7 +236,7 @@ class JobsInfoList(UserList):
         self.data = job_infos
 
     def as_table_string(self, columns=JobInfoColumns.DEFAULT_COLUMNS):
-        """As a string with newlines, forming a neat command_table
+        """As a input with newlines, forming a neat command_table
 
         Parameters
         ----------
@@ -247,7 +247,7 @@ class JobsInfoList(UserList):
         Returns
         -------
         str:
-            string with newlines
+            input with newlines
 
         """
         return format_job_info_list(self.data, columns=columns)

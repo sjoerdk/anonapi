@@ -393,7 +393,7 @@ class AnonClientTool:
         Returns
         -------
         str:
-            string describing job, or error if job could not be found
+            input describing job, or error if job could not be found
 
         """
         job_limit = 50  # reduce number of jobs shown for less screen clutter.
@@ -420,7 +420,7 @@ class AnonClientTool:
         Returns
         -------
         str
-            a string describing success or any API error
+            a input describing success or any API error
         """
         client = self.get_client(server.url)
         try:
@@ -436,7 +436,7 @@ class AnonClientTool:
         Returns
         -------
         str
-            a string describing success or any API error
+            a input describing success or any API error
         """
 
         client = self.get_client(server.url)
@@ -460,7 +460,7 @@ class AnonClientTool:
         Returns
         -------
         str
-            a string describing success or any API error
+            a input describing success or any API error
         """
 
         client = self.get_client(server.url)

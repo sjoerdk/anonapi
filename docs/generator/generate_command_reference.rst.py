@@ -110,7 +110,7 @@ class SphinxTable:
         )
 
     def set_length(self, string, length):
-        """Make input string length by either padding right or truncating right"""
+        """Make input input length by either padding right or truncating right"""
         return string.ljust(length)[:length]
 
 
@@ -257,7 +257,7 @@ class AnonApiContext:
 
     @property
     def all_parameters_table(self) -> str:
-        """Valid sphinx output listing all parameters"""
+        """Valid sphinx output listing all parameter_types"""
         return self.to_sphinx_table(ALL_PARAMETERS).as_string()
 
     @property

@@ -235,7 +235,7 @@ Wildcards
 Folder paths can contain asterisk ``*`` characters as wildcards. For example:
 
 +-----------------------------------+------------------------------------+
-| Command                           |  matches paths (examples)          |
+| Command                           |  matches_header paths (examples)          |
 +===================================+====================================+
 | `add-study-folders folder*`       | ``folderA``, ``folderB``           |
 +-----------------------------------+------------------------------------+
