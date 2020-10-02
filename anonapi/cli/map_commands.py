@@ -1,8 +1,5 @@
 """Click group and commands for the 'map' subcommand"""
-import csv
-import locale
 import os
-from csv import Dialect
 from pathlib import Path
 from typing import List, Optional
 
@@ -24,6 +21,7 @@ from anonapi.mapper import (
     ExampleJobParameterGrid,
     MapperException,
     Mapping,
+    get_local_dialect,
 )
 from anonapi.parameters import (
     SourceIdentifierFactory,
@@ -116,24 +114,6 @@ def init(context: MapCommandContext):
     mapping = create_example_mapping(context)
     folder.save_mapping(mapping)
     click.echo(f"Initialised example mapping in {folder.DEFAULT_FILENAME}")
-
-
-class ColonDelimited(csv.excel):
-    """Excel csv dialect, but with colon ';' delimiter"""
-
-    delimiter = ";"
-
-
-def get_local_dialect() -> Dialect:
-    """Try to obtain best match for local CSV dialect
-
-    Uses the heuristic that decimal separator comma goes together with
-    list separator colon
-    """
-    if locale.localeconv()["decimal_point"] == ",":
-        return ColonDelimited()
-    else:
-        return csv.excel
 
 
 def create_example_mapping(context: MapCommandContext = None) -> Mapping:

@@ -3,10 +3,11 @@ Pre-processing step for creating IDIS jobs
 
 Meant to be usable in a command line, with minimal windows editing tools. Maybe
 Excel, maybe notepad
-
 """
 import csv
+import locale
 import os
+
 from csv import Dialect
 from typing import List, Optional, TextIO, Union
 
@@ -557,3 +558,21 @@ class NoMappingFoundError(MapperException):
 
 class MappingLoadError(MapperException):
     pass
+
+
+class ColonDelimited(csv.excel):
+    """Excel csv dialect, but with colon ';' delimiter"""
+
+    delimiter = ";"
+
+
+def get_local_dialect() -> Dialect:
+    """Try to obtain best match for local CSV dialect
+
+    Uses the heuristic that decimal separator comma goes together with
+    list separator colon
+    """
+    if locale.localeconv()["decimal_point"] == ",":
+        return ColonDelimited()
+    else:
+        return csv.excel
