@@ -167,6 +167,31 @@ def cancel(parser: AnonAPIContext):
 @click.command()
 @handle_anonapi_exceptions
 @pass_anonapi_context
+def cancel_active(parser: AnonAPIContext):
+    """Cancel unprocessed (active) jobs, leave done and error"""
+    batch: JobBatch = parser.get_batch()
+
+    infos = parser.client_tool.get_job_info_list(
+        server=batch.server, job_ids=batch.job_ids
+    )
+
+    job_ids = [x.job_id for x in infos if x.status == JobStatus.ACTIVE]
+
+    if click.confirm(
+        f"This will cancel {len(job_ids)} jobs on {batch.server}. Are you sure?"
+    ):
+        for job_id in job_ids:
+            click.echo(
+                parser.client_tool.cancel_job(server=batch.server, job_id=job_id)
+            )
+        click.echo("Done")
+    else:
+        click.echo("User cancelled")
+
+
+@click.command()
+@handle_anonapi_exceptions
+@pass_anonapi_context
 def reset_error(parser: AnonAPIContext):
     """Reset all jobs with error status in the current batch"""
     batch: JobBatch = parser.get_batch()
@@ -222,6 +247,7 @@ for func in [
     add,
     remove,
     cancel,
+    cancel_active,
     reset_error,
     show_error,
 ]:
