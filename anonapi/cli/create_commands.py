@@ -1,5 +1,5 @@
 """Click group and commands for the 'create' subcommand"""
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import click
 
@@ -60,7 +60,7 @@ class JobParameterSet(ParameterSet):
         """Get the parameter indicating the source of the data"""
         return self.get_param_by_type(SourceIdentifierParameter)
 
-    def as_kwargs(self):
+    def as_kwargs(self) -> Dict[str, Parameter]:
         """Parameters as keyword arguments
 
         Raises

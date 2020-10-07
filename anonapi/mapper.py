@@ -510,7 +510,6 @@ class ExampleJobParameterGrid(JobParameterGrid):
                     FolderIdentifier(identifier=path.sep.join(["example", "folder1"]))
                 ),
                 PseudoName("Patient1"),
-                PseudoID("001"),
                 Description("All files from folder1"),
             ],
             [
@@ -518,7 +517,6 @@ class ExampleJobParameterGrid(JobParameterGrid):
                     StudyInstanceUIDIdentifier("123.12121212.12345678")
                 ),
                 PseudoName("Patient2"),
-                PseudoID("002"),
                 Description(
                     "A study which should be retrieved from PACS, "
                     "identified by StudyInstanceUID"
@@ -529,7 +527,6 @@ class ExampleJobParameterGrid(JobParameterGrid):
                     AccessionNumberIdentifier("12345678.1234567")
                 ),
                 PseudoName("Patient3"),
-                PseudoID("003"),
                 Description(
                     "A study which should be retrieved from PACS, "
                     "identified by AccessionNumber"
@@ -540,7 +537,6 @@ class ExampleJobParameterGrid(JobParameterGrid):
                     FileSelectionIdentifier(Path("folder2/fileselection.txt"))
                 ),
                 PseudoName("Patient4"),
-                PseudoID("004"),
                 Description("A selection of files in folder2"),
             ],
         ]
