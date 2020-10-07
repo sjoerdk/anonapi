@@ -228,6 +228,9 @@ class Parameter:
     field_name = "parameter"
     description = "Parameter base type"
 
+    # historical names for this parameter. Makes sure older files can still be read
+    legacy_field_names: List[str] = []
+
     def __init__(self, value: str = None):
         if not value:
             value = ""
@@ -235,6 +238,11 @@ class Parameter:
 
     def __str__(self):
         return self.to_string()
+
+    @classmethod
+    def field_names(cls) -> List[str]:
+        """All field names that this parameter might have, current field name first"""
+        return [cls.field_name] + cls.legacy_field_names
 
     def to_string(self, delimiter=","):
         """Parameter as string
@@ -244,14 +252,16 @@ class Parameter:
         return f"{self.field_name}{delimiter}{str(self.value)}"
 
 
-class PatientID(Parameter):
-    field_name = "patient_id"
-    description = "Patient ID to set in anonymized data"
+class PseudoID(Parameter):
+    field_name = "pseudo_id"
+    description = "Pseudonym for Patient ID to set in anonymized data"
+    legacy_field_names = ["patient_id"]
 
 
-class PatientName(Parameter):
-    field_name = "patient_name"
-    description = "Patient Name to set in anonymized data"
+class PseudoName(Parameter):
+    field_name = "pseudo_name"
+    description = "Pseudonym for Patient name to set in anonymized data"
+    legacy_field_names = ["patient_name"]
 
 
 class Description(Parameter):
@@ -434,7 +444,7 @@ class ParameterFactory:
         if parameter_types is None:
             parameter_types = ALL_PARAMETERS
         for param_type in parameter_types:
-            if param_type.field_name == key:
+            if key in param_type.field_names():
                 try:
                     return param_type(value)
                 except UnknownSourceIdentifierException as e:
@@ -530,7 +540,7 @@ def get_legacy_idis_value(identifier: SourceIdentifier) -> str:
         return str(identifier)  # will prepend the identifier type
 
 
-COMMON_JOB_PARAMETERS = [SourceIdentifierParameter, PatientID, PatientName, Description]
+COMMON_JOB_PARAMETERS = [SourceIdentifierParameter, PseudoID, PseudoName, Description]
 COMMON_GLOBAL_PARAMETERS = [PIMSKey, DestinationPath, RootSourcePath, Project]
 
 ALL_PARAMETERS = COMMON_JOB_PARAMETERS + COMMON_GLOBAL_PARAMETERS

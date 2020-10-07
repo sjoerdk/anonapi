@@ -17,7 +17,7 @@ from anonapi.parameters import (
     ParameterFactory,
     ParameterParsingError,
     PathParameter,
-    PatientName,
+    PseudoName,
 )
 
 
@@ -114,7 +114,7 @@ class AccessionNumberColumn(ParameterColumn):
 class PseudonymColumn(ParameterColumn):
 
     header_names = ["PseudoID", "Pseudonym"]
-    parameter_type: Type[Parameter] = PatientName
+    parameter_type: Type[Parameter] = PseudoName
 
 
 class FolderColumn(ParameterColumn):

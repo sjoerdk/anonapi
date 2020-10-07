@@ -22,8 +22,8 @@ from anonapi.parameters import (
     AccessionNumberIdentifier,
     SourceIdentifierParameter,
     ParameterFactory,
-    PatientName,
-    PatientID,
+    PseudoName,
+    PseudoID,
     Description,
     ALL_PARAMETERS,
     ParameterParsingError,
@@ -366,7 +366,7 @@ class JobParameterGrid:
         """
         # remember parameter list can be sparse
         table = defaultdict(list)
-        types = [SourceIdentifierParameter, PatientID]
+        types = [SourceIdentifierParameter, PseudoID]
 
         for row in self.rows:
             typed_row = {type(x): x for x in row}
@@ -509,16 +509,16 @@ class ExampleJobParameterGrid(JobParameterGrid):
                 SourceIdentifierParameter(
                     FolderIdentifier(identifier=path.sep.join(["example", "folder1"]))
                 ),
-                PatientName("Patient1"),
-                PatientID("001"),
+                PseudoName("Patient1"),
+                PseudoID("001"),
                 Description("All files from folder1"),
             ],
             [
                 SourceIdentifierParameter(
                     StudyInstanceUIDIdentifier("123.12121212.12345678")
                 ),
-                PatientName("Patient2"),
-                PatientID("002"),
+                PseudoName("Patient2"),
+                PseudoID("002"),
                 Description(
                     "A study which should be retrieved from PACS, "
                     "identified by StudyInstanceUID"
@@ -528,8 +528,8 @@ class ExampleJobParameterGrid(JobParameterGrid):
                 SourceIdentifierParameter(
                     AccessionNumberIdentifier("12345678.1234567")
                 ),
-                PatientName("Patient3"),
-                PatientID("003"),
+                PseudoName("Patient3"),
+                PseudoID("003"),
                 Description(
                     "A study which should be retrieved from PACS, "
                     "identified by AccessionNumber"
@@ -539,8 +539,8 @@ class ExampleJobParameterGrid(JobParameterGrid):
                 SourceIdentifierParameter(
                     FileSelectionIdentifier(Path("folder2/fileselection.txt"))
                 ),
-                PatientName("Patient4"),
-                PatientID("004"),
+                PseudoName("Patient4"),
+                PseudoID("004"),
                 Description("A selection of files in folder2"),
             ],
         ]

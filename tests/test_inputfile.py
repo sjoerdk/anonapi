@@ -16,11 +16,11 @@ def test_extract_parameter_grid_simple():
     grid = extract_parameter_grid(input_file)
     assert [str(x) for x in grid.rows[0]] == [
         "accession_number,1234567.12345678",
-        "patient_name,patient1",
+        "pseudo_name,patient1",
     ]
     assert [str(x) for x in grid.rows[1]] == [
         "accession_number,2234567.12345679",
-        "patient_name,patient2",
+        "pseudo_name,patient2",
     ]
 
 

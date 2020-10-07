@@ -15,7 +15,7 @@ from anonapi.parameters import (
     Description,
     SourceIdentifier,
     Parameter,
-    PatientID,
+    PseudoID,
     PIMSKey,
     RootSourcePath,
     ParameterSet,
@@ -244,13 +244,13 @@ def test_job_parameter_set_defaults():
     """
 
     param_set = JobParameterSet(
-        [PatientID("1234"), PIMSKey("0000")],
+        [PseudoID("1234"), PIMSKey("0000")],
         default_parameters=[Description("Default")],
     )
     assert param_set.get_param_by_type(Description).value == "Default"
 
     param_set2 = JobParameterSet(
-        [PatientID("1234"), Description("Overwrite!")],
+        [PseudoID("1234"), Description("Overwrite!")],
         default_parameters=[Description("Default")],
     )
     assert param_set2.get_param_by_type(Description).value == "Overwrite!"

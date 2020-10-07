@@ -12,8 +12,8 @@ from anonapi.mapper import Mapping, MappingFolder
 from anonapi.parameters import (
     Parameter,
     DestinationPath,
-    PatientID,
-    PatientName,
+    PseudoID,
+    PseudoName,
     Project,
     Description,
     SourceIdentifierParameter,
@@ -40,8 +40,8 @@ class JobParameterSet(ParameterSet):
     # keywords to use for each Parameter.
     PARAMETER_KEYWORDS = {
         DestinationPath: "destination_path",
-        PatientID: "anon_id",
-        PatientName: "anon_name",
+        PseudoID: "anon_id",
+        PseudoName: "anon_name",
         Project: "project_name",
         Description: "description",
         PIMSKey: "pims_keyfile_id",
