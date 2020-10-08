@@ -83,7 +83,8 @@ class Mapping:
     def __len__(self):
         return len(self.grid)
 
-    def save(self, f):
+    def save_to(self, f: TextIO):
+        """Write this Mapping to given stream"""
         # write description
         f.write(self.DESCRIPTION_HEADER + self.dialect.lineterminator)
         f.write(self.description)
@@ -458,7 +459,7 @@ class MappingFolder:
 
     def save_mapping(self, mapping: Mapping):
         with open(self.full_path(), "w", newline="") as f:
-            mapping.save(f)
+            mapping.save_to(f)
 
     def load_mapping(self):
         """Load Mapping from default location in this folder

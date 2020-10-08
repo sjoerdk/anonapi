@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
@@ -165,7 +166,9 @@ def test_command_line_tool_job_info(mock_main_runner, mock_requests):
     """Test checking status"""
     runner = mock_main_runner
 
-    result = runner.invoke(entrypoint.cli, "server activate testserver")
+    result = runner.invoke(
+        entrypoint.cli, "server activate testserver", catch_exceptions=False
+    )
     assert "Set active server to" in result.output
 
     mock_requests.set_response_text(RequestsMockResponseExamples.JOB_INFO)
@@ -626,6 +629,9 @@ def test_cli_entrypoint(monkeypatch, tmpdir):
     """Call main entrypoint with empty homedir. This should create a default
     settings file
     """
-    monkeypatch.setattr("anonapi.cli.entrypoint.pathlib.Path.home", lambda: tmpdir)
+    monkeypatch.setattr(
+        "anonapi.cli.entrypoint.get_settings_path",
+        lambda: Path(tmpdir) / "testsettings.yaml",
+    )
     parser = get_context()
     assert parser.settings.user_name == "username"

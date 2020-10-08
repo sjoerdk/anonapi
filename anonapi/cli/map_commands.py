@@ -92,17 +92,19 @@ def get_initial_options(settings: AnonClientSettings) -> List[Parameter]:
     """Do the awkward determination of what initially to write in the options
     section of a new mapping
     """
-    defaults = settings.job_default_parameters
+    # baseline options as a dict
+    options = {
+        x.field_name: x
+        for x in [
+            Project("Wetenschap-Algemeen"),
+            DestinationPath(r"\\server\share\folder"),
+        ]
+    }
 
-    default_project = "Wetenschap-Algemeen"
-    default_destination = r"\\server\share\folder"
-    if defaults:
-        if defaults.project_name:
-            default_project = defaults.project_name
-        if defaults.destination_path:
-            default_destination = defaults.destination_path
+    # if any are given, use these instead of baseline
+    options.update({x.field_name: x for x in settings.job_default_parameters})
 
-    return [Project(default_project), DestinationPath(default_destination)]
+    return list(options.values())
 
 
 @click.command()

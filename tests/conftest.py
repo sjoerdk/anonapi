@@ -11,6 +11,7 @@ from fileselection.fileselection import FileSelectionFolder
 from anonapi.context import AnonAPIContext
 from anonapi.client import WebAPIClient, AnonClientTool
 from anonapi.objects import RemoteAnonServer
+from anonapi.parameters import DestinationPath, Project
 from anonapi.settings import DefaultAnonClientSettings
 from tests.factories import (
     RequestsMock,
@@ -121,7 +122,7 @@ def mock_api_context(tmpdir):
     """Context required by many anonapi commands. Will yield a temp folder as
     current_dir
     """
-    settings = DefaultAnonClientSettings()
+    settings = TestDefaultAnonClientSettings()
     settings.servers.append(RemoteAnonServer("testserver2", "https://hostname_of_api2"))
     context = AnonAPIContext(
         client_tool=AnonClientTool(username="test", token="token"),
@@ -177,11 +178,10 @@ def mock_from_mapping_runner(mock_main_runner_with_mapping):
     * Default job rows are non-empty
     """
 
-    parameters = (
-        mock_main_runner_with_mapping.get_context().settings.job_default_parameters
-    )
-    parameters.project_name = "test_project"
-    parameters.destination_path = Path("//test/output/root_path")
+    mock_main_runner_with_mapping.get_context().settings.job_default_parameters = [
+        Project(value="Test_project"),
+        DestinationPath(value=Path("//test/output/root_path")),
+    ]
 
     return mock_main_runner_with_mapping
 
@@ -242,3 +242,13 @@ class AnonAPIContextRunner(MockContextCliRunner):
         AnonAPIContext
         """
         return self.mock_context
+
+
+class TestDefaultAnonClientSettings(DefaultAnonClientSettings):
+    """Default settings that you can save() without writing anything to disk
+
+    Useful for testing CLI commands that call save()
+    """
+
+    def save(self):
+        pass

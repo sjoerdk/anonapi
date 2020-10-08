@@ -11,6 +11,7 @@ from anonapi.objects import RemoteAnonServer
 
 
 class YamlSavable:
+    # TODO remove this class in favor of almost identical persistence.YAMLSerializable
     def to_dict(self):
         """
         Returns

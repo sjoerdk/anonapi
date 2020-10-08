@@ -27,8 +27,8 @@ class AnonAPIContext:
         settings: AnonClientSettings
             Settings object to use for reading and writing settings.
         current_dir: Path, optional
-            Full root_path to the directory that anonapi is being called from. Defaults
-            to None
+            Full root_path to the directory that anonapi is being called from.
+            Defaults to None
 
         """
         self.client_tool = client_tool
@@ -121,7 +121,7 @@ class AnonAPIContext:
         else:
             return batch
 
-    def get_batch_folder(self):
+    def get_batch_folder(self) -> BatchFolder:
         """True if there is a batch defined in this folder"""
         return BatchFolder(self.current_dir)
 

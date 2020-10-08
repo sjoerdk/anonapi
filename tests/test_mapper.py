@@ -100,7 +100,7 @@ def test_mapping_load_save():
     assert len(mapping.options) == 2
 
     output_file = StringIO(newline="")
-    mapping.save(output_file)
+    mapping.save_to(output_file)
     output_file.seek(0)
     loaded = Mapping.load(output_file)
 
@@ -316,7 +316,7 @@ def test_read_write_dialect(content, delimiter):
     """The csv dialect in a mapping should not change when reading and writing"""
 
     temp_file = StringIO()
-    Mapping.load(StringIO(initial_value=content)).save(temp_file)
+    Mapping.load(StringIO(initial_value=content)).save_to(temp_file)
     temp_file.seek(0)
     assert sniff_dialect(temp_file, max_lines=10).delimiter == delimiter
     temp_file.seek(0)
@@ -334,7 +334,7 @@ def test_write_new_mapping(monkeypatch, locale_setting, delimiter):
     with monkeypatch.context():
         locale.setlocale(locale.LC_ALL, locale_setting)
         temp_file = StringIO()
-        create_example_mapping().save(temp_file)
+        create_example_mapping().save_to(temp_file)
         temp_file.seek(0)
         assert sniff_dialect(temp_file, max_lines=10).delimiter == delimiter
 
@@ -348,7 +348,7 @@ def test_example_mapping_save_correct_csv():
     empty delimiters at the end of comments and section headers
     """
     temp_file = StringIO()
-    create_example_mapping().save(temp_file)
+    create_example_mapping().save_to(temp_file)
     temp_file.seek(0)
     line = temp_file.readline()
     assert line

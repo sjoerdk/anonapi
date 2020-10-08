@@ -244,12 +244,16 @@ class Parameter:
         """All field names that this parameter might have, current field name first"""
         return [cls.field_name] + cls.legacy_field_names
 
-    def to_string(self, delimiter=","):
-        """Parameter as string
+    def to_string(self, delimiter=",") -> str:
+        """Parameter as string, for serialization
 
         Separate method from __str__ to allow both comma and colon separators
         """
         return f"{self.field_name}{delimiter}{str(self.value)}"
+
+    def describe(self) -> str:
+        """Human readable description of this parameter, with description"""
+        return f"{self.field_name}:{self.value} ({self.description})"
 
 
 class PseudoID(Parameter):

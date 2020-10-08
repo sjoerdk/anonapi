@@ -23,11 +23,11 @@ from anonapi.parameters import (
     is_unc_path,
     get_legacy_idis_value,
 )
-from anonapi.settings import JobDefaultParameters, AnonClientSettingsException
 from click.exceptions import Abort, ClickException
 
 from pathlib import PureWindowsPath
 
+from anonapi.persistence import PersistenceException
 from anonapi.testresources import JobInfoFactory
 
 
@@ -189,11 +189,7 @@ class CreateCommandsContext(AnonAPIContext):
 
     def default_parameters(self) -> List[Parameter]:
         """Default parameter_types from settings"""
-        defaults: JobDefaultParameters = self.settings.job_default_parameters
-        return [
-            DestinationPath(defaults.destination_path),
-            Project(defaults.project_name),
-        ]
+        return self.settings.job_default_parameters
 
     def create_job_for_element(self, parameters: List[Parameter]):
         """Create a job for the given parameter_types
@@ -234,7 +230,7 @@ class CreateCommandsContext(AnonAPIContext):
             else:
                 raise JobCreationException(f"Unknown source '{source}'")
 
-        except (APIClientException, AnonClientSettingsException) as e:
+        except (APIClientException, PersistenceException) as e:
             raise JobCreationException(f"Error creating job for source {source}: {e}")
 
         return response.job_id
@@ -383,7 +379,7 @@ def extract_job_sets(context, mapping: Mapping) -> List[JobParameterSet]:
 @pass_create_commands_context
 def set_defaults(context: CreateCommandsContext):
     """Set project name used when creating jobs"""
-    job_default_parameters: JobDefaultParameters = context.settings.job_default_parameters
+    job_default_parameters: List[Parameter] = context.settings.job_default_parameters
     click.echo(
         "Please set default rows current value shown in [brackets]. Pressing enter"
         " without input will keep current value"
@@ -405,7 +401,7 @@ def set_defaults(context: CreateCommandsContext):
 
     job_default_parameters.project_name = project_name
     job_default_parameters.destination_path = destination_path
-    context.settings.save()
+    context.settings.save_to()
     click.echo("Saved")
 
 
@@ -413,13 +409,9 @@ def set_defaults(context: CreateCommandsContext):
 @pass_create_commands_context
 def show_defaults(context: CreateCommandsContext):
     """Show project name used when creating jobs"""
-
-    job_default_parameters: JobDefaultParameters = context.settings.job_default_parameters
-    click.echo(f"default IDIS project name: {job_default_parameters.project_name}")
-    click.echo(
-        f"default job destination directory: "
-        f"{job_default_parameters.destination_path}"
-    )
+    click.echo("Default parameters when creating jobs:")
+    for parameter in context.settings.job_default_parameters:
+        click.echo(parameter.describe())
 
 
 for func in [from_mapping, set_defaults, show_defaults]:

@@ -20,7 +20,7 @@ def main():
 def set_validate_ssl(context: AnonAPIContext, value: bool):
     """If False, ignore all ssl certificate errors"""
     context.settings.validate_ssl = value
-    context.settings.save()
+    context.settings.save_to()
     click.echo(f"Set validate ssl to {value}")
 
 
