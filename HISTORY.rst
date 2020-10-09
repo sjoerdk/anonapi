@@ -2,6 +2,12 @@
 History
 =======
 
+1.4.0 (2020-10-20)
+------------------
+
+* Changes the way settings are written. Old-style settings can still
+  be read and will be converted at any save
+
 1.3.0 (2020-09-20)
 ------------------
 
