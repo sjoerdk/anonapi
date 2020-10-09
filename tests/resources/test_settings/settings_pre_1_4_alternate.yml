@@ -1,0 +1,13 @@
+active_server_name: p03                                                                                             
+job_default_parameters:                                                                                             
+  destination_path: \\umcsanfsclp01\share\anonymized_data\Z123456                                       
+  project_name: Wetenschap-Algemeen                                                                                 
+servers:                                                                                                            
+  p01: https://anon/p01                                                                            
+  p02: https://anon/p02                                                                            
+  p03: https://anon/p03                                                                            
+  t01: https://anon/t01                                                                            
+  testserver: https://hostname_of_api
+user_name: z12345
+user_token: token
+validate_ssl: true

@@ -10,7 +10,7 @@ from anonapi.parameters import (
     DestinationPath,
     Parameter,
     ParameterFactory,
-    ParameterSet,
+    ParameterParsingError,
     Project,
 )
 from anonapi.persistence import YAMLSerializable
@@ -92,7 +92,7 @@ class AnonClientSettings(YAMLSerializable):
             user_name=dict_full["user_name"],
             user_token=dict_full["user_token"],
             validate_ssl=dict_full["validate_ssl"],
-            job_default_parameters=cls.extract_default_parameters(dict_full),
+            job_default_parameters=cls.extract_default_parameters(dict_in),
         )
 
         settings.active_server = cls.determine_active_server(
@@ -101,37 +101,49 @@ class AnonClientSettings(YAMLSerializable):
         return settings
 
     @classmethod
-    def extract_default_parameters(cls, dict_full) -> List[Parameter]:
-        """Read default parameters from dict and pad with defaults where needed"""
-        # There are three sources for default parameters
-        baseline = DefaultAnonClientSettings().job_default_parameters
-        from_input = [
-            ParameterFactory.parse_from_string(x)
-            for x in dict_full["job_default_parameters"]
-        ]
-        from_input_legacy = cls.extract_legacy_job_default_parameters(dict_full)
+    def extract_default_parameters(cls, dict_in: Dict) -> List[Parameter]:
+        """Default job parameters can be in pre- or post-1.4 format and under one
+         of two keys. Try all 4 combinations
 
-        # take results from input and pad out with defaults where needed
-        return ParameterSet(
-            parameters=from_input + from_input_legacy, default_parameters=baseline
-        ).parameters
+        Parameters
+        ----------
+        dict_in: Dict
+            All settings
+        """
+        # info is in one of these keys:
+        keys = [
+            key
+            for key, value in dict_in.items()
+            if key in ["create_job_defaults", "job_default_parameters"]
+        ]
+        for key in keys:
+            try:
+                # parse as post-1.4 style
+                return [ParameterFactory.parse_from_string(x) for x in dict_in[key]]
+            except ParameterParsingError:
+                # this did not work. Try old, pre-1.4 style
+                return cls.extract_legacy_job_default_parameters(dict_in[key])
 
     @staticmethod
-    def extract_legacy_job_default_parameters(dict_in) -> List[Parameter]:
+    def extract_legacy_job_default_parameters(
+        job_default_parameters: Dict,
+    ) -> List[Parameter]:
         """Extract job default parameters as they were written before version 1.4
         This makes sure older settings can still be read
+
+        Parameters
+        ----------
+        job_default_parameters: Dict
+            The contents of the job default parameters item in settings
+
         """
 
-        try:
-            legacy_defaults = dict_in["create_job_defaults"]
-        except KeyError:
-            return []
         parameters = []
-        if "project_name" in legacy_defaults:
-            parameters.append(Project(value=legacy_defaults["project_name"]))
-        if "destination_path" in legacy_defaults:
+        if "project_name" in job_default_parameters:
+            parameters.append(Project(value=job_default_parameters["project_name"]))
+        if "destination_path" in job_default_parameters:
             parameters.append(
-                DestinationPath(value=legacy_defaults["destination_path"])
+                DestinationPath(value=job_default_parameters["destination_path"])
             )
 
         return parameters

@@ -61,9 +61,7 @@ def assert_test_settings_file_contents(settings: AnonClientSettings):
     assert settings.user_token == "token"
     assert settings.active_server.name == "sandbox"
     assert type(settings.job_default_parameters[0]) == Project
-    assert type(settings.job_default_parameters[1]) == DestinationPath
     assert settings.job_default_parameters[0].value == "Wetenschap-Algemeen"
-    assert str(settings.job_default_parameters[1].value) == "."
     assert len(settings.servers) == 2
 
 
@@ -182,12 +180,19 @@ def test_load_v1_4_settings(test_settings_folder):
     """After v1.3.1 settings format changed. Make pre and post 1_4 settings
     can both be read
     """
+    # post-change should be loadable
+    assert_test_settings_file_contents(
+        AnonClientSettingsFromFile(test_settings_folder / "settings_post_1_4_style.yml")
+    )
+
     # pre-change should be loadable
     assert_test_settings_file_contents(
         AnonClientSettingsFromFile(test_settings_folder / "settings.yml")
     )
 
-    # post-change should be loadable
-    assert_test_settings_file_contents(
-        AnonClientSettingsFromFile(test_settings_folder / "settings_post_1_4_style.yml")
-    )
+
+def test_load_v1_4_settings_alternate(test_settings_folder):
+    """Recreates live exception"""
+    AnonClientSettingsFromFile(
+        test_settings_folder / "settings_pre_1_4_alternate.yml"
+    )  # should just not crash
