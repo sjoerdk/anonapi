@@ -1,5 +1,5 @@
 """Click group and commands for the 'create' subcommand"""
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import click
 
@@ -12,8 +12,8 @@ from anonapi.mapper import Mapping, MappingFolder
 from anonapi.parameters import (
     Parameter,
     DestinationPath,
-    PatientID,
-    PatientName,
+    PseudoID,
+    PseudoName,
     Project,
     Description,
     SourceIdentifierParameter,
@@ -23,16 +23,16 @@ from anonapi.parameters import (
     is_unc_path,
     get_legacy_idis_value,
 )
-from anonapi.settings import JobDefaultParameters, AnonClientSettingsException
 from click.exceptions import Abort, ClickException
 
 from pathlib import PureWindowsPath
 
+from anonapi.persistence import PersistenceException
 from anonapi.testresources import JobInfoFactory
 
 
 class JobParameterSet(ParameterSet):
-    """A collection of parameters that should create one job.
+    """A collection of parameter_types that should create one job.
 
     Offers validation and mapping to job-creation function keywords
     """
@@ -40,14 +40,14 @@ class JobParameterSet(ParameterSet):
     # keywords to use for each Parameter.
     PARAMETER_KEYWORDS = {
         DestinationPath: "destination_path",
-        PatientID: "anon_id",
-        PatientName: "anon_name",
+        PseudoID: "anon_id",
+        PseudoName: "anon_name",
         Project: "project_name",
         Description: "description",
         PIMSKey: "pims_keyfile_id",
     }
 
-    # these types of parameters are never sent to a function directly. They
+    # these types of parameter_types are never sent to a function directly. They
     # should be ignored when casting to kwargs
     NON_KEYWORD_PARAMETERS = [RootSourcePath]
 
@@ -60,13 +60,13 @@ class JobParameterSet(ParameterSet):
         """Get the parameter indicating the source of the data"""
         return self.get_param_by_type(SourceIdentifierParameter)
 
-    def as_kwargs(self):
+    def as_kwargs(self) -> Dict[str, Parameter]:
         """Parameters as keyword arguments
 
         Raises
         ------
         ParameterMappingException
-            If not all parameters can be mapped
+            If not all parameter_types can be mapped
 
         Returns
         -------
@@ -188,20 +188,16 @@ class CreateCommandsContext(AnonAPIContext):
         )
 
     def default_parameters(self) -> List[Parameter]:
-        """Default parameters from settings"""
-        defaults: JobDefaultParameters = self.settings.job_default_parameters
-        return [
-            DestinationPath(defaults.destination_path),
-            Project(defaults.project_name),
-        ]
+        """Default parameter_types from settings"""
+        return self.settings.job_default_parameters
 
     def create_job_for_element(self, parameters: List[Parameter]):
-        """Create a job for the given parameters
+        """Create a job for the given parameter_types
 
         Parameters
         ----------
         parameters: List[Parameter]
-            The parameters to use
+            The parameter_types to use
 
         Raises
         ------
@@ -234,7 +230,7 @@ class CreateCommandsContext(AnonAPIContext):
             else:
                 raise JobCreationException(f"Unknown source '{source}'")
 
-        except (APIClientException, AnonClientSettingsException) as e:
+        except (APIClientException, PersistenceException) as e:
             raise JobCreationException(f"Error creating job for source {source}: {e}")
 
         return response.job_id
@@ -354,7 +350,7 @@ def create_jobs(
 
 
 def extract_job_sets(context, mapping: Mapping) -> List[JobParameterSet]:
-    """Extract sets of parameters each creating one job
+    """Extract sets of parameter_types each creating one job
 
     Raises
     ------
@@ -375,7 +371,7 @@ def extract_job_sets(context, mapping: Mapping) -> List[JobParameterSet]:
         try:
             job_set.validate()
         except JobSetValidationError as e:
-            raise ClickException(f"Error validating parameters: {e}")
+            raise ClickException(f"Error validating parameter_types: {e}")
     return job_sets
 
 
@@ -383,7 +379,7 @@ def extract_job_sets(context, mapping: Mapping) -> List[JobParameterSet]:
 @pass_create_commands_context
 def set_defaults(context: CreateCommandsContext):
     """Set project name used when creating jobs"""
-    job_default_parameters: JobDefaultParameters = context.settings.job_default_parameters
+    job_default_parameters: List[Parameter] = context.settings.job_default_parameters
     click.echo(
         "Please set default rows current value shown in [brackets]. Pressing enter"
         " without input will keep current value"
@@ -405,7 +401,7 @@ def set_defaults(context: CreateCommandsContext):
 
     job_default_parameters.project_name = project_name
     job_default_parameters.destination_path = destination_path
-    context.settings.save()
+    context.settings.save_to()
     click.echo("Saved")
 
 
@@ -413,13 +409,9 @@ def set_defaults(context: CreateCommandsContext):
 @pass_create_commands_context
 def show_defaults(context: CreateCommandsContext):
     """Show project name used when creating jobs"""
-
-    job_default_parameters: JobDefaultParameters = context.settings.job_default_parameters
-    click.echo(f"default IDIS project name: {job_default_parameters.project_name}")
-    click.echo(
-        f"default job destination directory: "
-        f"{job_default_parameters.destination_path}"
-    )
+    click.echo("Default parameters when creating jobs:")
+    for parameter in context.settings.job_default_parameters:
+        click.echo(parameter.describe())
 
 
 for func in [from_mapping, set_defaults, show_defaults]:

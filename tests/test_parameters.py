@@ -2,6 +2,7 @@ import pytest
 
 from anonapi.cli.create_commands import JobParameterSet
 from anonapi.parameters import (
+    PseudoID,
     SourceIdentifierParameter,
     ParameterFactory,
     ParameterParsingError,
@@ -35,6 +36,24 @@ def test_parameter_factory():
     )
     assert parsed.field_name == "source"
     assert str(parsed.value) == "folder:C:/windowsisgreat/folder"
+
+
+def test_parameter_factory_legacy_keys():
+    """Legacy keys should be readable as parameter, but should yield their new
+    parameter class so that load->save of any of these keys will update to the
+    correct names
+    """
+    # patient_id should be parsed to the updated pseudo_id parameter
+    parsed = ParameterFactory.parse_from_string("patient_id,12345")
+    assert type(parsed) is PseudoID
+    assert parsed.value == "12345"
+    assert parsed.field_name == "pseudo_id"
+
+    # this should be identical:
+    parsed = ParameterFactory.parse_from_string("pseudo_id,12345")
+    assert type(parsed) is PseudoID
+    assert parsed.value == "12345"
+    assert parsed.field_name == "pseudo_id"
 
 
 @pytest.mark.parametrize(

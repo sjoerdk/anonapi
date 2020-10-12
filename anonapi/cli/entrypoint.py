@@ -1,7 +1,6 @@
 """Entrypoint for calling CLI with click."""
 import locale
 import os
-import pathlib
 
 import click
 
@@ -17,33 +16,46 @@ from anonapi.cli import (
 )
 from anonapi.context import AnonAPIContext
 from anonapi.client import AnonClientTool
-from anonapi.settings import AnonClientSettingsFromFile, DefaultAnonClientSettings
+from anonapi.persistence import DEFAULT_SETTINGS_PATH
+from anonapi.settings import DefaultAnonClientSettings, AnonClientSettingsFromFile
 
 
-def get_context():
-    """Collect info about settings, current dir that is passed to all anonapi commands
+def get_settings_path() -> str:
+    """Separate method for easier spoofing during tests"""
+    return DEFAULT_SETTINGS_PATH
+
+
+def get_settings() -> AnonClientSettingsFromFile:
+    """Obtain local anonapi settings. Creates default settings file if not found"""
+    settings_file = get_settings_path()
+    if not settings_file.exists():
+        click.echo(
+            f'No settings file found. Creating default settings at "{settings_file}"'
+        )
+        with open(settings_file, "w") as f:
+            DefaultAnonClientSettings().save_to(f)
+
+    return AnonClientSettingsFromFile(path=settings_file)
+
+
+def get_context() -> AnonAPIContext:
+    """Collect all info used by all anonapi commands. Settings, current dir, etc.
 
     Returns
     -------
     AnonAPIContext
     """
 
-    settings_file = pathlib.Path.home() / "AnonWebAPIClientSettings.yml"
-    if not settings_file.exists():
-        click.echo(
-            f'No settings file found. Creating default settings at "{settings_file}"'
-        )
-        DefaultAnonClientSettings().save_to_file(settings_file)
-    settings = AnonClientSettingsFromFile(settings_file)
+    settings = get_settings()
     tool = AnonClientTool(
         username=settings.user_name,
         token=settings.user_token,
         validate_https=settings.validate_ssl,
     )
-    parser = AnonAPIContext(
+    context = AnonAPIContext(
         client_tool=tool, settings=settings, current_dir=os.getcwd()
     )
-    return parser
+    return context
 
 
 @click.group()

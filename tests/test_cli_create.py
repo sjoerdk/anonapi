@@ -11,16 +11,17 @@ from anonapi.cli.create_commands import (
 )
 from anonapi.mapper import Mapping, MappingFolder
 from anonapi.parameters import (
+    DestinationPath,
+    Project,
     SourceIdentifierParameter,
     Description,
     SourceIdentifier,
     Parameter,
-    PatientID,
+    PseudoID,
     PIMSKey,
     RootSourcePath,
     ParameterSet,
 )
-from anonapi.settings import JobDefaultParameters
 from tests import RESOURCE_PATH
 from tests.mock_responses import RequestsMockResponseExamples
 
@@ -106,11 +107,12 @@ def test_create_from_mapping_server_error_halfway(
 
 def test_show_set_default_parameters(mock_main_runner):
     # Try to run from-mapping
-    parameters: JobDefaultParameters = mock_main_runner.get_context().settings.job_default_parameters
-    parameters.project_name = "test_project"
-    parameters.destination_path = "test_destination"
+    mock_main_runner.get_context().settings.job_default_parameters = [
+        Project("test_project"),
+        DestinationPath("test_destination"),
+    ]
 
-    result = mock_main_runner.invoke(main, "show-defaults")
+    result = mock_main_runner.invoke(main, "show-defaults", catch_exceptions=False)
     assert result.exit_code == 0
     assert all(x in result.output for x in ["test_project", "test_destination"])
 
@@ -218,7 +220,7 @@ def test_job_parameter_set_validate(all_parameters):
     param_set.validate()
 
     # now without a root source root_path, it is not possible to know what the
-    # relative root_path parameters are referring to. Exception.
+    # relative root_path parameter_types are referring to. Exception.
     param_set.parameters.remove(param_set.get_param_by_type(RootSourcePath))
     with pytest.raises(JobSetValidationError):
         param_set.validate()
@@ -244,13 +246,13 @@ def test_job_parameter_set_defaults():
     """
 
     param_set = JobParameterSet(
-        [PatientID("1234"), PIMSKey("0000")],
+        [PseudoID("1234"), PIMSKey("0000")],
         default_parameters=[Description("Default")],
     )
     assert param_set.get_param_by_type(Description).value == "Default"
 
     param_set2 = JobParameterSet(
-        [PatientID("1234"), Description("Overwrite!")],
+        [PseudoID("1234"), Description("Overwrite!")],
         default_parameters=[Description("Default")],
     )
     assert param_set2.get_param_by_type(Description).value == "Overwrite!"
