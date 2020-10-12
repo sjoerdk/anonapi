@@ -1,8 +1,6 @@
-"""Makes it possible to map source files to anonymized id, name etc.
+"""Makes it possible to map a structured file to batch of IDIS jobs.
+The file should contain source files to anonymized id, name etc.
 Pre-processing step for creating IDIS jobs
-
-Meant to be usable in a command line, with minimal windows editing tools. Maybe
-Excel, maybe notepad
 """
 import csv
 import locale
@@ -276,6 +274,10 @@ class JobParameterGrid:
     def width(self) -> int:
         """Maximum number of columns in this grid"""
         return max([len(x) for x in self.rows])
+
+    def append(self, row: List[Parameter]):
+        """Append the given row to this grid"""
+        self.rows.append(row)
 
     def save(self, f: TextIO, dialect: Union[str, Dialect] = "excel"):
         """Write rows as CSV. Will omit columns where each value is none

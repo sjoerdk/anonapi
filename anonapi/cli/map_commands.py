@@ -24,6 +24,7 @@ from anonapi.mapper import (
     get_local_dialect,
 )
 from anonapi.parameters import (
+    ParameterFactory,
     SourceIdentifierFactory,
     DestinationPath,
     PseudoName,
@@ -173,28 +174,34 @@ def get_mapping(context):
     " are included. off by default",
 )
 def add_study_folders(context: MapCommandContext, paths, check_dicom):
-    """Add all dicom files in given folder to map"""
+    """Add all dicom files in given folders to map"""
 
     # flatten paths, which is a tuple (due to nargs -1) of lists (due to wildcards)
     paths = [path for wildcard in paths for path in wildcard]
     click.echo(f"Adding {len(paths)} paths to mapping")
 
+    mapping = get_mapping(context)
     for path in paths:
-        mapping = add_path_to_mapping_click(
-            Path(path),
-            get_mapping(context),
-            cwd=context.current_path,
-            check_dicom=check_dicom,
+        fileselection = create_fileselection_click(
+            Path(path), cwd=context.current_path, check_dicom=check_dicom
         )
+        # add defaults
+        row = [
+            fileselection,
+            ParameterFactory.generate_pseudo_name(),
+            ParameterFactory.generate_pseudo_name(),
+        ]
+        mapping.grid.append(row)
+        # save each time so we don't loose all when an error occurs
         context.get_current_mapping_folder().save_mapping(mapping)
-        click.echo("")  # make adding of separate folders more readable
+        click.echo("")  # extra newline makes separate folder adding more readable
     click.echo(f"Done. Added '{paths}' to mapping")
 
 
-def add_path_to_mapping_click(
-    path: Path, mapping: Mapping, check_dicom: bool = True, cwd: Optional[Path] = None
-):
-    """Create a fileselection in the given path and add it to the given mapping
+def create_fileselection_click(
+    path: Path, check_dicom: bool = True, cwd: Optional[Path] = None
+) -> SourceIdentifierParameter:
+    """Create a fileselection in the given path, return an identifier pointing to it
 
     Meant to be called from a click function. Contains calls to click.echo().
 
@@ -202,8 +209,6 @@ def add_path_to_mapping_click(
     ----------
     path: Path
         Path to create fileselection in
-    mapping: Mapping
-        Mapping to add the fileselection to
     check_dicom: bool, optional
         open each file to see whether it is valid DICOM. Setting False is faster
         but could include files that will fail the job in IDIS. Defaults to True
@@ -218,8 +223,8 @@ def add_path_to_mapping_click(
 
     Returns
     -------
-    Mapping
-        The mapping with path added
+    SourceIdentifierParameter
+        A reference to the fileselection created
     """
     # create a selection from all dicom files in given root_path
     file_selection = create_dicom_selection_click(path, check_dicom)
@@ -231,17 +236,9 @@ def add_path_to_mapping_click(
             file_selection.data_file_path = path.relative_to(cwd)
 
     # how to refer to this new file selection
-    file_selection_identifier = FileSelectionIdentifier.from_object(file_selection)
-
-    patient_name = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
-    description = f"generated_{datetime.date.today().strftime('%B_%d_%Y')}"
-    row = [
-        SourceIdentifierParameter(file_selection_identifier),
-        PseudoName(patient_name),
-        Description(description),
-    ]
-    mapping.grid.rows.append(row)
-    return mapping
+    return SourceIdentifierParameter.init_from_source_identifier(
+        FileSelectionIdentifier.from_object(file_selection)
+    )
 
 
 @click.command()

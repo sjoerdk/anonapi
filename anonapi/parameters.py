@@ -6,7 +6,10 @@ Put these in separate module because rows appear in several guises throughout
 the job creation process and I want a unified type
 
 """
+import string
+import random
 from copy import copy
+from datetime import datetime
 from typing import Any, List, Optional, Type
 
 from anonapi.exceptions import AnonAPIException
@@ -15,18 +18,16 @@ from pathlib import Path, PureWindowsPath
 
 
 class SourceIdentifier:
-    """A input representing a place where data is coming from
+    """An input representing a place where data is coming from
 
     Attributes
     ----------
-    key: str
-        Class level attribute to identify this class of identifiers
     identifier: str
         Instance level attribute giving the actual value for this identifier.
         For example a specific root_path or UID
     """
 
-    key = "base"  # key with which this class is identified
+    key: str = "base"  # key with which this class is identified
 
     def __init__(self, identifier):
         self.identifier = self.parse_identifier(identifier)
@@ -61,7 +62,7 @@ class SourceIdentifier:
 
         Parameters
         ----------
-        identifier, str
+        identifier: str
             Valid source identifier, like 'root_path:/tmp/'
 
         Raises
@@ -341,6 +342,19 @@ class SourceIdentifierParameter(PathParameter):
         super().__init__()
         self.value = SourceIdentifierFactory().get_source_identifier_for_key(str(value))
 
+    @classmethod
+    def init_from_source_identifier(cls, obj: SourceIdentifier):
+        """Create a source identifier with the given source
+
+        TODO: rewrite this. This method shows that the whole class tree needs
+         rewriting. Why is SourceIdentifier not a Parameter? This makes no sense
+         and is very hard to follow. Also. Why is SourceIdentifier a PathParameter
+         even though it has non-path children such as StudyInstanceUIDIdentifier?
+        """
+        base = cls(value="base:empty")  # dummy value just to make __init__ pass..
+        base.value = obj
+        return base
+
     @property
     def path(self) -> Optional[Path]:
         """Return the path part of this identifier"""
@@ -457,6 +471,18 @@ class ParameterFactory:
             f"Could not parse key={key}, value={value} to any known parameter. "
             f"Tried {[x.field_name for x in ALL_PARAMETERS]}"
         )
+
+    @staticmethod
+    def generate_pseudo_name() -> PseudoName:
+        """Random pseudonym parameter. 8 characters, like '8GW7FEDQ'"""
+        return PseudoName(
+            "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        )
+
+    @staticmethod
+    def generate_description() -> Description:
+        """Description with curent date. Like 'generated_02_23_2020'"""
+        return Description(f"generated_{datetime.date.today().strftime('%B_%d_%Y')}")
 
 
 class ParameterSet:

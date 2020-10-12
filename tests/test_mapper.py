@@ -17,6 +17,8 @@ from anonapi.mapper import (
     sniff_dialect,
 )
 from anonapi.parameters import (
+    PathParameter,
+    PseudoName,
     SourceIdentifierFactory,
     UnknownSourceIdentifierException,
     PIMSKey,
@@ -352,3 +354,39 @@ def test_example_mapping_save_correct_csv():
     temp_file.seek(0)
     line = temp_file.readline()
     assert line
+
+
+def test_cli_map_add_paths_file(a_grid_of_parameters):
+    """Add an xls file containing several paths and potentially pseudonyms
+    to an existing mapping
+    """
+    grid = JobParameterGrid(
+        rows=[
+            PathParameter(r"Kees\01"),
+            PseudoName("Study1"),
+            PathParameter(r"Kees\02"),
+            PseudoName("Study2"),
+            PathParameter(r"Henk\04"),
+            PseudoName("Study3"),
+        ]
+    )
+
+    # a mapping
+    mapping = Mapping(grid=JobParameterGrid(rows=a_grid_of_parameters))
+    # add
+    mapping.grid.append(grid)
+    assert mapping.grid  # todo: continue
+    # convert one column to SourceIdentifier. How?
+
+    # add the new mapping
+    # mapping.grid = mapping.grid + grid
+
+    # questions.
+    # What to do with empty values?"
+    # first column is Key column
+    # If key is missing but other columns not, error
+    # If other column is missing but key is there, use default there
+    # If all are missing, stop
+
+    # What to do with existing values? -> just add, don't merge.
+    pass

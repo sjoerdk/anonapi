@@ -9,7 +9,7 @@ from anonapi.cli import entrypoint
 from anonapi.cli.map_commands import (
     MapCommandContext,
     add_selection,
-    add_path_to_mapping_click,
+    create_fileselection_click,
     add_study_folders,
 )
 from anonapi.mapper import MappingLoadError, MappingFolder
@@ -141,7 +141,9 @@ def test_cli_map_add_folder(mock_main_runner, folder_with_some_dicom_files):
     # dicom files should not have been selected yet currently
     assert not selection_folder.has_file_selection()
     result = mock_main_runner.invoke(
-        entrypoint.cli, f"map add-study-folders {selection_folder.path}"
+        entrypoint.cli,
+        f"map add-study-folders {selection_folder.path}",
+        catch_exceptions=False,
     )
     # but should be now
     assert result.exit_code == 0
@@ -179,21 +181,21 @@ def test_cli_map_add_folder_no_check(mock_main_runner, folder_with_some_dicom_fi
 
 
 @fixture
-def add_path_to_mapping_click_recorder(monkeypatch):
+def create_fileselection_click_recorder(monkeypatch):
     """Add a decorator around the function that adds paths to mapping. Function
     will still works as normal, but calls are recorded
     """
 
     recorder = Mock()
 
-    def add_path_to_mapping_click_recorded(*args, **kwargs):
+    def create_fileselection_click_recorded(*args, **kwargs):
         """Run the original function, but track calls"""
         recorder(*args, **kwargs)
-        return add_path_to_mapping_click(*args, **kwargs)
+        return create_fileselection_click(*args, **kwargs)
 
     monkeypatch.setattr(
-        "anonapi.cli.map_commands.add_path_to_mapping_click",
-        add_path_to_mapping_click_recorded,
+        "anonapi.cli.map_commands.create_fileselection_click",
+        create_fileselection_click_recorded,
     )
     return recorder
 
@@ -201,7 +203,7 @@ def add_path_to_mapping_click_recorder(monkeypatch):
 def test_cli_map_add_study_folders(
     map_command_runner_mapping_dir,
     folder_with_mapping_and_some_dicom_files,
-    add_path_to_mapping_click_recorder,
+    create_fileselection_click_recorder,
     monkeypatch,
 ):
     """Add multiple study folders using the add-study-folders command"""
@@ -215,7 +217,7 @@ def test_cli_map_add_study_folders(
         add_study_folders, "*", catch_exceptions=False,
     )
 
-    assert add_path_to_mapping_click_recorder.call_count == 2
+    assert create_fileselection_click_recorder.call_count == 2
     assert "that look like DICOM" in result.output
 
 
@@ -257,3 +259,14 @@ def test_cli_map_edit(mock_main_runner_with_mapping, monkeypatch):
     assert result.exit_code == 0
     assert "No mapping file defined" in result.output
     assert not mock_launch.called
+
+
+def test_cli_map_add_paths_file(mock_main_runner):
+    """Add an xls file containing several paths and potentially pseudonyms
+    to an existing mapping
+    """
+    # TODO create this
+    # a paths file with pseudonyms
+    # a mapping
+    # add
+    pass

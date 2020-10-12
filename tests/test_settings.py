@@ -6,8 +6,7 @@ from pathlib import Path
 import pytest
 
 from anonapi.cli import entrypoint
-from anonapi.objects import RemoteAnonServer
-from anonapi.parameters import DestinationPath, Project
+from anonapi.parameters import Project
 from anonapi.settings import (
     AnonClientSettingsException,
     AnonClientSettings,
@@ -36,19 +35,6 @@ def test_settings_folder(tmp_path):
 def test_settings_file(test_settings_folder):
     """Copy of a correctly formatted settings file"""
     return test_settings_folder / "settings.yml"
-
-
-@pytest.fixture
-def some_settings() -> AnonClientSettings:
-    return AnonClientSettings(
-        servers=[RemoteAnonServer(name="test", url="https://sometest")],
-        user_name="testuser",
-        user_token="abcdedtoken",
-        job_default_parameters=[
-            Project(value="testproject"),
-            DestinationPath(value=Path(r"\\server\share")),
-        ],
-    )
 
 
 def assert_test_settings_file_contents(settings: AnonClientSettings):
