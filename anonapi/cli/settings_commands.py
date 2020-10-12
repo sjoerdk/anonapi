@@ -17,18 +17,18 @@ def main():
 @click.command()
 @pass_anonapi_context
 @click.argument("value", type=bool)
-def set_validate_ssl(parser: AnonAPIContext, value: bool):
+def set_validate_ssl(context: AnonAPIContext, value: bool):
     """If False, ignore all ssl certificate errors"""
-    parser.settings.validate_ssl = value
-    parser.settings.save()
+    context.settings.validate_ssl = value
+    context.settings.save_to()
     click.echo(f"Set validate ssl to {value}")
 
 
 @click.command()
 @pass_anonapi_context
-def show(parser: AnonAPIContext):
+def show(context: AnonAPIContext):
     """Show all settings"""
-    click.echo(parser.settings.as_human_readable())
+    click.echo(context.settings.as_human_readable())
 
 
 main.add_command(user_commands.main)

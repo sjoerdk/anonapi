@@ -1,4 +1,5 @@
 """Click group and commands for the 'map' subcommand"""
+import os
 from pathlib import Path
 from typing import List, Optional
 
@@ -10,6 +11,7 @@ import string
 
 from click.exceptions import BadParameter, ClickException
 
+from anonapi.cli.click_parameters import WildcardFolder
 from anonapi.cli.click_types import FileSelectionFileParam
 from anonapi.cli.select_commands import create_dicom_selection_click
 from anonapi.context import AnonAPIContext
@@ -19,20 +21,21 @@ from anonapi.mapper import (
     ExampleJobParameterGrid,
     MapperException,
     Mapping,
+    get_local_dialect,
 )
 from anonapi.parameters import (
     SourceIdentifierFactory,
     DestinationPath,
-    PatientName,
+    PseudoName,
     SourceIdentifierParameter,
-    PatientID,
+    PseudoID,
     Description,
     RootSourcePath,
     Project,
     Parameter,
     FileSelectionIdentifier,
 )
-from anonapi.settings import AnonClientSettings
+from anonapi.settings import AnonClientSettings, DefaultAnonClientSettings
 
 
 class MapCommandContext:
@@ -89,17 +92,19 @@ def get_initial_options(settings: AnonClientSettings) -> List[Parameter]:
     """Do the awkward determination of what initially to write in the options
     section of a new mapping
     """
-    defaults = settings.job_default_parameters
+    # baseline options as a dict
+    options = {
+        x.field_name: x
+        for x in [
+            Project("Wetenschap-Algemeen"),
+            DestinationPath(r"\\server\share\folder"),
+        ]
+    }
 
-    default_project = "Wetenschap-Algemeen"
-    default_destination = r"\\server\share\folder"
-    if defaults:
-        if defaults.project_name:
-            default_project = defaults.project_name
-        if defaults.destination_path:
-            default_destination = defaults.destination_path
+    # if any are given, use these instead of baseline
+    options.update({x.field_name: x for x in settings.job_default_parameters})
 
-    return [Project(default_project), DestinationPath(default_destination)]
+    return list(options.values())
 
 
 @click.command()
@@ -108,6 +113,24 @@ def init(context: MapCommandContext):
     """Save a default mapping in the current folder"""
     folder = context.get_current_mapping_folder()
 
+    mapping = create_example_mapping(context)
+    folder.save_mapping(mapping)
+    click.echo(f"Initialised example mapping in {folder.DEFAULT_FILENAME}")
+
+
+def create_example_mapping(context: MapCommandContext = None) -> Mapping:
+    """A default mapping with some example parameter_types
+
+    Parameters
+    ----------
+    context: MapCommandContext, optional
+        set default options according to this context. Defaults to built-in
+        defaults
+    """
+    if not context:
+        context = MapCommandContext(
+            current_path=os.getcwd(), settings=DefaultAnonClientSettings()
+        )
     options = [RootSourcePath(context.current_path)] + get_initial_options(
         context.settings
     )
@@ -116,9 +139,9 @@ def init(context: MapCommandContext):
         options=options,
         description=f"Mapping created {datetime.date.today().strftime('%B %d %Y')} "
         f"by {getpass.getuser()}\n",
+        dialect=get_local_dialect(),
     )
-    folder.save_mapping(mapping)
-    click.echo(f"Initialised example mapping in {folder.DEFAULT_FILENAME}")
+    return mapping
 
 
 @click.command()
@@ -139,25 +162,33 @@ def get_mapping(context):
 
 @click.command()
 @pass_map_command_context
-@click.argument("path", type=click.Path(exists=True))
+@click.argument("paths", type=WildcardFolder(exists=True), nargs=-1)
 @click.option(
     "--check-dicom/--no-check-dicom",
-    default=True,
-    help="Open each file to check whether it is valid DICOM. Turning this off is "
-    "faster, but the anonymization fails if non-DICOM files are included. "
-    "On by default",
+    default=False,
+    help="--check-dicom: Open each file to check whether it is valid DICOM. "
+    "--no-check-dicom: Add all files that look like DICOM (exclude files with"
+    " known file extensions like .txt or .xml)"
+    " Not checking is faster, but the anonymization fails if non-DICOM files"
+    " are included. off by default",
 )
-def add_study_folder(context: MapCommandContext, path, check_dicom):
+def add_study_folders(context: MapCommandContext, paths, check_dicom):
     """Add all dicom files in given folder to map"""
 
-    mapping = add_path_to_mapping_click(
-        Path(path),
-        get_mapping(context),
-        cwd=context.current_path,
-        check_dicom=check_dicom,
-    )
-    context.get_current_mapping_folder().save_mapping(mapping)
-    click.echo(f"Done. Added '{path}' to mapping")
+    # flatten paths, which is a tuple (due to nargs -1) of lists (due to wildcards)
+    paths = [path for wildcard in paths for path in wildcard]
+    click.echo(f"Adding {len(paths)} paths to mapping")
+
+    for path in paths:
+        mapping = add_path_to_mapping_click(
+            Path(path),
+            get_mapping(context),
+            cwd=context.current_path,
+            check_dicom=check_dicom,
+        )
+        context.get_current_mapping_folder().save_mapping(mapping)
+        click.echo("")  # make adding of separate folders more readable
+    click.echo(f"Done. Added '{paths}' to mapping")
 
 
 def add_path_to_mapping_click(
@@ -202,57 +233,15 @@ def add_path_to_mapping_click(
     # how to refer to this new file selection
     file_selection_identifier = FileSelectionIdentifier.from_object(file_selection)
 
-    patient_name = f"autogenerated_{''.join(random.choices(string.ascii_uppercase + string.digits, k=5))}"
-    patient_id = "auto_" + "".join(map(str, random.choices(range(10), k=8)))
-    description = f"auto generated_{datetime.date.today().strftime('%B %d, %Y')}"
+    patient_name = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
+    description = f"generated_{datetime.date.today().strftime('%B_%d_%Y')}"
     row = [
         SourceIdentifierParameter(file_selection_identifier),
-        PatientName(patient_name),
-        PatientID(patient_id),
+        PseudoName(patient_name),
         Description(description),
     ]
     mapping.grid.rows.append(row)
     return mapping
-
-
-@click.command()
-@pass_map_command_context
-@click.argument("pattern")
-@click.option(
-    "--check-dicom/--no-check-dicom",
-    default=True,
-    help="Open each file to check whether it is valid DICOM. Turning this off is "
-    "faster, but the anonymization fails if non-DICOM files are included. "
-    "On by default",
-)
-def add_all_study_folders(context: MapCommandContext, pattern, check_dicom):
-    """Add all folders matching pattern to mapping"""
-    # Examples: **/* */1 */*/*2
-    found = [
-        x.relative_to(context.current_path)
-        for x in Path(context.current_path).glob(pattern)
-        if x.is_dir()
-    ]
-    click.echo(
-        f"Pattern '{pattern}' matches the following paths"
-        f"matches the following paths:"
-    )
-    click.echo("\n".join([str(x) for x in found]))
-    if not click.confirm(
-        f"This will add the {len(found)} folders listed above "
-        f"to mapping. Are you sure?"
-    ):
-        click.echo("Cancelled")
-        return
-    else:
-        mapping = get_mapping(context)
-        for path in found:
-            mapping = add_path_to_mapping_click(
-                Path(path), mapping, cwd=context.current_path, check_dicom=check_dicom
-            )
-
-        context.get_current_mapping_folder().save_mapping(mapping)
-        click.echo("Done")
 
 
 @click.command()
@@ -283,8 +272,8 @@ def add_selection(context: MapCommandContext, selection):
     mapping.add_row(
         [
             SourceIdentifierParameter(identifier),
-            PatientName(f"autogenerated_{random_string(5)}"),
-            PatientID(f"auto_{random_intstring(8)}"),
+            PseudoName(f"autogenerated_{random_string(5)}"),
+            PseudoID(f"auto_{random_intstring(8)}"),
             Description(f"auto generated_" + today()),
         ]
     )
@@ -308,8 +297,7 @@ for func in [
     status,
     init,
     delete,
-    add_study_folder,
-    add_all_study_folders,
+    add_study_folders,
     edit,
     add_selection,
 ]:

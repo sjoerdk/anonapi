@@ -1,5 +1,6 @@
 """Click group and commands for the 'job' subcommand"""
 import itertools
+from typing import List
 
 import click
 
@@ -7,6 +8,11 @@ from anonapi.cli.click_types import JobIDRangeParamType
 from anonapi.cli.parser import command_group_function
 from anonapi.context import AnonAPIContext
 from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
+
+
+def flatten(list_of_lists: List[List]) -> List:
+    """Take all lists in list and add all elements together in one flat list"""
+    return [item for sublist in list_of_lists for item in sublist]
 
 
 @click.group(name="job")
@@ -18,13 +24,16 @@ def main():
 @click.command()
 @pass_anonapi_context
 @handle_anonapi_exceptions
-@click.argument("job_id", type=str)
-def info(parser: AnonAPIContext, job_id):
-    """Print job info"""
+@click.argument("job_ids", type=JobIDRangeParamType(), nargs=-1)
+def info(parser: AnonAPIContext, job_ids):
+    """Print full info for one or more jobs"""
+    # Each element in job_ids could be range. Flatten
+    job_ids = flatten(job_ids)
     server = parser.get_active_server()
-    job_info = parser.client_tool.get_job_info(server=server, job_id=job_id)
-    click.echo(f"job {job_id} on {server.name}:")
-    click.echo(job_info.as_string())
+    for job_id in job_ids:
+        job_info = parser.client_tool.get_job_info(server=server, job_id=job_id)
+        click.echo(f"job {job_id} on {server.name}:")
+        click.echo(job_info.as_string())
 
 
 @command_group_function(name="list")

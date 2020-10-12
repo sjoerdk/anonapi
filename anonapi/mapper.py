@@ -3,10 +3,13 @@ Pre-processing step for creating IDIS jobs
 
 Meant to be usable in a command line, with minimal windows editing tools. Maybe
 Excel, maybe notepad
-
 """
 import csv
+import locale
 import os
+
+from csv import Dialect
+from typing import List, Optional, TextIO, Union
 
 from tabulate import tabulate
 
@@ -14,12 +17,13 @@ from anonapi.exceptions import AnonAPIException
 from anonapi.parameters import (
     FolderIdentifier,
     FileSelectionIdentifier,
+    Parameter,
     StudyInstanceUIDIdentifier,
     AccessionNumberIdentifier,
     SourceIdentifierParameter,
     ParameterFactory,
-    PatientName,
-    PatientID,
+    PseudoName,
+    PseudoID,
     Description,
     ALL_PARAMETERS,
     ParameterParsingError,
@@ -43,44 +47,63 @@ class Mapping:
     GRID_HEADER = "## Mapping ##"
     ALL_HEADERS = [DESCRIPTION_HEADER, OPTIONS_HEADER, GRID_HEADER]
 
-    def __init__(self, grid, options=None, description=""):
+    def __init__(
+        self,
+        grid: "JobParameterGrid",
+        options: Optional[List[Parameter]] = None,
+        description="",
+        dialect: Union[str, Dialect] = "excel",
+    ):
         """
 
         Parameters
         ----------
         grid: JobParameterGrid
-            The per-job command_table of parameters
+            The per-job command_table of parameter_types
         options: List[Parameter], optional
             List of rows that have been set for the entire mapping. Defaults to empty
         description: str, optional
             Human readable description of this mapping. Can contain newline chars.
-            Defaults to empty string
+            Defaults to empty input
+        dialect: Union[str, Dialect], optional
+            CSV dialect. Which line separator to use etc. Any Dialect or a input
+            returned by the list_dialects() function.
+            Defaults to 'excel'
         """
         self.grid = grid
         if options is None:
             options = []
         self.options = options
         self.description = description
+        if type(dialect) == str:
+            self.dialect = csv.get_dialect(dialect)
+        else:
+            self.dialect = dialect
 
     def __len__(self):
         return len(self.grid)
 
-    def save(self, f):
+    def save_to(self, f: TextIO):
+        """Write this Mapping to given stream"""
         # write description
-        f.write(self.DESCRIPTION_HEADER + os.linesep)
+        f.write(self.DESCRIPTION_HEADER + self.dialect.lineterminator)
         f.write(self.description)
-        f.write(os.linesep)
+        f.write(self.dialect.lineterminator)
 
         # write options
-        f.write(self.OPTIONS_HEADER + os.linesep)
-        f.write(os.linesep.join([str(x) for x in self.options]))
-        f.write(os.linesep)
-        f.write(os.linesep)
+        f.write(self.OPTIONS_HEADER + self.dialect.lineterminator)
+        f.write(
+            self.dialect.lineterminator.join(
+                [x.to_string(delimiter=self.dialect.delimiter) for x in self.options]
+            )
+        )
+        f.write(self.dialect.lineterminator)
+        f.write(self.dialect.lineterminator)
 
         # write mapping
-        f.write(self.GRID_HEADER + os.linesep)
+        f.write(self.GRID_HEADER + self.dialect.lineterminator)
         mapping_content = StringIO()
-        self.grid.save(mapping_content)
+        self.grid.save(mapping_content, dialect=self.dialect)
         mapping_content.seek(0)
         f.write(mapping_content.read())
 
@@ -109,12 +132,13 @@ class Mapping:
         ]
 
         grid_content = StringIO(os.linesep.join(sections[cls.GRID_HEADER]))
+        dialect = sniff_dialect(grid_content)
         grid = JobParameterGrid.load(grid_content)
-        return cls(grid=grid, options=options, description=description)
+        return cls(grid=grid, options=options, description=description, dialect=dialect)
 
     @classmethod
     def parse_sections(cls, f):
-        """A mapping csv file consists of three sections devided by headers.
+        """A mapping csv file consists of three sections divided by column_types.
          Try to parse each one. Also cleans each line
 
         Parameters
@@ -124,14 +148,14 @@ class Mapping:
         Returns
         -------
         Dict
-            A dict with all lines under each of the headers in cls.ALL_HEADERS
+            A dict with all lines under each of the column_types in cls.ALL_HEADERS
             Line endings and trailing commas have been stripped. empty lines
             have been removed
 
         Raises
         ------
         MappingLoadError
-            If not all headers can be found or are not in the expected order
+            If not all column_types can be found or are not in the expected order
 
         """
         collected = defaultdict(list)
@@ -139,7 +163,7 @@ class Mapping:
         header_to_find = headers_to_find.pop(0)
         current_header = None
         for line in f.readlines():
-            line = line.replace("\r", "").replace("\n", "").rstrip(",")
+            line = line.replace("\r", "").replace("\n", "").rstrip(",").rstrip(";")
             if not line:  # skip empty lines
                 continue
             if header_to_find.lower() in line.lower():
@@ -152,19 +176,19 @@ class Mapping:
             if current_header:
                 collected[current_header].append(line)
 
-        # check the results do we have all headers?
+        # check the results do we have all column_types?
         if headers_to_find:
             raise MappingLoadError(
-                f'Could not find required headers "{headers_to_find}"'
+                f'Could not find required column_types "{headers_to_find}"'
             )
 
         return collected
 
     def rows(self):
-        """All parameters for each row. This includes the parameters in the
-        grid as well as the mapping-wide parameters in the options section.
+        """All parameter_types for each row. This includes the parameter_types in the
+        grid as well as the mapping-wide parameter_types in the options section.
 
-        Grid parameters overrule mapping-wide parameters
+        Grid parameter_types overrule mapping-wide parameter_types
 
         Returns
         -------
@@ -178,12 +202,12 @@ class Mapping:
         return rows
 
     def add_row(self, parameters):
-        """Add the given parameters in a new row in this mapping
+        """Add the given parameter_types in a new row in this mapping
 
         Parameters
         ----------
         parameters: List[Parameter]
-            The parameters to create one job
+            The parameter_types to create one job
 
         """
         self.grid.rows.append(parameters)
@@ -198,6 +222,39 @@ class Mapping:
         output = self.description
         output += "\n" + self.grid.to_table_string()
         return output
+
+
+def sniff_dialect(f: TextIO, max_lines: int = 3) -> Dialect:
+    """Try to find out the separator character etc. from given opened csv file
+
+    Parameters
+    ----------
+    f: TextIO
+        Open file handle to csv file
+    max_lines: int, optional
+        sniff this many lines. If dialect is still not found then,
+        Raise exception. Defaults to 3
+
+    Raises
+    ------
+    AnonAPIException:
+        When dialect cannot be determined
+
+    """
+    tried = 0
+    for line in f:
+        tried += 1
+        try:
+            dialect = csv.Sniffer().sniff(line, delimiters=";,")
+            f.seek(0)
+            return dialect
+        except csv.Error as e:
+            if tried < max_lines:
+                continue
+            else:
+                raise AnonAPIException(e)
+
+    raise AnonAPIException("Could not determine dialect for csv file")
 
 
 class JobParameterGrid:
@@ -216,24 +273,31 @@ class JobParameterGrid:
     def __len__(self):
         return len(self.rows)
 
-    def save(self, f):
+    def width(self) -> int:
+        """Maximum number of columns in this grid"""
+        return max([len(x) for x in self.rows])
+
+    def save(self, f: TextIO, dialect: Union[str, Dialect] = "excel"):
         """Write rows as CSV. Will omit columns where each value is none
 
         Parameters
         ----------
-        f: stream
+        f: TextIO
             Write to this
+        dialect: Union[str, Dialect], optional
+            CSV dialect. Which line separator to use etc. Any Dialect or a input
+            returned by the list_dialects() function.
+            Defaults to 'excel'
 
         """
+        if type(dialect) == str:  # cast to Dialect instance if needed
+            dialect = csv.get_dialect(dialect)
+
         # Which parameter types are there?
         params = self.parameter_types()
 
         writer = csv.DictWriter(
-            f,
-            delimiter=",",
-            quotechar='"',
-            quoting=csv.QUOTE_MINIMAL,
-            fieldnames=[x.field_name for x in params],
+            f, dialect=dialect, fieldnames=[x.field_name for x in params],
         )
         writer.writeheader()
         for row in self.rows:
@@ -241,7 +305,7 @@ class JobParameterGrid:
 
     @classmethod
     def load(cls, f):
-        """Load a  instance from open file handle
+        """Load an instance from open file handle
 
         Parameters
         ----------
@@ -259,7 +323,8 @@ class JobParameterGrid:
             If mapping could not be loaded
 
         """
-        reader = csv.DictReader(f)
+        dialect = sniff_dialect(f)
+        reader = csv.DictReader(f, dialect=dialect)
         parameters = []
         try:
             for row in reader:
@@ -296,13 +361,13 @@ class JobParameterGrid:
         Returns
         -------
         str:
-            Nice string representation of this list, 80 chars wide, truncated if
+            Nice input representation of this list, 80 chars wide, truncated if
             needed
 
         """
         # remember parameter list can be sparse
         table = defaultdict(list)
-        types = [SourceIdentifierParameter, PatientID]
+        types = [SourceIdentifierParameter, PseudoID]
 
         for row in self.rows:
             typed_row = {type(x): x for x in row}
@@ -392,9 +457,9 @@ class MappingFolder:
         """Is there a mapping file in this folder?"""
         return self.full_path().exists()
 
-    def save_mapping(self, mapping_list):
+    def save_mapping(self, mapping: Mapping):
         with open(self.full_path(), "w", newline="") as f:
-            mapping_list.save(f)
+            mapping.save_to(f)
 
     def load_mapping(self):
         """Load Mapping from default location in this folder
@@ -445,16 +510,14 @@ class ExampleJobParameterGrid(JobParameterGrid):
                 SourceIdentifierParameter(
                     FolderIdentifier(identifier=path.sep.join(["example", "folder1"]))
                 ),
-                PatientName("Patient1"),
-                PatientID("001"),
+                PseudoName("Patient1"),
                 Description("All files from folder1"),
             ],
             [
                 SourceIdentifierParameter(
                     StudyInstanceUIDIdentifier("123.12121212.12345678")
                 ),
-                PatientName("Patient2"),
-                PatientID("002"),
+                PseudoName("Patient2"),
                 Description(
                     "A study which should be retrieved from PACS, "
                     "identified by StudyInstanceUID"
@@ -464,8 +527,7 @@ class ExampleJobParameterGrid(JobParameterGrid):
                 SourceIdentifierParameter(
                     AccessionNumberIdentifier("12345678.1234567")
                 ),
-                PatientName("Patient3"),
-                PatientID("003"),
+                PseudoName("Patient3"),
                 Description(
                     "A study which should be retrieved from PACS, "
                     "identified by AccessionNumber"
@@ -475,8 +537,7 @@ class ExampleJobParameterGrid(JobParameterGrid):
                 SourceIdentifierParameter(
                     FileSelectionIdentifier(Path("folder2/fileselection.txt"))
                 ),
-                PatientName("Patient4"),
-                PatientID("004"),
+                PseudoName("Patient4"),
                 Description("A selection of files in folder2"),
             ],
         ]
@@ -494,3 +555,21 @@ class NoMappingFoundError(MapperException):
 
 class MappingLoadError(MapperException):
     pass
+
+
+class ColonDelimited(csv.excel):
+    """Excel csv dialect, but with colon ';' delimiter"""
+
+    delimiter = ";"
+
+
+def get_local_dialect() -> Dialect:
+    """Try to obtain best match for local CSV dialect
+
+    Uses the heuristic that decimal separator comma goes together with
+    list separator colon
+    """
+    if locale.localeconv()["decimal_point"] == ",":
+        return ColonDelimited()
+    else:
+        return csv.excel

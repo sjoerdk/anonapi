@@ -30,7 +30,7 @@ Command  Description
 activate Commands will use given server by default                               
 add      Add a server to the list of servers in settings                         
 jobs     List latest 100 jobs for active server                                  
-list     show all servers in settings                                            
+list     Show all servers in settings                                            
 remove   Remove a server from list in settings                                   
 status   Check whether active server is online and responding                    
 ======== ========================================================================
@@ -43,14 +43,15 @@ Work with single jobs. Get extended info, reset, restart a job
 
 Overview of job functions:
 
-======= =========================================================================
-Command Description                                                              
-======= =========================================================================
-cancel  set job status to inactive                                               
-info    print job info                                                           
-list    list info for multiple jobs                                              
-reset   reset job, process again                                                 
-======= =========================================================================
+================== ==============================================================
+Command            Description                                                   
+================== ==============================================================
+cancel             Set job status to inactive                                    
+info               Print job info                                                
+list               List info for multiple jobs                                   
+reset              Reset job, process again                                      
+set-opt-out-ignore Set opt-out ignore with given reason for job_id               
+================== ==============================================================
 
 
 settings
@@ -62,7 +63,7 @@ View and edit local settings for this anonapi instance. Credentials that are use
 Command      Description                                                         
 ============ ====================================================================
 get-token    Obtain a security token                                             
-info         show current credentials                                            
+info         Show current credentials                                            
 set-username Set the given username in settings                                  
 ============ ====================================================================
 
@@ -114,7 +115,7 @@ Command     Description
 =========== =====================================================================
 add         Add ids to current batch. Space-separated (1 2 3) or range (1-40)    
 cancel      Cancel every job in the current batch                                
-delete      delete batch in current folder                                       
+delete      Delete batch in current folder                                       
 info        Show batch in current directory                                      
 init        Save an empty batch in the current folder, for current server        
 remove      Remove ids from current batch. Space-separated (1 2 3) or range (1-40
@@ -184,36 +185,36 @@ anonymization jobs
 
 Overview of map functions:
 
-===================== ===========================================================
-Command               Description                                                
-===================== ===========================================================
-add-all-study-folders Add all folders matching pattern to mapping                
-add-selection         Add selection file to mapping                              
-add-study-folder      Add all dicom files in given folder to map                 
-delete                delete mapping in current folder                           
-edit                  Edit the current mapping in OS default editor              
-init                  Save a default mapping in the current folder               
-status                Show mapping in current directory                          
-===================== ===========================================================
+================= ===============================================================
+Command           Description                                                    
+================= ===============================================================
+add-selection     Add selection file to mapping                                  
+add-study-folders Add all dicom files in given folder to map                     
+delete            Delete mapping in current folder                               
+edit              Edit the current mapping in OS default editor                  
+init              Save a default mapping in the current folder                   
+status            Show mapping in current directory                              
+================= ===============================================================
 
-.. _map_add_study_folder:
+.. _map_add_study_folders:
 
-add-study-folder
-----------------
+add-study-folders
+-----------------
 
-Add the given folder to :ref:`mapping <concepts_mapping>`. This is done by finding all dicom files in the folder and any folders below it, adding
-those to a :ref:`file selection <concepts_selection>`, and then adding the file selection to the mapping.
+Add the given folder or space-separated list of folders to :ref:`mapping <concepts_mapping>`. This is done by finding
+all dicom files in the folder and any folders below it, adding those to a :ref:`file selection <concepts_selection>`,
+and then adding the file selection to the mapping.
 
 Options:
 
 --check-dicom/ --no-check-dicom
-	Open each file to check whether it is valid DICOM. Turning this off is faster, but the anonymization fails if non-DICOM files are included. On by default
+	--check-dicom: Open each file to check whether it is valid DICOM. --no-check-dicom: Add all files that look like DICOM (exclude files with known file extensions like .txt or .xml) Not checking is faster, but the anonymization fails if non-DICOM files are included. off by default
 
 Example:
 
 .. code-block:: console
 
-    $ anon map add-study-folder folder1/
+    $ anon map add-study-folders folder1/
     > Adding 'folder1' to mapping
     > Finding all files in folder1
     > 1it [12:01, 145.41it/s]
@@ -225,76 +226,32 @@ Example:
 To find out which files are DICOM, each file is opened as DICOM. If this succeeds the file is added. This makes
 sure that only valid DICOM is sent to the anonymization server.
 
-Running the command ``anon map add-study-folder <folder>`` is equivalent to running ``anon select add <folder>`` and then
+Running the command ``anon map add-study-folders <folder>`` is equivalent to running ``anon select add <folder>`` and then
 ``anon map add-selection-file <folder>/fileselection.txt``
 
+Wildcards
+.........
+
+Folder paths can contain asterisk ``*`` characters as wildcards. For example:
+
++-----------------------------------+------------------------------------+
+| Command                           |  matches_header paths (examples)          |
++===================================+====================================+
+| `add-study-folders folder*`       | ``folderA``, ``folderB``           |
++-----------------------------------+------------------------------------+
+| `add-study-folders folder*1`      | ``folderA1``, ``folderB1``         |
++-----------------------------------+------------------------------------+
+| `add-study-folders *`             | <all folders>                      |
++-----------------------------------+------------------------------------+
+| `add-study-folders folder* extra` | ``folderA``, ``folderB``, ``extra``|
++-----------------------------------+------------------------------------+
+| `add-study-folders **/raw`        | ``A/B/raw``, ``raw``, ``C/raw``    |
++-----------------------------------+------------------------------------+
+
 
 .. note::
 
-    For folders with many files, add-study-folder might take several seconds up to a minute to complete.
-
-.. _map_add_all_study_folders:
-
-add-all-study-folders
----------------------
-
-Runs :ref:`add-study-folder <map_add_study_folder>` on all folders that match pattern. The pattern can include ``*``
-to match part of a file or folder and ``**`` to match any combination of folders and filenames.
-
-Options:
-
---check-dicom/ --no-check-dicom
-	Open each file to check whether it is valid DICOM. Turning this off is faster, but the anonymization fails if non-DICOM files are included. On by default
-
-For example, given the following folder structure::
-
-    root
-    |--patient1
-    |   |--notes.txt
-    |   |--raw
-    |       |--raw1.dcm
-    |       |--raw2.dcm
-    |--patient2
-    |   |--notes.txt
-    |   |--test
-    |   |   |--test.dcm
-    |   |   |--othertest.dcm
-    |   |   |--raw
-    |   |       |--test2.dcm
-    |   |--raw
-    |       |--raw1.dcm
-    |       |--raw2.dcm
-    |       |--raw3.dcm
-
-
-The following paths would be selected:
-
-.. code-block:: console
-
-    $ anon map add-all-study-folders */raw  #  match all direct subfolders named 'raw'
-    > Pattern '*/raw' matches the following paths:
-    > patient1/raw
-    > patient2/raw
-
-    $ anon map add-all-study-folders */*    #  match any direct subfolders
-    > Pattern '*/*' matches the following paths:
-    > patient1/raw
-    > patient2/test
-    > patient2/raw
-
-    $ anon map add-all-study-folders **/raw  # match any subfolder named 'raw', at any depth
-    > Pattern '*/raw' matches the following paths:
-    > patient1/raw
-    > patient2/test/raw
-    > patient2/raw
-
-    # tip: On linux bash terminals, the pattern needs to be
-    #      quoted to avoid automatic expansion
-
-.. note::
-
-    Make sure that each added path contains data for only one patient. You can only map one patient name and id
-    to each path.
+    For folders with many files, on a slow shared folder, add-study-folders --check-dicom might take several minutes to complete.
 
 
 .. _map_add_selection_file:
@@ -403,7 +360,7 @@ Command       Description
 ============= ===================================================================
 from-mapping  Create jobs from mapping in current folder                         
 set-defaults  Set project name used when creating jobs                           
-show-defaults show project name used when creating jobs                          
+show-defaults Show project name used when creating jobs                          
 ============= ===================================================================
 
 .. _create_from_mapping:

@@ -28,7 +28,7 @@ class FileFolder:
         recurse: bool, optional
             Search for paths in all underlying directories. Default is True
         exclude_patterns: List[str], optional
-            Exclude any root_path that matches any of these patterns.
+            Exclude any root_path that matches_header any of these patterns.
             Patterns are unix-style: * as wildcard. See fnmatch function.
             Defaults to emtpy list meaning no exclusions
         ignore_dotfiles: bool, optional

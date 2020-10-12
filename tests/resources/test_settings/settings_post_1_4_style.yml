@@ -1,0 +1,9 @@
+active_server_name: sandbox
+job_default_parameters:
+- project,Wetenschap-Algemeen
+servers:
+  p01: https://umcradanonp11/p01
+  sandbox: https://umcradanont01/sandbox
+user_name: kees
+user_token: token
+validate_ssl: true

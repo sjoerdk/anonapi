@@ -9,8 +9,8 @@ from anonapi.cli import entrypoint
 from anonapi.cli.map_commands import (
     MapCommandContext,
     add_selection,
-    add_all_study_folders,
     add_path_to_mapping_click,
+    add_study_folders,
 )
 from anonapi.mapper import MappingLoadError, MappingFolder
 from anonapi.parameters import ParameterSet, RootSourcePath, SourceIdentifierParameter
@@ -124,7 +124,7 @@ def test_cli_map_add_folder(mock_main_runner, folder_with_some_dicom_files):
     # Add this folder to mapping
     result = mock_main_runner.invoke(
         entrypoint.cli,
-        f"map add-study-folder {selection_folder.path}",
+        f"map add-study-folders {selection_folder.path}",
         catch_exceptions=False,
     )
 
@@ -141,7 +141,7 @@ def test_cli_map_add_folder(mock_main_runner, folder_with_some_dicom_files):
     # dicom files should not have been selected yet currently
     assert not selection_folder.has_file_selection()
     result = mock_main_runner.invoke(
-        entrypoint.cli, f"map add-study-folder {selection_folder.path}"
+        entrypoint.cli, f"map add-study-folders {selection_folder.path}"
     )
     # but should be now
     assert result.exit_code == 0
@@ -170,12 +170,12 @@ def test_cli_map_add_folder_no_check(mock_main_runner, folder_with_some_dicom_fi
     # dicom files should not have been selected yet currently
     assert not selection_folder.has_file_selection()
     result = mock_main_runner.invoke(
-        entrypoint.cli, f"map add-study-folder {selection_folder.path} --no-check-dicom"
+        entrypoint.cli, f"map add-study-folders {selection_folder.path}"
     )
     # but should be now
     assert result.exit_code == 0
     assert selection_folder.has_file_selection()
-    assert "--no-check-dicom was set" in result.output
+    assert "that look like DICOM" in result.output
 
 
 @fixture
@@ -198,59 +198,25 @@ def add_path_to_mapping_click_recorder(monkeypatch):
     return recorder
 
 
-def test_cli_map_add_all_study_folders(
+def test_cli_map_add_study_folders(
     map_command_runner_mapping_dir,
     folder_with_mapping_and_some_dicom_files,
     add_path_to_mapping_click_recorder,
     monkeypatch,
 ):
-    """Add multiple study folders"""
+    """Add multiple study folders using the add-study-folders command"""
     context: MapCommandContext = map_command_runner_mapping_dir.mock_context
     context.current_path = folder_with_mapping_and_some_dicom_files.path
     monkeypatch.setattr(
         "os.getcwd", lambda: str(folder_with_mapping_and_some_dicom_files.path)
     )
 
-    # Add this folder to mapping, but cancel
     result = map_command_runner_mapping_dir.invoke(
-        add_all_study_folders, f"{'*'}", input="No", catch_exceptions=False,
-    )
-    # nothing should have been done
-    assert result.exit_code == 0
-    assert "Cancelled" in result.output
-    assert not add_path_to_mapping_click_recorder.called
-
-    # now repeat and do not cancel
-    result = map_command_runner_mapping_dir.invoke(
-        add_all_study_folders, f"{'*'}", input="Yes", catch_exceptions=False,
+        add_study_folders, "*", catch_exceptions=False,
     )
 
     assert add_path_to_mapping_click_recorder.call_count == 2
-
-
-def test_cli_map_add_all_study_folders_no_scan(
-    map_command_runner_mapping_dir,
-    folder_with_mapping_and_some_dicom_files,
-    add_path_to_mapping_click_recorder,
-    monkeypatch,
-):
-    """Add multiple study folders"""
-    context: MapCommandContext = map_command_runner_mapping_dir.mock_context
-    context.current_path = folder_with_mapping_and_some_dicom_files.path
-    monkeypatch.setattr(
-        "os.getcwd", lambda: str(folder_with_mapping_and_some_dicom_files.path)
-    )
-
-    # now repeat and do not cancel
-    result = map_command_runner_mapping_dir.invoke(
-        add_all_study_folders,
-        "* --no-check-dicom",
-        input="Yes",
-        catch_exceptions=False,
-    )
-
-    assert add_path_to_mapping_click_recorder.call_count == 2
-    assert "--no-check-dicom was set" in result.output
+    assert "that look like DICOM" in result.output
 
 
 def test_cli_map_delete(mock_main_runner, a_folder_with_mapping):
@@ -267,7 +233,7 @@ def test_cli_map_delete(mock_main_runner, a_folder_with_mapping):
     assert result.exit_code == 0
     assert not mapping_folder.has_mapping()
 
-    # deleting  again will yield nice message
+    # deleting again will yield nice message
     result = mock_main_runner.invoke(entrypoint.cli, "map delete")
     assert result.exit_code == 1
     assert "No mapping defined" in result.output

@@ -1,3 +1,4 @@
+import locale
 from io import StringIO
 from pathlib import Path
 from unittest.mock import Mock
@@ -5,12 +6,15 @@ from unittest.mock import Mock
 import pytest
 from fileselection.fileselection import FileSelectionFile
 
+from anonapi.cli.map_commands import create_example_mapping
+from anonapi.exceptions import AnonAPIException
 from anonapi.mapper import (
     JobParameterGrid,
     MappingLoadError,
     MappingFolder,
     MapperException,
     Mapping,
+    sniff_dialect,
 )
 from anonapi.parameters import (
     SourceIdentifierFactory,
@@ -25,14 +29,22 @@ from tests.factories import (
 )
 from tests import RESOURCE_PATH
 from tests.resources.test_mapper.example_mapping_inputs import (
-    CAN_BE_PARSED_AS_MAPPING,
+    BASIC_MAPPING,
+    BASIC_MAPPING_LOWER,
+    COLON_SEPARATED_MAPPING,
     CAN_NOT_BE_PARSED_AS_MAPPING,
+)
+
+from tests.resources.test_mapper.example_sniffer_inputs import (
+    BASIC_CSV_INPUT,
+    SEPARATOR_LATE_IN_TEXT,
+    VERY_SHORT_INPUT,
 )
 
 
 @pytest.fixture()
 def a_grid_of_parameters():
-    """A grid of parameters that can be used to seed a JobParameterGrid
+    """A grid of parameter_types that can be used to seed a JobParameterGrid
 
     Returns
     -------
@@ -71,6 +83,13 @@ def test_job_parameter_grid_load():
     assert len(grid.rows) == 20
 
 
+def test_job_parameter_grid_load_colon():
+    mapping_file = RESOURCE_PATH / "test_mapper" / "example_mapping_colon.csv"
+    with open(mapping_file, "r", newline="") as f:
+        grid = JobParameterGrid.load(f)
+    assert len(grid.rows) == 4
+
+
 def test_mapping_load_save():
     """Load file with CSV part and general part"""
     mapping_file = RESOURCE_PATH / "test_mapper" / "with_mapping_wide_settings.csv"
@@ -81,7 +100,7 @@ def test_mapping_load_save():
     assert len(mapping.options) == 2
 
     output_file = StringIO(newline="")
-    mapping.save(output_file)
+    mapping.save_to(output_file)
     output_file.seek(0)
     loaded = Mapping.load(output_file)
 
@@ -93,21 +112,30 @@ def test_mapping_load_save():
     ]
 
 
-@pytest.mark.parametrize("content", CAN_BE_PARSED_AS_MAPPING)
+@pytest.mark.parametrize(
+    "content", [BASIC_MAPPING, BASIC_MAPPING_LOWER, COLON_SEPARATED_MAPPING]
+)
 def test_mapping_parse(content):
-    """Parse into sections"""
+    """Content that can be parsed to a mapping"""
 
     stream = StringIO(initial_value=content)
-    parsed = Mapping.parse_sections(stream)
-    assert len(parsed) == 3
+    Mapping.load(stream)
 
 
 @pytest.mark.parametrize("content", CAN_NOT_BE_PARSED_AS_MAPPING)
 def test_mapping_parse_exceptions(content):
-    """For  these cases parsing should fail"""
+    """For these cases parsing should fail"""
     stream = StringIO(initial_value=content)
     with pytest.raises(MappingLoadError):
         _ = Mapping.parse_sections(stream)
+
+
+def test_mapping_parse_colon_separated():
+    """Excel in certain locales will save with colons. Make sure this works"""
+
+    stream = StringIO(initial_value=COLON_SEPARATED_MAPPING)
+    mapping = Mapping.load(stream)
+    assert len(mapping.grid) == 4
 
 
 def test_load_pims_only():
@@ -251,3 +279,76 @@ def test_open_file():
             _ = Mapping.load(f)
 
         assert "opened in any editor?" in str(e)
+
+
+@pytest.mark.parametrize(
+    "content, delimiter",
+    [
+        (BASIC_CSV_INPUT, ","),
+        (COLON_SEPARATED_MAPPING, ";"),
+        (SEPARATOR_LATE_IN_TEXT, ","),
+        (VERY_SHORT_INPUT, ","),
+    ],
+)
+def test_sniff_dialect(content, delimiter):
+    """Find out whether this file has commas or colons as delimiters"""
+    stream = StringIO(initial_value=content)
+    dialect = sniff_dialect(stream)
+    assert dialect.delimiter == delimiter
+
+
+def test_sniff_dialect_exception():
+    with pytest.raises(AnonAPIException) as e:
+        sniff_dialect(StringIO(initial_value="Just not a csv file."))
+    assert "Could not determine dialect" in str(e)
+
+    with pytest.raises(AnonAPIException) as e:
+        sniff_dialect(
+            StringIO(initial_value="\n".join(["line1", "line2", "line3", "line4"]))
+        )
+    assert "Could not determine delimiter" in str(e)
+
+
+@pytest.mark.parametrize(
+    "content, delimiter", [(BASIC_MAPPING, ","), (COLON_SEPARATED_MAPPING, ";")],
+)
+def test_read_write_dialect(content, delimiter):
+    """The csv dialect in a mapping should not change when reading and writing"""
+
+    temp_file = StringIO()
+    Mapping.load(StringIO(initial_value=content)).save_to(temp_file)
+    temp_file.seek(0)
+    assert sniff_dialect(temp_file, max_lines=10).delimiter == delimiter
+    temp_file.seek(0)
+    Mapping.load(temp_file)  # Mapping should still be valid
+
+
+@pytest.mark.parametrize(
+    "locale_setting, delimiter", [(("nl_nl", "UTF8"), ";"), (("en_us", "UTF8"), ",")],
+)
+def test_write_new_mapping(monkeypatch, locale_setting, delimiter):
+    """When writing a mapping from scratch, for example with 'map init', use
+    the best guess at the current dialect and write csv files with comma or
+    colon accordingly
+    """
+    with monkeypatch.context():
+        locale.setlocale(locale.LC_ALL, locale_setting)
+        temp_file = StringIO()
+        create_example_mapping().save_to(temp_file)
+        temp_file.seek(0)
+        assert sniff_dialect(temp_file, max_lines=10).delimiter == delimiter
+
+        # Check that the correct delimiter is used in different parts of mapping
+        last_lines = StringIO("".join(temp_file.readlines()[10:12]))
+        assert sniff_dialect(last_lines).delimiter == delimiter
+
+
+def test_example_mapping_save_correct_csv():
+    """The initial mapping should be easily parsed as a csv. This means adding
+    empty delimiters at the end of comments and section headers
+    """
+    temp_file = StringIO()
+    create_example_mapping().save_to(temp_file)
+    temp_file.seek(0)
+    line = temp_file.readline()
+    assert line

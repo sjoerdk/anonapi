@@ -11,6 +11,7 @@ from anonapi.objects import RemoteAnonServer
 
 
 class YamlSavable:
+    # TODO remove this class in favor of almost identical persistence.YAMLSerializable
     def to_dict(self):
         """
         Returns
@@ -88,7 +89,7 @@ class JobBatch(YamlSavable):
         return {"server": self.server.to_dict(), "job_ids": self.job_ids}
 
     def to_string(self):
-        """Batch as string
+        """Batch as input
 
         Returns
         -------

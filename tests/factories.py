@@ -8,8 +8,8 @@ from requests.models import Response
 import factory
 
 from anonapi.parameters import (
-    PatientID,
-    PatientName,
+    PseudoID,
+    PseudoName,
     Description,
     PIMSKey,
     SourceIdentifierParameter,
@@ -25,14 +25,14 @@ from tests.mock_responses import RequestMockResponse
 
 class PatientIDFactory(factory.Factory):
     class Meta:
-        model = PatientID
+        model = PseudoID
 
     value = factory.sequence(lambda n: f"patientID{n}")
 
 
 class PatientNameFactory(factory.Factory):
     class Meta:
-        model = PatientName
+        model = PseudoName
 
     value = factory.sequence(lambda n: f"patientName{n}")
 

@@ -1,9 +1,15 @@
 """Tests for anonapi.cli.select_commands"""
+from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
 from fileselection.fileselection import FileSelectionFolder, FileSelectionFile
-from anonapi.cli.select_commands import main, SelectCommandContext, CLIMessages
+from anonapi.cli.select_commands import (
+    looks_like_dicom_file,
+    main,
+    SelectCommandContext,
+    CLIMessages,
+)
 
 
 @pytest.fixture()
@@ -119,3 +125,31 @@ def test_select_edit(mock_main_runner, initialised_selection_folder, monkeypatch
     result = mock_main_runner.invoke(main, "edit")
     assert CLIMessages.NO_SELECTION_DEFINED in result.output
     assert not mock_launch.called
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "./file1.dcm",
+        "file2.dcm",
+        "long.file.name_.dicom",
+        "1232.3.4.43.5",
+        "RAW134.234.2353555",
+        "RAW134.234.2353555.123",
+        Path(r"D:\something\file2.dicom"),
+        "1",
+        "/path/lotsoflettersnonumbers",  # might be a dicom file?
+        "/path/thing/2",
+    ],
+)
+def test_looks_like_dicom_true(path):
+    """These should all be recognized as DICOM files"""
+    assert looks_like_dicom_file(path)
+
+
+@pytest.mark.parametrize(
+    "path", ["/path/thing/info.xml", "dicom.txt", "foo.doc", Path(r"C:\athing.txt")]
+)
+def test_looks_like_dicom_false(path):
+    """These should all be seen as non DICOM files"""
+    assert not looks_like_dicom_file(path)

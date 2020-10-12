@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
@@ -165,11 +166,26 @@ def test_command_line_tool_job_info(mock_main_runner, mock_requests):
     """Test checking status"""
     runner = mock_main_runner
 
-    result = runner.invoke(entrypoint.cli, "server activate testserver")
+    result = runner.invoke(
+        entrypoint.cli, "server activate testserver", catch_exceptions=False
+    )
     assert "Set active server to" in result.output
 
     mock_requests.set_response_text(RequestsMockResponseExamples.JOB_INFO)
     result = runner.invoke(entrypoint.cli, "job info 3")
+    assert "job 3 on testserver" in result.output
+    assert "'user_name', 'z123sandbox'" in result.output
+
+
+def test_command_line_tool_job_info_multiple(mock_main_runner, mock_requests):
+    """Test checking status"""
+    runner = mock_main_runner
+
+    result = runner.invoke(entrypoint.cli, "server activate testserver")
+    assert "Set active server to" in result.output
+
+    mock_requests.set_response_text(RequestsMockResponseExamples.JOB_INFO)
+    result = runner.invoke(entrypoint.cli, "job info 3 2 4")
     assert "job 3 on testserver" in result.output
     assert "'user_name', 'z123sandbox'" in result.output
 
@@ -188,7 +204,7 @@ def test_cli_job_list(mock_main_runner, mock_requests):
 
 
 def test_cli_job_list_errors(mock_main_runner, mock_requests):
-    """Giving no rows should yield helpful error string. Not python stacktrace"""
+    """Giving no rows should yield helpful error input. Not python stacktrace"""
     runner = mock_main_runner
     mock_requests.set_response_text(
         text=RequestsMockResponseExamples.REQUIRED_PARAMETER_NOT_SUPPLIED,
@@ -298,7 +314,7 @@ def test_job_id_parameter_type(mock_main_runner, mock_requests):
         "5",
     ]
 
-    # test range and weird string argument (not sure whether this is a good idea to allow)
+    # test range and weird input argument (not sure whether this is a good idea to allow)
     get_job_info_mock.reset()
     runner.invoke(entrypoint.cli, "job list 1-4 hallo")
     assert get_job_info_mock.call_args[1]["job_ids"] == ["1", "2", "3", "4", "hallo"]
@@ -613,6 +629,9 @@ def test_cli_entrypoint(monkeypatch, tmpdir):
     """Call main entrypoint with empty homedir. This should create a default
     settings file
     """
-    monkeypatch.setattr("anonapi.cli.entrypoint.pathlib.Path.home", lambda: tmpdir)
+    monkeypatch.setattr(
+        "anonapi.cli.entrypoint.get_settings_path",
+        lambda: Path(tmpdir) / "testsettings.yaml",
+    )
     parser = get_context()
     assert parser.settings.user_name == "username"
