@@ -1,4 +1,5 @@
 """Click group and commands for the 'select' subcommand"""
+import logging
 import os
 import re
 
@@ -10,6 +11,8 @@ from anonapi.selection import FileFolder, open_as_dicom
 from fileselection.fileselection import FileSelectionFolder, FileSelectionFile
 from pathlib import Path
 from tqdm import tqdm
+
+logger = logging.getLogger(__name__)
 
 
 class CLIMessages:
@@ -76,7 +79,7 @@ def status(context: SelectCommandContext):
     """Show selection in current directory"""
     try:
         selection = context.get_current_selection()
-        click.echo(describe_selection(selection))
+        logger.info(describe_selection(selection))
     except FileNotFoundError:
         raise ClickException(CLIMessages.NO_SELECTION_DEFINED)
 
@@ -89,7 +92,7 @@ def delete(context: SelectCommandContext):
     selection_folder = context.get_current_selection_folder()
     if selection_folder.has_file_selection():
         os.remove(selection_folder.get_data_file_path())
-        click.echo("Removed file selection in current folder")
+        logger.info("Removed file selection in current folder")
     else:
         raise ClickException(CLIMessages.NO_SELECTION_DEFINED)
 
@@ -121,7 +124,7 @@ def add(context: SelectCommandContext, pattern, recurse, check_dicom, exclude_pa
 
     Excludes 'fileselection.txt'
     """
-    click.echo(f"Finding files...")
+    logger.info(f"Finding files...")
     current_folder = FileFolder(context.current_path)
     paths = list(
         tqdm(
@@ -134,7 +137,7 @@ def add(context: SelectCommandContext, pattern, recurse, check_dicom, exclude_pa
     )
 
     if check_dicom:
-        click.echo("Checking that each file is Dicom")
+        logger.info("Checking that each file is Dicom")
         paths = [x for x in tqdm(paths) if open_as_dicom(x)]
 
     selection_folder = context.get_current_selection_folder()
@@ -148,7 +151,7 @@ def add(context: SelectCommandContext, pattern, recurse, check_dicom, exclude_pa
         )
 
     selection.save_to_file()
-    click.echo(f"selection now contains {len(selection.selected_paths)} files")
+    logger.info(f"selection now contains {len(selection.selected_paths)} files")
 
 
 @click.command()
@@ -181,7 +184,7 @@ def looks_like_dicom_file(path):
 def create_dicom_selection_click(path, check_dicom=True):
     """Find all DICOM files path (recursive) and save them a FileSelectionFile.
 
-    Meant to be included directly inside click commands. Uses a lot of click.echo()
+    Meant to be included directly inside click commands. Uses a lot of logger.info()
 
     Parameters
     ----------
@@ -196,20 +199,20 @@ def create_dicom_selection_click(path, check_dicom=True):
         The created file selection
     """
     # Find all dicom files in this folder
-    click.echo(f"Adding '{path}' to mapping")
+    logger.info(f"Adding '{path}' to mapping")
     folder = FileFolder(path)
-    click.echo(f"Finding all files in {path}")
+    logger.info(f"Finding all files in {path}")
     files = [x for x in tqdm(folder.iterate()) if x is not None]
     if check_dicom:
-        click.echo(f"Found {len(files)} files. Finding out which ones are DICOM")
+        logger.info(f"Found {len(files)} files. Finding out which ones are DICOM")
         dicom_files = [
             x for x in tqdm(files) if open_as_dicom(x, read_pixel_data=False)
         ]
     else:
-        click.echo(f"Found {len(files)} files. Adding all that look like DICOM")
+        logger.info(f"Found {len(files)} files. Adding all that look like DICOM")
         dicom_files = [x for x in files if looks_like_dicom_file(x)]
 
-    click.echo(f"Found {len(dicom_files)} DICOM files")
+    logger.info(f"Found {len(dicom_files)} DICOM files")
     # record dicom files as fileselection
     selection_folder = FileSelectionFolder(path=path.absolute())
     selection = FileSelectionFile(

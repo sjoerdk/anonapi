@@ -1,17 +1,20 @@
 """Command line utility object that gets passed around by click functions to
 have shared settings etc.
 """
+import logging
 
 import click
 
 from anonapi.context import AnonAPIContext
+
+logger = logging.getLogger(__name__)
 
 
 @click.command(short_help="show tool status")
 @click.pass_obj
 def status(parser: AnonAPIContext):
     """Get general status of this tool, show currently active server etc."""
-    click.echo("Status is really good")
+    logger.info("Status is really good")
     server_list = parser.create_server_list()
     status = (
         f"Available servers (* = active)\n\n"
@@ -20,7 +23,7 @@ def status(parser: AnonAPIContext):
         f"Reading settings from \n"
         f"{parser.settings}"
     )
-    click.echo(status)
+    logger.info(status)
 
 
 def command_group_function(**kwargs):

@@ -79,9 +79,8 @@ def test_command_line_tool_status_without_active_server(mock_main_runner):
     runner = CliRunner()
 
     # this should not crash
-    result = runner.invoke(entrypoint.cli, "status")
+    result = runner.invoke(entrypoint.cli, "status", catch_exceptions=False)
 
-    assert result.exit_code == 0
     assert "Available servers" in result.stdout
 
 
@@ -112,7 +111,7 @@ def test_command_line_tool_add_remove_server(mock_main_runner):
 def test_command_line_tool_list_servers(mock_main_runner):
 
     runner = mock_main_runner
-    result = runner.invoke(entrypoint.cli, "server list")
+    result = runner.invoke(entrypoint.cli, "server list", catch_exceptions=False)
     assert result.exit_code == 0
     assert all(
         [
@@ -172,7 +171,7 @@ def test_command_line_tool_job_info(mock_main_runner, mock_requests):
     assert "Set active server to" in result.output
 
     mock_requests.set_response_text(RequestsMockResponseExamples.JOB_INFO)
-    result = runner.invoke(entrypoint.cli, "job info 3")
+    result = runner.invoke(entrypoint.cli, "job info 3", catch_exceptions=False)
     assert "job 3 on testserver" in result.output
     assert "'user_name', 'z123sandbox'" in result.output
 
@@ -362,7 +361,7 @@ def test_command_line_tool_user_commands(mock_main_runner):
     runner.invoke(entrypoint.cli, "settings user set-username test_changed")
     assert context.settings.user_name == "test_changed"
 
-    result = runner.invoke(entrypoint.cli, "settings user info")
+    result = runner.invoke(entrypoint.cli, "settings user info", catch_exceptions=False)
     assert "user" in result.output
 
     token_before = context.settings.user_token

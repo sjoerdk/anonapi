@@ -1,4 +1,6 @@
 """Click group and commands for the 'server' subcommand"""
+import logging
+
 import click
 
 from anonapi.cli.click_types import AnonServerKeyParamType
@@ -6,6 +8,8 @@ from anonapi.cli.parser import command_group_function
 from anonapi.context import AnonAPIContext
 from anonapi.decorators import pass_anonapi_context
 from anonapi.objects import RemoteAnonServer
+
+logger = logging.getLogger(__name__)
 
 
 @click.group(name="server")
@@ -23,14 +27,14 @@ def add(parser: AnonAPIContext, short_name, url):
     server = RemoteAnonServer(name=short_name, url=url)
     parser.settings.servers.append(server)
     parser.settings.save()
-    click.echo(f"added {server} to list")
+    logger.info(f"added {server} to list")
 
 
 @command_group_function(name="list")
 def server_list(parser: AnonAPIContext):
     """Show all servers in settings"""
     servers = parser.create_server_list()
-    click.echo(f"Available servers (* = active):\n\n{servers}")
+    logger.info(f"Available servers (* = active):\n\n{servers}")
 
 
 @click.command()
@@ -45,7 +49,7 @@ def remove(parser: AnonAPIContext, short_name):
 
     parser.settings.servers.remove(server)
     parser.settings.save()
-    click.echo(f"removed {server} from list")
+    logger.info(f"removed {server} from list")
 
 
 @click.command()
@@ -53,7 +57,7 @@ def remove(parser: AnonAPIContext, short_name):
 def status(parser: AnonAPIContext):
     """Check whether active server is online and responding"""
     response = parser.client_tool.get_server_status(parser.get_active_server())
-    click.echo(response)
+    logger.info(response)
 
 
 @click.command()
@@ -61,7 +65,7 @@ def status(parser: AnonAPIContext):
 def jobs(parser: AnonAPIContext):
     """List latest 100 jobs for active server"""
     response = parser.client_tool.get_jobs(parser.get_active_server())
-    click.echo(response)
+    logger.info(response)
 
 
 @click.command()
@@ -72,7 +76,7 @@ def activate(parser: AnonAPIContext, short_name):
     server = parser.get_server_by_name(short_name)
     parser.settings.active_server = server
     parser.settings.save()
-    click.echo(f"Set active server to {server}")
+    logger.info(f"Set active server to {server}")
 
 
 for func in [add, remove, server_list, status, jobs, activate]:

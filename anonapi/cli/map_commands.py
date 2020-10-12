@@ -1,4 +1,5 @@
 """Click group and commands for the 'map' subcommand"""
+import logging
 import os
 from pathlib import Path
 from typing import List, Optional
@@ -37,6 +38,8 @@ from anonapi.parameters import (
     FileSelectionIdentifier,
 )
 from anonapi.settings import AnonClientSettings, DefaultAnonClientSettings
+
+logger = logging.getLogger(__name__)
 
 
 class MapCommandContext:
@@ -86,7 +89,7 @@ def status(context: MapCommandContext):
     """Show mapping in current directory"""
 
     mapping = context.get_current_mapping()
-    click.echo(mapping.to_string())
+    logger.info(mapping.to_string())
 
 
 def get_initial_options(settings: AnonClientSettings) -> List[Parameter]:
@@ -116,7 +119,7 @@ def init(context: MapCommandContext):
 
     mapping = create_example_mapping(context)
     folder.save_mapping(mapping)
-    click.echo(f"Initialised example mapping in {folder.DEFAULT_FILENAME}")
+    logger.info(f"Initialised example mapping in {folder.DEFAULT_FILENAME}")
 
 
 def create_example_mapping(context: MapCommandContext = None) -> Mapping:
@@ -153,7 +156,7 @@ def delete(context: MapCommandContext):
     if not folder.has_mapping():
         raise ClickException("No mapping defined in current folder")
     folder.delete_mapping()
-    click.echo(f"Removed mapping in current dir")
+    logger.info(f"Removed mapping in current dir")
 
 
 @handle_anonapi_exceptions
@@ -178,7 +181,7 @@ def add_study_folders(context: MapCommandContext, paths, check_dicom):
 
     # flatten paths, which is a tuple (due to nargs -1) of lists (due to wildcards)
     paths = [path for wildcard in paths for path in wildcard]
-    click.echo(f"Adding {len(paths)} paths to mapping")
+    logger.info(f"Adding {len(paths)} paths to mapping")
 
     mapping = get_mapping(context)
     for path in paths:
@@ -194,8 +197,8 @@ def add_study_folders(context: MapCommandContext, paths, check_dicom):
         mapping.grid.append(row)
         # save each time so we don't loose all when an error occurs
         context.get_current_mapping_folder().save_mapping(mapping)
-        click.echo("")  # extra newline makes separate folder adding more readable
-    click.echo(f"Done. Added '{paths}' to mapping")
+        logger.info("")  # extra newline makes separate folder adding more readable
+    logger.info(f"Done. Added '{paths}' to mapping")
 
 
 def create_fileselection_click(
@@ -203,7 +206,7 @@ def create_fileselection_click(
 ) -> SourceIdentifierParameter:
     """Create a fileselection in the given path, return an identifier pointing to it
 
-    Meant to be called from a click function. Contains calls to click.echo().
+    Meant to be called from a click function. Contains calls to logger.info().
 
     Parameters
     ----------
@@ -276,7 +279,7 @@ def add_selection(context: MapCommandContext, selection):
     )
 
     context.get_current_mapping_folder().save_mapping(mapping)
-    click.echo(f"Done. Added '{identifier}' to mapping")
+    logger.info(f"Done. Added '{identifier}' to mapping")
 
 
 @click.command()
@@ -287,7 +290,7 @@ def edit(context: MapCommandContext):
     if mapping_folder.has_mapping():
         click.launch(str(mapping_folder.full_path()))
     else:
-        click.echo("No mapping file defined in current folder")
+        logger.info("No mapping file defined in current folder")
 
 
 for func in [

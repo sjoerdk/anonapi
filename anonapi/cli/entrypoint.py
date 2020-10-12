@@ -1,5 +1,6 @@
 """Entrypoint for calling CLI with click."""
 import locale
+import logging
 import os
 
 import click
@@ -16,8 +17,11 @@ from anonapi.cli import (
 )
 from anonapi.context import AnonAPIContext
 from anonapi.client import AnonClientTool
+from anonapi.logging import configure_logging
 from anonapi.persistence import DEFAULT_SETTINGS_PATH
 from anonapi.settings import DefaultAnonClientSettings, AnonClientSettingsFromFile
+
+logger = logging.getLogger(__name__)
 
 
 def get_settings_path() -> str:
@@ -29,7 +33,7 @@ def get_settings() -> AnonClientSettingsFromFile:
     """Obtain local anonapi settings. Creates default settings file if not found"""
     settings_file = get_settings_path()
     if not settings_file.exists():
-        click.echo(
+        logger.info(
             f'No settings file found. Creating default settings at "{settings_file}"'
         )
         with open(settings_file, "w") as f:
@@ -67,6 +71,7 @@ def cli(ctx):
     Use the commands below with -h for more info
     """
     locale.setlocale(locale.LC_ALL, "")  # use local instead of default 'C' locale
+    configure_logging()
     ctx.obj = get_context()
 
 

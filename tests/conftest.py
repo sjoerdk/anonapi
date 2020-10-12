@@ -10,6 +10,7 @@ from fileselection.fileselection import FileSelectionFolder
 
 from anonapi.context import AnonAPIContext
 from anonapi.client import WebAPIClient, AnonClientTool
+from anonapi.logging import configure_logging
 from anonapi.objects import RemoteAnonServer
 from anonapi.parameters import DestinationPath, Project
 from anonapi.settings import DefaultAnonClientSettings
@@ -25,6 +26,14 @@ from tests.factories import (
     ProjectFactory,
 )
 from tests import RESOURCE_PATH
+
+
+@fixture(autouse=True)
+def use_logging():
+    """Many cli tests check stdout. Make sure internal logging actually writes
+    to stdout. Without this fixture log messages would not be written
+    """
+    configure_logging()
 
 
 @fixture

@@ -1,5 +1,6 @@
 """Click group and commands for the 'batch' subcommand"""
 import itertools
+import logging
 from typing import List
 
 import click
@@ -15,6 +16,8 @@ from anonapi.context import (
 from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
 from anonapi.responses import JobStatus, JobInfoColumns, JobInfo, format_job_info_list
 from collections import Counter
+
+logger = logging.getLogger(__name__)
 
 
 @click.group(name="batch")
@@ -33,7 +36,7 @@ def init(parser: AnonAPIContext):
     else:
         server = parser.get_active_server()
         batch_folder.save(JobBatch(job_ids=[], server=server))
-        click.echo(f"Initialised batch for {server} in current dir")
+        logger.info(f"Initialised batch for {server} in current dir")
 
 
 @click.command()
@@ -41,7 +44,7 @@ def init(parser: AnonAPIContext):
 def info(parser: AnonAPIContext):
     """Show batch in current directory"""
     try:
-        click.echo(parser.get_batch().to_string())
+        logger.info(parser.get_batch().to_string())
     except NoBatchDefinedException as e:
         raise ClickException(str(e) + ". You can create one with 'anon batch init'")
     except AnonAPIContextException as e:
@@ -53,7 +56,7 @@ def info(parser: AnonAPIContext):
 def delete(parser: AnonAPIContext):
     """Delete batch in current folder"""
     parser.get_batch_folder().delete_batch()
-    click.echo(f"Removed batch in current dir")
+    logger.info(f"Removed batch in current dir")
 
 
 @click.command()
@@ -66,7 +69,7 @@ def add(parser: AnonAPIContext, job_ids):
     batch: JobBatch = batch_folder.load()
     batch.job_ids = sorted(list(set(batch.job_ids) | set(job_ids)))
     batch_folder.save(batch)
-    click.echo(f"Added {job_ids} to batch")
+    logger.info(f"Added {job_ids} to batch")
 
 
 @click.command()
@@ -80,7 +83,7 @@ def remove(parser: AnonAPIContext, job_ids):
     batch.job_ids = sorted(list(set(batch.job_ids) - set(job_ids)))
     batch_folder.save(batch)
 
-    click.echo(f"Removed {job_ids} from batch")
+    logger.info(f"Removed {job_ids} from batch")
 
 
 @click.command()
@@ -107,11 +110,11 @@ def status(parser: AnonAPIContext, patient_name):
         server=batch.server, job_ids=ids_queried, get_extended_info=get_extended_info,
     )
 
-    click.echo(f"Job info for {len(infos)} jobs on {batch.server}:")
+    logger.info(f"Job info for {len(infos)} jobs on {batch.server}:")
     columns_to_show = JobInfoColumns.DEFAULT_COLUMNS.copy()
     if patient_name:
         columns_to_show += [JobInfoColumns.pseudo_name]
-    click.echo(infos.as_table_string(columns=columns_to_show))
+    logger.info(infos.as_table_string(columns=columns_to_show))
 
     summary = ["Status       count   percentage", "-------------------------------"]
     status_count = Counter([x.status for x in infos])
@@ -124,8 +127,8 @@ def status(parser: AnonAPIContext, patient_name):
     summary.append("-------------------------------")
     summary.append(f"Total        {str(len(ids_queried)):<8} 100%")
 
-    click.echo(f"Summary for all {len(ids_queried)} jobs:")
-    click.echo("\n".join(summary))
+    logger.info(f"Summary for all {len(ids_queried)} jobs:")
+    logger.info("\n".join(summary))
 
 
 @click.command()
@@ -138,11 +141,13 @@ def reset(parser: AnonAPIContext):
         f"This will reset {len(batch.job_ids)} jobs on {batch.server}. Are you sure?"
     ):
         for job_id in batch.job_ids:
-            click.echo(parser.client_tool.reset_job(server=batch.server, job_id=job_id))
+            logger.info(
+                parser.client_tool.reset_job(server=batch.server, job_id=job_id)
+            )
 
-        click.echo("Done")
+        logger.info("Done")
     else:
-        click.echo("User cancelled")
+        logger.info("User cancelled")
 
 
 @click.command()
@@ -155,13 +160,13 @@ def cancel(parser: AnonAPIContext):
         f"This will cancel {len(batch.job_ids)} jobs on {batch.server}. Are you sure?"
     ):
         for job_id in batch.job_ids:
-            click.echo(
+            logger.info(
                 parser.client_tool.cancel_job(server=batch.server, job_id=job_id)
             )
 
-        click.echo("Done")
+        logger.info("Done")
     else:
-        click.echo("User cancelled")
+        logger.info("User cancelled")
 
 
 @click.command()
@@ -181,12 +186,12 @@ def cancel_active(parser: AnonAPIContext):
         f"This will cancel {len(job_ids)} jobs on {batch.server}. Are you sure?"
     ):
         for job_id in job_ids:
-            click.echo(
+            logger.info(
                 parser.client_tool.cancel_job(server=batch.server, job_id=job_id)
             )
-        click.echo("Done")
+        logger.info("Done")
     else:
-        click.echo("User cancelled")
+        logger.info("User cancelled")
 
 
 @click.command()
@@ -206,11 +211,13 @@ def reset_error(parser: AnonAPIContext):
         f"This will reset {len(job_ids)} jobs on {batch.server}. Are you sure?"
     ):
         for job_id in job_ids:
-            click.echo(parser.client_tool.reset_job(server=batch.server, job_id=job_id))
+            logger.info(
+                parser.client_tool.reset_job(server=batch.server, job_id=job_id)
+            )
 
-        click.echo("Done")
+        logger.info("Done")
     else:
-        click.echo("User cancelled")
+        logger.info("User cancelled")
 
 
 @click.command()
@@ -233,9 +240,9 @@ def show_error(parser: AnonAPIContext):
             output += "error message:\n"
             output += f"{info.error}\n\n"
 
-        click.echo(output)
+        logger.info(output)
     else:
-        click.echo("There are no jobs with error status in this batch")
+        logger.info("There are no jobs with error status in this batch")
 
 
 for func in [

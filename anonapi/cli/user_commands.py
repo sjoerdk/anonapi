@@ -1,4 +1,5 @@
 """User sub commands"""
+import logging
 import random
 import string
 
@@ -6,6 +7,9 @@ import click
 
 from anonapi.context import AnonAPIContext
 from anonapi.decorators import pass_anonapi_context
+
+
+logger = logging.getLogger(__name__)
 
 
 @click.group(name="user")
@@ -17,7 +21,7 @@ def main():
 @pass_anonapi_context
 def info(parser: AnonAPIContext):
     """Show current credentials"""
-    click.echo(
+    logger.info(
         f"username is {parser.settings.user_name}\nAPI token: {parser.settings.user_token}"
     )
 
@@ -29,7 +33,7 @@ def set_username(parser: AnonAPIContext, user_name):
     """Set the given username in settings"""
     parser.settings.user_name = user_name
     parser.settings.save()
-    click.echo(f"username is now '{user_name}'")
+    logger.info(f"username is now '{user_name}'")
 
 
 @click.command()
@@ -44,7 +48,7 @@ def get_token(parser: AnonAPIContext):
     )
     parser.settings.user_token = token
     parser.settings.save()
-    click.echo(f"Got and saved api token for username {parser.settings.user_name}")
+    logger.info(f"Got and saved api token for username {parser.settings.user_name}")
 
 
 for func in [info, set_username, get_token]:
