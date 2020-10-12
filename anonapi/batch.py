@@ -8,61 +8,10 @@ import yaml
 
 from anonapi.exceptions import AnonAPIException
 from anonapi.objects import RemoteAnonServer
+from anonapi.persistence import YAMLSerializable
 
 
-class YamlSavable:
-    # TODO remove this class in favor of almost identical persistence.YAMLSerializable
-    def to_dict(self):
-        """
-        Returns
-        -------
-        Dict
-        """
-        raise NotImplementedError()
-
-    def save(self, f):
-        """
-
-        Parameters
-        ----------
-        f: FileHandle
-
-        """
-        yaml.dump(self.to_dict(), f, default_flow_style=False)
-
-    @staticmethod
-    def from_dict(dict_in):
-        """
-
-        Parameters
-        ----------
-        dict_in: Dict
-
-        Returns
-        -------
-        Instance of this class
-
-        """
-        raise NotImplementedError()
-
-    @classmethod
-    def load(cls, f) -> "YamlSavable":
-        """Load an instance of this class
-
-        Parameters
-        ----------
-        f: FileHandle
-
-        Returns
-        -------
-        YamlSavable
-
-        """
-        flat_dict = yaml.safe_load(f)
-        return cls.from_dict(dict_in=flat_dict)
-
-
-class JobBatch(YamlSavable):
+class JobBatch(YAMLSerializable):
     """A collection of anonymisation jobs"""
 
     def __init__(self, job_ids, server):
@@ -141,7 +90,7 @@ class BatchFolder:
             return None
         else:
             with open(self.batch_file_path, "r") as f:
-                return JobBatch.load(f)
+                return JobBatch.load_from(f)
 
     def save(self, batch):
         """Save the given batch to this folder
@@ -154,7 +103,7 @@ class BatchFolder:
 
         """
         with open(self.batch_file_path, "w") as f:
-            batch.save(f)
+            batch.save_to(f)
 
     def delete_batch(self):
         """Delete the batch file in this folder

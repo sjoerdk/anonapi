@@ -11,7 +11,9 @@ DEFAULT_SETTINGS_PATH = pathlib.Path.home() / "AnonWebAPIClientSettings.yml"
 
 
 class YAMLSerializable:
-    """A mixin for an object that can be saved to and loaded from yaml text"""
+    """A mixin for an object that can be saved to and loaded from yaml text.
+    Requires implementation of to_dict() and from_dict() on the implementing object
+    """
 
     def to_dict(self) -> dict:
         """Basis for json serialization. Overwrite this in child classes"""
