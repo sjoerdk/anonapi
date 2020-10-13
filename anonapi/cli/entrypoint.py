@@ -2,6 +2,7 @@
 import locale
 import logging
 import os
+from pathlib import Path
 
 import click
 
@@ -24,7 +25,7 @@ from anonapi.settings import DefaultAnonClientSettings, AnonClientSettingsFromFi
 logger = logging.getLogger(__name__)
 
 
-def get_settings_path() -> str:
+def get_settings_path() -> Path:
     """Separate method for easier spoofing during tests"""
     return DEFAULT_SETTINGS_PATH
 

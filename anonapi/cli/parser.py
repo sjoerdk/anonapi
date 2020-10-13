@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 @click.pass_obj
 def status(parser: AnonAPIContext):
     """Get general status of this tool, show currently active server etc."""
-    logger.info("Status is really good")
+    logger.info("Status")
     server_list = parser.create_server_list()
     status = (
         f"Available servers (* = active)\n\n"

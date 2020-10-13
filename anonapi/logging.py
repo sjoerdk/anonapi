@@ -20,10 +20,45 @@ class ClickEchoIO(IOBase):
         click.echo(msg, nl=False)  # no newline, as this is already in msg
 
 
+class AnonAPIFormatter(logging.Formatter):
+    """A formatter with a single verbosity level to fit with cli -v or -vv..etc
+    also, prints INFO message very plainly to not pollute regular output
+    """
+
+    TERSE = 1
+    VERBOSE = 2
+    ALL = [TERSE, VERBOSE]
+
+    def __init__(self, verbosity: int = 1):
+        super().__init__(self)
+        self.verbosity = verbosity
+
+    @staticmethod
+    def format_record(record, pattern: str) -> str:
+        return pattern.format(**vars(record))
+
+    def format(self, record: logging.LogRecord) -> str:
+        """Print INFO level messages plainly, rest with level name prepended"""
+        if self.verbosity == self.TERSE:
+            if record.levelno == logging.INFO:
+                return self.format_record(record, "{msg}")
+            else:
+                return self.format_record(record, "{levelname}: {msg}")
+        elif self.verbosity == self.VERBOSE:
+            if record.levelno == logging.INFO:
+                return self.format_record(record, "{name} - {msg}")
+            else:
+                return self.format_record(record, "{name} - {levelname}: {msg}")
+        else:
+            raise ValueError(
+                f"Unknown verbosity level {self.verbosity}. " f"Allowed: {self.ALL}"
+            )
+
+
 def configure_logging():
     """Route all log messages to click.echo(). Removes any other log handling"""
     click_stream = logging.StreamHandler(stream=ClickEchoIO())
-    click_stream.setFormatter(logging.Formatter("%(name)s - %(levelname)s:%(message)s"))
+    click_stream.setFormatter(AnonAPIFormatter())
 
     root = logging.getLogger()
     root.handlers = [click_stream]  # remove all other handlers
