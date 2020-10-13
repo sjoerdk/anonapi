@@ -18,7 +18,7 @@ from anonapi.cli import (
 )
 from anonapi.context import AnonAPIContext
 from anonapi.client import AnonClientTool
-from anonapi.logging import configure_logging
+from anonapi.logging import AnonAPILogController, Verbosities
 from anonapi.persistence import DEFAULT_SETTINGS_PATH
 from anonapi.settings import DefaultAnonClientSettings, AnonClientSettingsFromFile
 
@@ -64,16 +64,29 @@ def get_context() -> AnonAPIContext:
 
 
 @click.group()
+@click.option("-v", "--verbose", count=True)
 @click.pass_context
-def cli(ctx):
+def cli(ctx, verbose):
     r"""\b
     anonymization web API tool
     Controls remote anonymization servers
     Use the commands below with -h for more info
     """
     locale.setlocale(locale.LC_ALL, "")  # use local instead of default 'C' locale
-    configure_logging()
+    configure_logging(verbose)
     ctx.obj = get_context()
+
+
+def configure_logging(verbose):
+    log_controller = AnonAPILogController(
+        logger=logging.getLogger()
+    )  # control root logger
+    if verbose == 0:
+        log_controller.set_verbosity(Verbosities.TERSE)
+    elif verbose == 1:
+        log_controller.set_verbosity(Verbosities.VERBOSE)
+    elif verbose >= 2:
+        log_controller.set_verbosity(Verbosities.VERY_VERBOSE)
 
 
 cli.add_command(parser.status)

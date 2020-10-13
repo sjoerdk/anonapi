@@ -72,9 +72,7 @@ class AnonAPILogController:
     def __init__(
         self, logger: logging.Logger, verbosity: Verbosity = Verbosities.TERSE
     ):
-        """Start controlling given logger. This will configure the logger as part
-        of init
-        """
+        """Set handler that prints to click.echo(). Removes any existing handlers"""
         self.logger = logger
         self.formatter = AnonAPIFormatter()
 
@@ -101,13 +99,3 @@ class AnonAPILogController:
             raise ValueError(
                 f"Unknown verbosity {verbosity}. " f"Allowed:{Verbosities.ALL}"
             )
-
-
-def configure_logging():
-    """Route all log messages to click.echo(). Removes any other log handling"""
-    click_stream = logging.StreamHandler(stream=ClickEchoIO())
-    click_stream.setFormatter(AnonAPIFormatter())
-
-    root = logging.getLogger()
-    root.handlers = [click_stream]  # remove all other handlers
-    root.setLevel(logging.DEBUG)

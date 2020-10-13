@@ -50,7 +50,7 @@ def test_logging(mock_main_runner):
                     CRITICAL: Oh the humanity!""",
     )
 
-    # verbose output will add source of log message, but INFO still shorted
+    # verbose output will add source of log message, but INFO still short
     log_control.set_verbosity(Verbosities.VERBOSE)
 
     assert_output(
