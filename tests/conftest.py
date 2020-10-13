@@ -1,6 +1,7 @@
 """Conftest.py is loaded for each pytest. Contains fixtures shared by multiple
 tests, amongs other things
 """
+import logging
 import shutil
 from pathlib import Path
 
@@ -10,7 +11,7 @@ from fileselection.fileselection import FileSelectionFolder
 
 from anonapi.context import AnonAPIContext
 from anonapi.client import WebAPIClient, AnonClientTool
-from anonapi.logging import configure_logging
+from anonapi.logging import AnonAPILogController
 from anonapi.objects import RemoteAnonServer
 from anonapi.parameters import DestinationPath, Project
 from anonapi.settings import DefaultAnonClientSettings
@@ -33,7 +34,7 @@ def use_logging():
     """Many cli tests check stdout. Make sure internal logging actually writes
     to stdout. Without this fixture log messages would not be written
     """
-    configure_logging()
+    AnonAPILogController(logging.getLogger())
 
 
 @fixture

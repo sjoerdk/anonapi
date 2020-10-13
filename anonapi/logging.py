@@ -20,16 +20,23 @@ class ClickEchoIO(IOBase):
         click.echo(msg, nl=False)  # no newline, as this is already in msg
 
 
+class Verbosity(int):
+    pass
+
+
+class Verbosities:
+    TERSE = Verbosity(1)
+    VERBOSE = Verbosity(2)
+    VERY_VERBOSE = Verbosity(3)
+    ALL = [TERSE, VERBOSE, VERY_VERBOSE]
+
+
 class AnonAPIFormatter(logging.Formatter):
     """A formatter with a single verbosity level to fit with cli -v or -vv..etc
     also, prints INFO message very plainly to not pollute regular output
     """
 
-    TERSE = 1
-    VERBOSE = 2
-    ALL = [TERSE, VERBOSE]
-
-    def __init__(self, verbosity: int = 1):
+    def __init__(self, verbosity: Verbosity = Verbosities.TERSE):
         super().__init__(self)
         self.verbosity = verbosity
 
@@ -39,19 +46,60 @@ class AnonAPIFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         """Print INFO level messages plainly, rest with level name prepended"""
-        if self.verbosity == self.TERSE:
+        if self.verbosity == Verbosities.TERSE:
             if record.levelno == logging.INFO:
                 return self.format_record(record, "{msg}")
             else:
                 return self.format_record(record, "{levelname}: {msg}")
-        elif self.verbosity == self.VERBOSE:
+        elif self.verbosity == Verbosities.VERBOSE:
             if record.levelno == logging.INFO:
                 return self.format_record(record, "{name} - {msg}")
             else:
                 return self.format_record(record, "{name} - {levelname}: {msg}")
         else:
             raise ValueError(
-                f"Unknown verbosity level {self.verbosity}. " f"Allowed: {self.ALL}"
+                f"Unknown verbosity level {self.verbosity}. "
+                f"Allowed:"
+                f" {[Verbosities.TERSE, Verbosities.VERBOSE]}"
+            )
+
+
+class AnonAPILogController:
+    """Holds on to a Logger instance and changes it according to a single verbosity
+    scale.
+    """
+
+    def __init__(
+        self, logger: logging.Logger, verbosity: Verbosity = Verbosities.TERSE
+    ):
+        """Start controlling given logger. This will configure the logger as part
+        of init
+        """
+        self.logger = logger
+        self.formatter = AnonAPIFormatter()
+
+        click_stream = logging.StreamHandler(stream=ClickEchoIO())
+        click_stream.setFormatter(self.formatter)
+
+        self.logger.handlers = [click_stream]  # remove all other handlers
+        self.set_verbosity(verbosity)
+
+    def set_verbosity(self, verbosity: Verbosity):
+        if verbosity == Verbosities.TERSE:
+            self.formatter.verbosity = Verbosities.TERSE
+            self.logger.setLevel(logging.INFO)
+
+        elif verbosity == Verbosities.VERBOSE:
+            self.formatter.verbosity = Verbosities.VERBOSE
+            self.logger.setLevel(logging.INFO)
+
+        elif verbosity == Verbosities.VERY_VERBOSE:
+            self.formatter.verbosity = Verbosities.VERBOSE
+            self.logger.setLevel(logging.DEBUG)
+
+        else:
+            raise ValueError(
+                f"Unknown verbosity {verbosity}. " f"Allowed:{Verbosities.ALL}"
             )
 
 

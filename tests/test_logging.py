@@ -12,7 +12,7 @@ import click
 
 from anonapi.cli.entrypoint import cli
 from anonapi.context import AnonAPIContext
-from anonapi.logging import AnonAPIFormatter
+from anonapi.logging import AnonAPILogController, Verbosities
 
 
 @click.command(short_help="test logs")
@@ -36,27 +36,41 @@ def test_logging(mock_main_runner):
     """Some assertions on what log messages should look like"""
     runner = mock_main_runner
 
+    # overwrite log control from tests.conftest.use_logging()
+    log_control = AnonAPILogController(
+        logger=logging.getLogger(), verbosity=Verbosities.TERSE
+    )
+
     # regular output should show loglevel, except for INFO, which should be concise
     assert_output(
         output=runner.invoke(logtest, catch_exceptions=False).output,
-        expected="""DEBUG: some debug info
-                              some info
-                              WARNING: I\'m warning you
-                              ERROR: I told you!
-                              CRITICAL: Oh the humanity!""",
+        expected="""some info
+                    WARNING: I\'m warning you
+                    ERROR: I told you!
+                    CRITICAL: Oh the humanity!""",
     )
 
     # verbose output will add source of log message, but INFO still shorted
-    formatter: AnonAPIFormatter = logging.getLogger().handlers[0].formatter
-    formatter.verbosity = formatter.VERBOSE
+    log_control.set_verbosity(Verbosities.VERBOSE)
+
+    assert_output(
+        output=runner.invoke(logtest, catch_exceptions=False).output,
+        expected="""testloggerA - some info
+                    testloggerA - WARNING: I\'m warning you
+                    testloggerA - ERROR: I told you!
+                    testloggerB - CRITICAL: Oh the humanity!""",
+    )
+
+    # very verbose will also show debug messages
+    log_control.set_verbosity(Verbosities.VERY_VERBOSE)
 
     assert_output(
         output=runner.invoke(logtest, catch_exceptions=False).output,
         expected="""testloggerA - DEBUG: some debug info
-                              testloggerA - some info
-                              testloggerA - WARNING: I\'m warning you
-                              testloggerA - ERROR: I told you!
-                              testloggerB - CRITICAL: Oh the humanity!""",
+                    testloggerA - some info
+                    testloggerA - WARNING: I\'m warning you
+                    testloggerA - ERROR: I told you!
+                    testloggerB - CRITICAL: Oh the humanity!""",
     )
 
 
