@@ -14,7 +14,7 @@ from click.exceptions import BadParameter, ClickException
 
 from anonapi.cli.click_parameters import WildcardFolder
 from anonapi.cli.click_types import FileSelectionFileParam
-from anonapi.cli.select_commands import create_dicom_selection_click
+from anonapi.selection import create_dicom_selection_click
 from anonapi.context import AnonAPIContext
 from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
 from anonapi.mapper import (
