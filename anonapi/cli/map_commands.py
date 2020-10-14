@@ -83,8 +83,8 @@ def main(context: AnonAPIContext, ctx):
 
 
 @click.command()
-@handle_anonapi_exceptions
 @pass_map_command_context
+@handle_anonapi_exceptions
 def status(context: MapCommandContext):
     """Show mapping in current directory"""
 
@@ -113,6 +113,7 @@ def get_initial_options(settings: AnonClientSettings) -> List[Parameter]:
 
 @click.command()
 @pass_map_command_context
+@handle_anonapi_exceptions
 def init(context: MapCommandContext):
     """Save a default mapping in the current folder"""
     folder = context.get_current_mapping_folder()
@@ -150,6 +151,7 @@ def create_example_mapping(context: MapCommandContext = None) -> Mapping:
 
 @click.command()
 @pass_map_command_context
+@handle_anonapi_exceptions
 def delete(context: MapCommandContext):
     """Delete mapping in current folder"""
     folder = context.get_current_mapping_folder()
@@ -157,11 +159,6 @@ def delete(context: MapCommandContext):
         raise ClickException("No mapping defined in current folder")
     folder.delete_mapping()
     logger.info(f"Removed mapping in current dir")
-
-
-@handle_anonapi_exceptions
-def get_mapping(context):
-    return context.get_current_mapping()
 
 
 @click.command()
@@ -176,6 +173,7 @@ def get_mapping(context):
     " Not checking is faster, but the anonymization fails if non-DICOM files"
     " are included. off by default",
 )
+@handle_anonapi_exceptions
 def add_study_folders(context: MapCommandContext, paths, check_dicom):
     """Add all dicom files in given folders to map"""
 
@@ -183,7 +181,7 @@ def add_study_folders(context: MapCommandContext, paths, check_dicom):
     paths = [path for wildcard in paths for path in wildcard]
     logger.info(f"Adding {len(paths)} paths to mapping")
 
-    mapping = get_mapping(context)
+    mapping = context.get_current_mapping()
     for path in paths:
         fileselection = create_fileselection_click(
             Path(path), cwd=context.current_path, check_dicom=check_dicom
@@ -247,9 +245,10 @@ def create_fileselection_click(
 @click.command()
 @pass_map_command_context
 @click.argument("selection", type=FileSelectionFileParam())
+@handle_anonapi_exceptions
 def add_selection(context: MapCommandContext, selection):
     """Add selection file to mapping"""
-    mapping = get_mapping(context)
+    mapping = context.get_current_mapping()
     identifier = SourceIdentifierFactory().get_source_identifier_for_obj(selection)
     # make identifier root_path relative to mapping
     try:
@@ -284,6 +283,7 @@ def add_selection(context: MapCommandContext, selection):
 
 @click.command()
 @pass_map_command_context
+@handle_anonapi_exceptions
 def edit(context: MapCommandContext):
     """Edit the current mapping in OS default editor"""
     mapping_folder = context.get_current_mapping_folder()

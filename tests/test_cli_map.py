@@ -92,7 +92,7 @@ def test_cli_map_info_empty_dir(mock_main_runner):
     nice 'no mapping' message
     """
     runner = mock_main_runner
-    result = runner.invoke(entrypoint.cli, "map status")
+    result = runner.invoke(entrypoint.cli, "map status", catch_exceptions=False)
 
     assert result.exit_code == 1
     assert "No mapping defined" in result.output
