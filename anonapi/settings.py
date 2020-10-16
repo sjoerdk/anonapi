@@ -1,5 +1,6 @@
 """Settings used by anon console app"""
 from io import FileIO
+from pathlib import Path
 from typing import Dict, List, Optional
 
 import yaml
@@ -26,6 +27,7 @@ class AnonClientSettings(YAMLSerializable):
         user_token: str,
         job_default_parameters: Optional[List[Parameter]] = None,
         validate_ssl=True,
+        active_mapping_file: Optional[Path] = None,
     ):
         """
         Parameters
@@ -41,7 +43,9 @@ class AnonClientSettings(YAMLSerializable):
         validate_ssl: bool, optional
             If False, ignore ssl warnings and outdated certificates.
             Defaults to True
-
+        active_mapping_file: Optional[Path]
+            Full path to the mapping that is currently being worked on, if any.
+            Defaults to None
         """
         self.servers = servers
         try:
@@ -54,6 +58,7 @@ class AnonClientSettings(YAMLSerializable):
             job_default_parameters = []
         self.job_default_parameters = job_default_parameters
         self.validate_ssl = validate_ssl
+        self.activate_mapping_file = active_mapping_file
 
     def get_active_server_key(self) -> Optional[str]:
         if self.active_server:
@@ -72,6 +77,7 @@ class AnonClientSettings(YAMLSerializable):
             "job_default_parameters": [
                 x.to_string() for x in self.job_default_parameters
             ],
+            "active_mapping_file": self.activate_mapping_file,
         }
 
     @classmethod
@@ -93,6 +99,7 @@ class AnonClientSettings(YAMLSerializable):
             user_token=dict_full["user_token"],
             validate_ssl=dict_full["validate_ssl"],
             job_default_parameters=cls.extract_default_parameters(dict_in),
+            active_mapping_file=dict_full["active_mapping_file"],
         )
 
         settings.active_server = cls.determine_active_server(
