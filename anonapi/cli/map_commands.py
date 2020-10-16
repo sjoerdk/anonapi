@@ -193,7 +193,7 @@ def add_study_folders(context: MapCommandContext, paths, check_dicom):
             ParameterFactory.generate_pseudo_name(),
             ParameterFactory.generate_pseudo_name(),
         ]
-        mapping.grid.append(row)
+        mapping.grid.append_row(row)
         # save each time so we don't loose all when an error occurs
         context.get_current_mapping_folder().save_mapping(mapping)
         logger.info("")  # extra newline makes separate folder adding more readable

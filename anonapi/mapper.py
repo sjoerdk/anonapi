@@ -199,16 +199,20 @@ class Mapping:
             rows.append(list(row_dict.values()))
         return rows
 
-    def add_row(self, parameters):
-        """Add the given parameter_types in a new row in this mapping
+    def add_row(self, parameters: List[Parameter]):
+        """Add the given list of parameters to this mapping as a new grid row
 
         Parameters
         ----------
         parameters: List[Parameter]
-            The parameter_types to create one job
+            The parameters to create one job
 
         """
-        self.grid.rows.append(parameters)
+        self.grid.append_row(parameters)
+
+    def add_grid(self, grid: "JobParameterGrid"):
+        """Add each row in given grid to this mapping"""
+        self.grid.append_parameter_grid(grid)
 
     def to_string(self):
         """Human readable multi-line description of this mapping
@@ -275,9 +279,14 @@ class JobParameterGrid:
         """Maximum number of columns in this grid"""
         return max([len(x) for x in self.rows])
 
-    def append(self, row: List[Parameter]):
+    def append_row(self, row: List[Parameter]):
         """Append the given row to this grid"""
         self.rows.append(row)
+
+    def append_parameter_grid(self, grid: "JobParameterGrid"):
+        """Append all rows in the given grid"""
+        for row in grid.rows:
+            self.append_row(row)
 
     def save(self, f: TextIO, dialect: Union[str, Dialect] = "excel"):
         """Write rows as CSV. Will omit columns where each value is none

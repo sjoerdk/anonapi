@@ -64,6 +64,12 @@ def a_grid_of_parameters():
     return [paramlist() for _ in range(15)]
 
 
+@pytest.fixture()
+def a_mapping(a_grid_of_parameters):
+    """A mapping containing 15 random lines"""
+    return Mapping(grid=JobParameterGrid(rows=a_grid_of_parameters))
+
+
 def test_write(tmpdir, a_grid_of_parameters):
     mapping_list = JobParameterGrid(rows=a_grid_of_parameters)
 
@@ -356,37 +362,21 @@ def test_example_mapping_save_correct_csv():
     assert line
 
 
-def test_cli_map_add_paths_file(a_grid_of_parameters):
+def test_cli_map_add_paths_file(a_mapping):
     """Add an xls file containing several paths and potentially pseudonyms
     to an existing mapping
     """
+
+    assert len(a_mapping.grid) == 15
+
     grid = JobParameterGrid(
         rows=[
-            PathParameter(r"Kees\01"),
-            PseudoName("Study1"),
-            PathParameter(r"Kees\02"),
-            PseudoName("Study2"),
-            PathParameter(r"Henk\04"),
-            PseudoName("Study3"),
+            [PathParameter(r"Kees\01"), PseudoName("Study1")],
+            [PathParameter(r"Kees\02"), PseudoName("Study2")],
+            [PathParameter(r"Henk\04"), PseudoName("Study3")],
         ]
     )
 
-    # a mapping
-    mapping = Mapping(grid=JobParameterGrid(rows=a_grid_of_parameters))
-    # add
-    mapping.grid.append(grid)
-    assert mapping.grid  # todo: continue
-    # convert one column to SourceIdentifier. How?
+    a_mapping.add_grid(grid)
 
-    # add the new mapping
-    # mapping.grid = mapping.grid + grid
-
-    # questions.
-    # What to do with empty values?"
-    # first column is Key column
-    # If key is missing but other columns not, error
-    # If other column is missing but key is there, use default there
-    # If all are missing, stop
-
-    # What to do with existing values? -> just add, don't merge.
-    pass
+    assert len(a_mapping.grid) == 18
