@@ -9,7 +9,7 @@ from anonapi.cli import entrypoint
 from anonapi.cli.map_commands import (
     MapCommandContext,
     add_selection,
-    create_fileselection_click,
+    find_dicom_files,
     add_study_folders,
 )
 from anonapi.mapper import MappingLoadError, MappingFolder
@@ -188,14 +188,13 @@ def create_fileselection_click_recorder(monkeypatch):
 
     recorder = Mock()
 
-    def create_fileselection_click_recorded(*args, **kwargs):
+    def find_dicom_files_recorded(*args, **kwargs):
         """Run the original function, but track calls"""
         recorder(*args, **kwargs)
-        return create_fileselection_click(*args, **kwargs)
+        return find_dicom_files(*args, **kwargs)
 
     monkeypatch.setattr(
-        "anonapi.cli.map_commands.create_fileselection_click",
-        create_fileselection_click_recorded,
+        "anonapi.cli.map_commands.find_dicom_files", find_dicom_files_recorded,
     )
     return recorder
 

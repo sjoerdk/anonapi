@@ -14,7 +14,7 @@ from click.exceptions import BadParameter, ClickException
 
 from anonapi.cli.click_parameters import WildcardFolder
 from anonapi.cli.click_types import FileSelectionFileParam
-from anonapi.selection import create_dicom_selection_click
+from anonapi.selection import create_dicom_selection
 from anonapi.context import AnonAPIContext
 from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
 from anonapi.mapper import (
@@ -183,7 +183,8 @@ def add_study_folders(context: MapCommandContext, paths, check_dicom):
 
     mapping = context.get_current_mapping()
     for path in paths:
-        fileselection = create_fileselection_click(
+        logger.info(f"Adding '{path}' to mapping")
+        fileselection = find_dicom_files(
             Path(path), cwd=context.current_path, check_dicom=check_dicom
         )
         # add defaults
@@ -199,12 +200,10 @@ def add_study_folders(context: MapCommandContext, paths, check_dicom):
     logger.info(f"Done. Added '{paths}' to mapping")
 
 
-def create_fileselection_click(
+def find_dicom_files(
     path: Path, check_dicom: bool = True, cwd: Optional[Path] = None
 ) -> SourceIdentifierParameter:
-    """Create a fileselection in the given path, return an identifier pointing to it
-
-    Meant to be called from a click function. Contains calls to logger.info().
+    """Finds all DICOM files in the given path and saves this as fileselection
 
     Parameters
     ----------
@@ -228,7 +227,7 @@ def create_fileselection_click(
         A reference to the fileselection created
     """
     # create a selection from all dicom files in given root_path
-    file_selection = create_dicom_selection_click(path, check_dicom)
+    file_selection = create_dicom_selection(path, check_dicom)
 
     # make path relative if requested
     if cwd:

@@ -95,25 +95,23 @@ def open_as_dicom(path, read_pixel_data: bool = True):
         return None
 
 
-def create_dicom_selection_click(path, check_dicom=True):
-    """Find all DICOM files path (recursive) and save them a FileSelectionFile.
-
-    Meant to be included directly inside click commands. Uses a lot of logger.info()
+def create_dicom_selection(path, check_dicom=True) -> FileSelectionFile:
+    """Find all DICOM files path (recursive) and save them as a FileSelectionFile.
 
     Parameters
     ----------
     path: PathLike
+        Search for DICOM files in the path, recursively
     check_dicom: bool, optional
-        open each file to see whether it is valid DICOM. Setting False is faster
-        but could include files that will fail the job in IDIS. Defaults to True
+        If True, open each file to see whether it is valid DICOM (thorough).
+        If False, will only select based on filename (fast). Defaults to True
 
     Returns
     -------
     FileSelectionFile
-        The created file selection
+        The created file selection that has been saved to disk
     """
     # Find all dicom files in this folder
-    logger.info(f"Adding '{path}' to mapping")
     folder = FileFolder(path)
     logger.info(f"Finding all files in {path}")
     files = [x for x in tqdm(folder.iterate()) if x is not None]
