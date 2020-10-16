@@ -49,9 +49,9 @@ class AnonServerKeyParamType(ParamType):
     def convert(self, value, param, ctx):
         if not ctx:
             self.fail("This type expects an AnonAPIContext object in context")
-        parser: AnonAPIContext = ctx.obj
+        context: AnonAPIContext = ctx.obj
 
-        allowed = [x.name for x in parser.settings.servers]
+        allowed = [x.name for x in context.settings.servers]
         if value not in allowed:
             self.fail(
                 f"'{value}' is not a registered anonymization server. Options: {allowed}"

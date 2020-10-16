@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import click
+
 from anonapi.batch import BatchFolder
 from anonapi.client import AnonClientTool
 from anonapi.exceptions import AnonAPIException
@@ -132,3 +134,19 @@ class AnonAPIContextException(AnonAPIException):
 
 class NoBatchDefinedException(AnonAPIContextException):
     pass
+
+
+def command_group_function(**kwargs):
+    """Combines decorators used for all click functions inside a ClickCommandGroup
+    Identical to
+
+    @click.command(**kwargs)
+    @click.pass_obj
+
+    Just to prevent duplicated code
+    """
+
+    def decorator(func):
+        return click.command(**kwargs)((click.pass_obj(func)))
+
+    return decorator

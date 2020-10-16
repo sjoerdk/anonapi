@@ -632,5 +632,5 @@ def test_cli_entrypoint(monkeypatch, tmpdir):
         "anonapi.cli.entrypoint.get_settings_path",
         lambda: Path(tmpdir) / "testsettings.yaml",
     )
-    parser = get_context()
-    assert parser.settings.user_name == "username"
+    context = get_context()
+    assert context.settings.user_name == "username"

@@ -28,23 +28,23 @@ def main():
 
 @click.command()
 @pass_anonapi_context
-def init(parser: AnonAPIContext):
+def init(context: AnonAPIContext):
     """Save an empty batch in the current folder, for current server"""
-    batch_folder = parser.get_batch_folder()
+    batch_folder = context.get_batch_folder()
     if batch_folder.has_batch():
         raise ClickException("Cannot init, A batch is already defined in this folder")
     else:
-        server = parser.get_active_server()
+        server = context.get_active_server()
         batch_folder.save(JobBatch(job_ids=[], server=server))
         logger.info(f"Initialised batch for {server} in current dir")
 
 
 @click.command()
 @pass_anonapi_context
-def info(parser: AnonAPIContext):
+def info(context: AnonAPIContext):
     """Show batch in current directory"""
     try:
-        logger.info(parser.get_batch().to_string())
+        logger.info(context.get_batch().to_string())
     except NoBatchDefinedException as e:
         raise ClickException(str(e) + ". You can create one with 'anon batch init'")
     except AnonAPIContextException as e:
@@ -53,19 +53,19 @@ def info(parser: AnonAPIContext):
 
 @click.command()
 @pass_anonapi_context
-def delete(parser: AnonAPIContext):
+def delete(context: AnonAPIContext):
     """Delete batch in current folder"""
-    parser.get_batch_folder().delete_batch()
+    context.get_batch_folder().delete_batch()
     logger.info(f"Removed batch in current dir")
 
 
 @click.command()
 @pass_anonapi_context
 @click.argument("job_ids", type=JobIDRangeParamType(), nargs=-1)
-def add(parser: AnonAPIContext, job_ids):
+def add(context: AnonAPIContext, job_ids):
     """Add ids to current batch. Space-separated (1 2 3) or range (1-40)"""
     job_ids = [x for x in itertools.chain(*job_ids)]  # make into one list
-    batch_folder = parser.get_batch_folder()
+    batch_folder = context.get_batch_folder()
     batch: JobBatch = batch_folder.load()
     batch.job_ids = sorted(list(set(batch.job_ids) | set(job_ids)))
     batch_folder.save(batch)
@@ -75,10 +75,10 @@ def add(parser: AnonAPIContext, job_ids):
 @click.command()
 @pass_anonapi_context
 @click.argument("job_ids", type=JobIDRangeParamType(), nargs=-1)
-def remove(parser: AnonAPIContext, job_ids):
+def remove(context: AnonAPIContext, job_ids):
     """Remove ids from current batch. Space-separated (1 2 3) or range (1-40)"""
     job_ids = [x for x in itertools.chain(*job_ids)]  # make into one list
-    batch_folder = parser.get_batch_folder()
+    batch_folder = context.get_batch_folder()
     batch: JobBatch = batch_folder.load()
     batch.job_ids = sorted(list(set(batch.job_ids) - set(job_ids)))
     batch_folder.save(batch)
@@ -94,10 +94,10 @@ def remove(parser: AnonAPIContext, job_ids):
     default=False,
     help="Add pseudo patient id to command_table",
 )
-def status(parser: AnonAPIContext, patient_name):
+def status(context: AnonAPIContext, patient_name):
     """Print status overview for all jobs in batch"""
 
-    batch = parser.get_batch()
+    batch = context.get_batch()
 
     if patient_name:
         get_extended_info = True
@@ -106,7 +106,7 @@ def status(parser: AnonAPIContext, patient_name):
 
     ids_queried = batch.job_ids
 
-    infos = parser.client_tool.get_job_info_list(
+    infos = context.client_tool.get_job_info_list(
         server=batch.server, job_ids=ids_queried, get_extended_info=get_extended_info,
     )
 
@@ -133,16 +133,16 @@ def status(parser: AnonAPIContext, patient_name):
 
 @click.command()
 @pass_anonapi_context
-def reset(parser: AnonAPIContext):
+def reset(context: AnonAPIContext):
     """Reset every job in the current batch"""
-    batch: JobBatch = parser.get_batch()
+    batch: JobBatch = context.get_batch()
 
     if click.confirm(
         f"This will reset {len(batch.job_ids)} jobs on {batch.server}. Are you sure?"
     ):
         for job_id in batch.job_ids:
             logger.info(
-                parser.client_tool.reset_job(server=batch.server, job_id=job_id)
+                context.client_tool.reset_job(server=batch.server, job_id=job_id)
             )
 
         logger.info("Done")
@@ -152,16 +152,16 @@ def reset(parser: AnonAPIContext):
 
 @click.command()
 @pass_anonapi_context
-def cancel(parser: AnonAPIContext):
+def cancel(context: AnonAPIContext):
     """Cancel every job in the current batch"""
-    batch: JobBatch = parser.get_batch()
+    batch: JobBatch = context.get_batch()
 
     if click.confirm(
         f"This will cancel {len(batch.job_ids)} jobs on {batch.server}. Are you sure?"
     ):
         for job_id in batch.job_ids:
             logger.info(
-                parser.client_tool.cancel_job(server=batch.server, job_id=job_id)
+                context.client_tool.cancel_job(server=batch.server, job_id=job_id)
             )
 
         logger.info("Done")
@@ -172,11 +172,11 @@ def cancel(parser: AnonAPIContext):
 @click.command()
 @handle_anonapi_exceptions
 @pass_anonapi_context
-def cancel_active(parser: AnonAPIContext):
+def cancel_active(context: AnonAPIContext):
     """Cancel unprocessed (active) jobs, leave done and error"""
-    batch: JobBatch = parser.get_batch()
+    batch: JobBatch = context.get_batch()
 
-    infos = parser.client_tool.get_job_info_list(
+    infos = context.client_tool.get_job_info_list(
         server=batch.server, job_ids=batch.job_ids
     )
 
@@ -187,7 +187,7 @@ def cancel_active(parser: AnonAPIContext):
     ):
         for job_id in job_ids:
             logger.info(
-                parser.client_tool.cancel_job(server=batch.server, job_id=job_id)
+                context.client_tool.cancel_job(server=batch.server, job_id=job_id)
             )
         logger.info("Done")
     else:
@@ -197,11 +197,11 @@ def cancel_active(parser: AnonAPIContext):
 @click.command()
 @handle_anonapi_exceptions
 @pass_anonapi_context
-def reset_error(parser: AnonAPIContext):
+def reset_error(context: AnonAPIContext):
     """Reset all jobs with error status in the current batch"""
-    batch: JobBatch = parser.get_batch()
+    batch: JobBatch = context.get_batch()
 
-    infos = parser.client_tool.get_job_info_list(
+    infos = context.client_tool.get_job_info_list(
         server=batch.server, job_ids=batch.job_ids
     )
 
@@ -212,7 +212,7 @@ def reset_error(parser: AnonAPIContext):
     ):
         for job_id in job_ids:
             logger.info(
-                parser.client_tool.reset_job(server=batch.server, job_id=job_id)
+                context.client_tool.reset_job(server=batch.server, job_id=job_id)
             )
 
         logger.info("Done")
@@ -223,11 +223,11 @@ def reset_error(parser: AnonAPIContext):
 @click.command()
 @handle_anonapi_exceptions
 @pass_anonapi_context
-def show_error(parser: AnonAPIContext):
+def show_error(context: AnonAPIContext):
     """Show full error message for all error jobs in batch"""
-    batch: JobBatch = parser.get_batch()
+    batch: JobBatch = context.get_batch()
 
-    infos = parser.client_tool.get_job_info_list(
+    infos = context.client_tool.get_job_info_list(
         server=batch.server, job_ids=batch.job_ids
     )
 

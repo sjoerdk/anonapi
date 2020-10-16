@@ -7,7 +7,6 @@ from pathlib import Path
 import click
 
 from anonapi.cli import (
-    parser,
     job_commands,
     batch_commands,
     map_commands,
@@ -89,7 +88,23 @@ def configure_logging(verbose):
         log_controller.set_verbosity(Verbosities.VERY_VERBOSE)
 
 
-cli.add_command(parser.status)
+@click.command(short_help="show tool status")
+@click.pass_obj
+def status(context: AnonAPIContext):
+    """Get general status of this tool, show currently active server etc."""
+    logger.info("Status")
+    server_list = context.create_server_list()
+    status = (
+        f"Available servers (* = active)\n\n"
+        f"{server_list}\n"
+        f"Using username: '{context.settings.user_name}'\n"
+        f"Reading settings from \n"
+        f"{context.settings}"
+    )
+    logger.info(status)
+
+
+cli.add_command(status)
 cli.add_command(job_commands.main)
 cli.add_command(server_commands.main)
 cli.add_command(batch_commands.main)
