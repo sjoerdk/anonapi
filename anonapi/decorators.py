@@ -26,6 +26,6 @@ def handle_anonapi_exceptions(func):
         try:
             return func(*args, **kwargs)
         except AnonAPIException as e:
-            raise ClickException(f"{e}")
+            raise ClickException(click.style(f"{e}", fg="red"))
 
     return wrapper

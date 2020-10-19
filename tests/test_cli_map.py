@@ -1,4 +1,4 @@
-from pathlib import Path, PureWindowsPath
+from pathlib import Path
 from unittest.mock import Mock
 
 from click.testing import CliRunner
@@ -8,46 +8,80 @@ from pytest import fixture
 from anonapi.cli import entrypoint
 from anonapi.cli.map_commands import (
     MapCommandContext,
+    activate,
     add_selection,
+    delete,
+    edit,
     find_dicom_files,
     add_study_folders,
+    init,
 )
-from anonapi.mapper import MappingLoadError, MappingFolder
-from anonapi.parameters import ParameterSet, RootSourcePath, SourceIdentifierParameter
+
+from anonapi.mapper import (
+    DEFAULT_MAPPING_NAME,
+    MappingFile,
+    MappingLoadError,
+)
+from anonapi.parameters import ParameterSet, SourceIdentifierParameter
 from anonapi.settings import DefaultAnonClientSettings
-from tests.conftest import MockContextCliRunner
+from tests.conftest import AnonAPIContextRunner, MockContextCliRunner
 from tests import RESOURCE_PATH
 
 
 @fixture
 def mock_main_runner_with_mapping(mock_main_runner, a_folder_with_mapping):
-    mock_main_runner.get_context().current_dir = a_folder_with_mapping
+    context = mock_main_runner.get_context()
+    context.current_dir = lambda: NotImplementedError(
+        "Call settings.active_mapping_file instead"
+    )
+    context.settings.active_mapping_file = a_folder_with_mapping / "anon_mapping.csv"
     return mock_main_runner
 
 
 @fixture
-def map_command_runner_mapping_dir(a_folder_with_mapping):
-    """A click CLIRunner that MapCommandContext pointing to a dir with some mapping"""
+def mock_map_context_with_mapping(a_folder_with_mapping) -> MapCommandContext:
+    return MapCommandContext(
+        current_dir=a_folder_with_mapping,
+        settings=DefaultAnonClientSettings(
+            active_mapping_file=a_folder_with_mapping / "anon_mapping.csv"
+        ),
+    )
+
+
+@fixture
+def runner_with_mapping(mock_map_context_with_mapping) -> AnonAPIContextRunner:
+    """A click CLIRunner with MapCommandContext that has a valid active mapping"""
+    return AnonAPIContextRunner(mock_context=mock_map_context_with_mapping)
+
+
+@fixture
+def mock_map_context_without(tmpdir) -> MapCommandContext:
+    return MapCommandContext(current_dir=tmpdir, settings=DefaultAnonClientSettings(),)
+
+
+@fixture
+def runner_without_mapping(tmpdir):
+    """A click CLIRunner that passes MapCommandContext without active mapping"""
     return MockContextCliRunner(
         mock_context=MapCommandContext(
-            current_path=a_folder_with_mapping, settings=DefaultAnonClientSettings()
+            current_dir=tmpdir, settings=DefaultAnonClientSettings()
         )
     )
 
 
 def test_cli_map_add_selection(
-    map_command_runner_mapping_dir, a_folder_with_mapping_and_fileselection
+    runner_with_mapping, a_folder_with_mapping_and_fileselection
 ):
     """Add a file selection to a mapping."""
     mapping_folder, fileselection_path = a_folder_with_mapping_and_fileselection
 
-    runner = map_command_runner_mapping_dir
+    runner = runner_with_mapping
     result = runner.invoke(
         add_selection, str(fileselection_path), catch_exceptions=False
     )
     assert result.exit_code == 0
 
-    mapping = map_command_runner_mapping_dir.mock_context.get_current_mapping()
+    mapping = runner_with_mapping.mock_context.get_current_mapping()
     assert len(mapping) == 21
     assert "fileselection:a_folder/a_file_selection.txt" in "".join(
         [str(x) for y in mapping.rows() for x in y]
@@ -62,17 +96,23 @@ def test_cli_map(mock_main_runner, mock_cli_base_context, tmpdir):
     assert result.exit_code == 0
 
 
-def test_cli_map_init(mock_main_runner, mock_cli_base_context, tmpdir):
-    result = mock_main_runner.invoke(entrypoint.cli, "map init", catch_exceptions=False)
-    assert result.exit_code == 0
-    assert MappingFolder(folder_path=Path(tmpdir)).has_mapping()
-    # getting this mapping should not crash
-    mapping = MappingFolder(folder_path=Path(tmpdir)).get_mapping()
+def test_cli_map_init(mock_main_runner, tmpdir):
+    runner = mock_main_runner
 
-    # the base source should have been set to the current dir
-    param_set = ParameterSet(mapping.options)
-    root_source_path = param_set.get_param_by_type(RootSourcePath)
-    assert root_source_path.value == PureWindowsPath(tmpdir)
+    #  there should be no mapping to start with
+    assert (
+        "Could not find mapping"
+        in runner.invoke(entrypoint.cli, "map activate", catch_exceptions=False).output
+    )
+
+    # but after init there should be a valid mapping
+    runner.invoke(entrypoint.cli, "map init", catch_exceptions=False)
+    mapping_path = mock_main_runner.get_context().current_dir / DEFAULT_MAPPING_NAME
+    assert mapping_path.exists()
+    MappingFile(mapping_path).load_mapping()  # should not crash
+
+    # and the created mapping should have been activated
+    assert mock_main_runner.get_context().settings.active_mapping_file == mapping_path
 
 
 def test_cli_map_info(mock_main_runner_with_mapping):
@@ -95,14 +135,16 @@ def test_cli_map_info_empty_dir(mock_main_runner):
     result = runner.invoke(entrypoint.cli, "map status", catch_exceptions=False)
 
     assert result.exit_code == 1
-    assert "No mapping defined" in result.output
+    assert "No active mapping" in result.output
 
 
 def test_cli_map_info_load_exception(mock_main_runner, monkeypatch):
     """Running info with a corrupt mapping file should yield a nice message"""
     # make sure a valid mapping file is found
     context = mock_main_runner.get_context()
-    context.current_dir = str(RESOURCE_PATH / "test_cli")
+    context.settings.active_mapping_file = (
+        RESOURCE_PATH / "test_cli" / "anon_mapping.csv"
+    )
 
     # but then raise exception when loading
     def mock_load(x):
@@ -111,46 +153,45 @@ def test_cli_map_info_load_exception(mock_main_runner, monkeypatch):
     monkeypatch.setattr("anonapi.mapper.JobParameterGrid.load", mock_load)
     runner = CliRunner()
 
-    result = runner.invoke(entrypoint.cli, "map status")
+    result = runner.invoke(entrypoint.cli, "map status", catch_exceptions=False)
 
     assert result.exit_code == 1
     assert "Test Exception" in result.output
 
 
-def test_cli_map_add_folder(mock_main_runner, folder_with_some_dicom_files):
+def test_cli_map_add_folder(mock_map_context_without, folder_with_some_dicom_files):
     """Add all dicom files in this folder to mapping"""
+    context = mock_map_context_without
+    runner = AnonAPIContextRunner(mock_context=context)
     selection_folder = folder_with_some_dicom_files
 
     # Add this folder to mapping
-    result = mock_main_runner.invoke(
-        entrypoint.cli,
-        f"map add-study-folders {selection_folder.path}",
-        catch_exceptions=False,
+    result = runner.invoke(
+        add_study_folders, args=[str(selection_folder.path)], catch_exceptions=False,
     )
 
     # oh no! no mapping yet!
-    assert "No mapping defined in current" in result.output
+    assert "No active mapping" in result.output
 
     # make one
-    mock_main_runner.invoke(entrypoint.cli, f"map init")
-    mapping_folder = MappingFolder(mock_main_runner.mock_context.current_dir)
-    assert (
-        len(mapping_folder.load_mapping().grid) == 4
-    )  # by default there are 4 example rows in mapping
+    runner.invoke(init)
+    # by default there are 4 example rows in mapping
+    assert len(context.get_current_mapping().grid) == 4
 
-    # dicom files should not have been selected yet currently
+    # No selection file has been put in the folder at this point
     assert not selection_folder.has_file_selection()
-    result = mock_main_runner.invoke(
-        entrypoint.cli,
-        f"map add-study-folders {selection_folder.path}",
-        catch_exceptions=False,
+
+    # but after adding
+    result = runner.invoke(
+        add_study_folders, args=[str(selection_folder.path)], catch_exceptions=False
     )
-    # but should be now
+
+    # There should be a selection there
     assert result.exit_code == 0
     assert selection_folder.has_file_selection()
 
     # also, this selection should have been added to the mapping:
-    mapping = mapping_folder.load_mapping()  # reload from disk
+    mapping = context.get_current_mapping()  # reload from disk
     assert len(mapping.grid) == 5
     added = ParameterSet(mapping.grid.rows[-1])
     identifier = added.get_param_by_type(SourceIdentifierParameter)
@@ -159,22 +200,27 @@ def test_cli_map_add_folder(mock_main_runner, folder_with_some_dicom_files):
     assert not identifier.path.is_absolute()
 
 
-def test_cli_map_add_folder_no_check(mock_main_runner, folder_with_some_dicom_files):
+def test_cli_map_add_folder_no_check(
+    mock_map_context_without, folder_with_some_dicom_files
+):
     """Add all dicom files in this folder to mapping but do not scan"""
+    context = mock_map_context_without
+    runner = AnonAPIContextRunner(mock_context=context)
     selection_folder = folder_with_some_dicom_files
 
-    mock_main_runner.invoke(entrypoint.cli, f"map init")
-    mapping_folder = MappingFolder(mock_main_runner.mock_context.current_dir)
-    assert (
-        len(mapping_folder.load_mapping().grid) == 4
-    )  # by default there are 4 example rows in mapping
+    runner.invoke(init)
+    # by default there are 4 example rows in mapping
+    assert len(context.get_current_mapping().grid) == 4
 
     # dicom files should not have been selected yet currently
     assert not selection_folder.has_file_selection()
-    result = mock_main_runner.invoke(
-        entrypoint.cli, f"map add-study-folders {selection_folder.path}"
+
+    # but after adding
+    result = runner.invoke(
+        add_study_folders, args=[str(selection_folder.path)], catch_exceptions=False
     )
-    # but should be now
+
+    # There should be a selection there
     assert result.exit_code == 0
     assert selection_folder.has_file_selection()
     assert "that look like DICOM" in result.output
@@ -200,64 +246,76 @@ def create_fileselection_click_recorder(monkeypatch):
 
 
 def test_cli_map_add_study_folders(
-    map_command_runner_mapping_dir,
+    runner_with_mapping,
     folder_with_mapping_and_some_dicom_files,
     create_fileselection_click_recorder,
     monkeypatch,
 ):
     """Add multiple study folders using the add-study-folders command"""
-    context: MapCommandContext = map_command_runner_mapping_dir.mock_context
-    context.current_path = folder_with_mapping_and_some_dicom_files.path
+    context: MapCommandContext = runner_with_mapping.mock_context
+    context.current_dir = folder_with_mapping_and_some_dicom_files.path
     monkeypatch.setattr(
         "os.getcwd", lambda: str(folder_with_mapping_and_some_dicom_files.path)
     )
 
-    result = map_command_runner_mapping_dir.invoke(
-        add_study_folders, "*", catch_exceptions=False,
-    )
+    result = runner_with_mapping.invoke(add_study_folders, "*", catch_exceptions=False,)
 
     assert create_fileselection_click_recorder.call_count == 2
     assert "that look like DICOM" in result.output
 
 
-def test_cli_map_delete(mock_main_runner, a_folder_with_mapping):
+def test_cli_map_delete(mock_map_context_with_mapping):
     """Running map info should give you a nice print of contents"""
-    mock_main_runner.set_mock_current_dir(a_folder_with_mapping)
+    context = mock_map_context_with_mapping
+    runner = AnonAPIContextRunner(mock_context=context)
 
-    mapping_folder = MappingFolder(a_folder_with_mapping)
-    assert mapping_folder.has_mapping()
+    assert context.settings.active_mapping_file.exists()
 
-    result = mock_main_runner.invoke(
-        entrypoint.cli, "map delete", catch_exceptions=False
-    )
-
+    result = runner.invoke(delete, catch_exceptions=False)
     assert result.exit_code == 0
-    assert not mapping_folder.has_mapping()
+    assert not context.settings.active_mapping_file.exists()
 
     # deleting again will yield nice message
-    result = mock_main_runner.invoke(entrypoint.cli, "map delete")
+    result = runner.invoke(delete)
     assert result.exit_code == 1
-    assert "No mapping defined" in result.output
+    assert "No such file or directory" in result.output
 
 
-def test_cli_map_edit(mock_main_runner_with_mapping, monkeypatch):
+def test_cli_map_edit(mock_map_context_with_mapping, monkeypatch):
+    context = mock_map_context_with_mapping
+    runner = AnonAPIContextRunner(mock_context=context)
+
     mock_launch = Mock()
-    monkeypatch.setattr("anonapi.cli.select_commands.click.launch", mock_launch)
+    monkeypatch.setattr("anonapi.cli.map_commands.click.launch", mock_launch)
 
-    runner = mock_main_runner_with_mapping
-    result = runner.invoke(entrypoint.cli, "map edit")
+    result = runner.invoke(edit, catch_exceptions=False)
 
     assert result.exit_code == 0
     assert mock_launch.called
 
     # now try edit without any mapping being present
     mock_launch.reset_mock()
-    runner.invoke(entrypoint.cli, "map delete")
-    result = runner.invoke(entrypoint.cli, "map edit")
+    runner.invoke(delete)
+    result = runner.invoke(edit)
 
-    assert result.exit_code == 0
-    assert "No mapping file defined" in result.output
+    assert "No mapping file found at" in result.output
     assert not mock_launch.called
+
+
+def test_cli_map_activate(mock_map_context_with_mapping):
+    context = mock_map_context_with_mapping
+    runner = AnonAPIContextRunner(mock_context=context)
+    settings = context.settings
+
+    settings.active_mapping_file = None  # we start with a mapping file, but no active
+
+    # after activating, active mapping should be set
+    runner.invoke(activate)
+    assert settings.active_mapping_file == context.current_dir / "anon_mapping.csv"
+
+    # Graceful error when activating when there is no mapping in current dir
+    runner.invoke(delete)
+    assert "Could not find mapping file at" in runner.invoke(activate).output
 
 
 def test_cli_map_add_paths_file(mock_main_runner):

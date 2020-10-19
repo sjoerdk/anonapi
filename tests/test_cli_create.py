@@ -4,12 +4,13 @@ import pytest
 
 from anonapi.batch import BatchFolder
 from anonapi.cli.create_commands import (
+    CreateCommandsContext,
     main,
     JobParameterSet,
     ParameterMappingException,
     JobSetValidationError,
 )
-from anonapi.mapper import Mapping, MappingFolder
+from anonapi.mapper import Mapping
 from anonapi.parameters import (
     DestinationPath,
     Project,
@@ -36,10 +37,10 @@ def mock_requests_for_job_creation(mock_requests):
 
 
 def test_create_from_mapping_no_mapping(mock_main_runner):
-    """Running from-mapping in a folder without mapping should not work"""
+    """Running from-mapping without active mapping should not work"""
     result = mock_main_runner.invoke(main, "from-mapping")
     assert result.exit_code == 1
-    assert "No mapping" in result.output
+    assert "No active mapping" in result.output
 
 
 def test_create_from_mapping(mock_from_mapping_runner, mock_requests_for_job_creation):
@@ -132,7 +133,10 @@ def test_create_from_mapping_relative_path(
     assert mock_requests_for_job_creation.requests.post.call_count == 20
 
     current_dir = str(mock_from_mapping_runner.mock_context.current_dir)
-    mapping = MappingFolder(current_dir).load_mapping()
+    # TODO: test_cli_create should use CreateCommandsContext by default in most tests
+    mapping = CreateCommandsContext(
+        context=mock_from_mapping_runner.mock_context
+    ).get_mapping()
 
     def all_paths(mapping_in):
         """List[str] of all paths in mapping"""

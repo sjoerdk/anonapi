@@ -1,7 +1,7 @@
 """Click group and commands for the 'create' subcommand"""
 import logging
 from typing import Dict, List, Optional
-from pathlib import PureWindowsPath
+from pathlib import Path, PureWindowsPath
 
 import click
 
@@ -11,7 +11,7 @@ from anonapi.context import AnonAPIContext
 from anonapi.client import APIClientException
 from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
 from anonapi.exceptions import AnonAPIException
-from anonapi.mapper import Mapping, MappingFolder
+from anonapi.mapper import MapperException, Mapping, MappingFile
 from anonapi.parameters import (
     Parameter,
     DestinationPath,
@@ -256,9 +256,16 @@ class CreateCommandsContext(AnonAPIContext):
             )  # add only unique new ids
             batch_folder.save(batch)
 
-    @handle_anonapi_exceptions
-    def get_mapping(self):
-        return MappingFolder(self.current_dir).get_mapping()
+    def active_mapping_file_path(self) -> Optional[Path]:
+        return self.settings.active_mapping_file
+
+    def get_current_mapping_file(self) -> MappingFile:
+        if not self.active_mapping_file_path():
+            raise MapperException("No active mapping")
+        return MappingFile(self.settings.active_mapping_file)
+
+    def get_mapping(self) -> Mapping:
+        return self.get_current_mapping_file().get_mapping()
 
 
 pass_create_commands_context = click.make_pass_decorator(CreateCommandsContext)
@@ -282,6 +289,7 @@ def mock_create(*args, **kwargs):
 
 @click.command()
 @pass_create_commands_context
+@handle_anonapi_exceptions
 @click.option(
     "--dry-run/--no-dry-run", default=False, help="Do not post to server, just print"
 )

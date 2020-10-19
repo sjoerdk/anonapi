@@ -10,9 +10,8 @@ from anonapi.cli.map_commands import create_example_mapping
 from anonapi.exceptions import AnonAPIException
 from anonapi.mapper import (
     JobParameterGrid,
+    MappingFile,
     MappingLoadError,
-    MappingFolder,
-    MapperException,
     Mapping,
     sniff_dialect,
 )
@@ -216,50 +215,27 @@ def test_format_job_info(a_grid_of_parameters):
     assert "with 15 rows" in as_string
 
 
-def test_mapping_list_folder():
-    with_mapping = MappingFolder(
-        RESOURCE_PATH / "test_mapper" / "mapping_list_folder" / "with_mapping"
-    )
-    without_mapping = MappingFolder(
-        RESOURCE_PATH / "test_mapper" / "mapping_list_folder" / "without_mapping"
-    )
-    assert with_mapping.has_mapping()
-    assert not without_mapping.has_mapping()
-
-
-def test_mapping_list_folder_path_funcs():
-    path = RESOURCE_PATH / "test_mapper" / "mapping_list_folder" / "with_mapping"
-    assert str(MappingFolder(path).make_relative(path / "foo/bar")) == "foo/bar"
-    assert (
-        str(MappingFolder(path).make_relative("already/relative")) == "already/relative"
-    )
-
-    with pytest.raises(MapperException):
-        MappingFolder(path).make_relative("/outside/scope")
-
-    assert MappingFolder(path).make_absolute("foo/bar") == path / "foo/bar"
-
-    with pytest.raises(MapperException):
-        MappingFolder(path).make_absolute("/absolute/root_path")
-
-
 def test_mapping_folder_read_write(tmpdir, a_grid_of_parameters):
     """Test creating reading and deleting mappings in folder"""
-    mapping_folder = MappingFolder(tmpdir)
-    assert not mapping_folder.has_mapping()
 
+    # just some path
+    path = tmpdir / "a_mapping.csv"
+    assert not path.exists()
+
+    # and an in-memory mapping
     mapping = Mapping(JobParameterGrid(a_grid_of_parameters))
-    mapping_folder.save_mapping(mapping)
-    assert mapping_folder.has_mapping()
+    mapping_file = MappingFile(path)
 
-    loaded = mapping_folder.load_mapping()
-    assert [str(x) for row in loaded.rows() for x in row] == [
+    # when saving this to disk
+    mapping_file.save_mapping(mapping)
+
+    # the file should appear
+    assert path.exists()
+
+    # and content should be as expected
+    assert [str(x) for row in mapping_file.load_mapping().rows() for x in row] == [
         str(x) for row in mapping.rows() for x in row
     ]
-    assert mapping_folder.has_mapping()
-
-    mapping_folder.delete_mapping()
-    assert not mapping_folder.has_mapping()
 
 
 def test_os_error():

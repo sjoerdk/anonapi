@@ -10,7 +10,7 @@ import getpass
 import random
 import string
 
-from click.exceptions import BadParameter, ClickException
+from click.exceptions import BadParameter
 
 from anonapi.cli.click_parameters import WildcardFolder
 from anonapi.cli.click_types import FileSelectionFileParam
@@ -18,7 +18,8 @@ from anonapi.selection import create_dicom_selection
 from anonapi.context import AnonAPIContext
 from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
 from anonapi.mapper import (
-    MappingFolder,
+    DEFAULT_MAPPING_NAME,
+    MappingFile,
     ExampleJobParameterGrid,
     MapperException,
     Mapping,
@@ -43,14 +44,38 @@ logger = logging.getLogger(__name__)
 
 
 class MapCommandContext:
-    def __init__(self, current_path, settings: AnonClientSettings):
-        self.current_path = current_path
+    def __init__(self, current_dir, settings: AnonClientSettings):
+        self.current_dir = current_dir
         self.settings = settings
 
-    def get_current_mapping_folder(self):
-        return MappingFolder(self.current_path)
+    def active_mapping_file_path(self) -> Optional[Path]:
+        return self.settings.active_mapping_file
 
-    def get_current_mapping(self):
+    def get_current_mapping_file(self) -> MappingFile:
+        """Get active MappingFile object. If none is active raise exception
+
+        Notes
+        -----
+        Active mapping file has not been parsed or even checked for existence.
+        This method might return a MappingFile that points to a non-existant file
+        or to a file with invalid Format. Use MappingFile.get_mapping() to be sure
+        of existence and validity
+
+        Returns
+        -------
+        MappingFile
+
+        Raises
+        ------
+        MapperException
+            If there is no active mapping file
+
+        """
+        if not self.active_mapping_file_path():
+            raise MapperException("No active mapping")
+        return MappingFile(self.settings.active_mapping_file)
+
+    def get_current_mapping(self) -> Mapping:
         """Load mapping from the current directory
 
         Returns
@@ -64,7 +89,7 @@ class MapCommandContext:
             When no mapping could be loaded from current directory
 
         """
-        return self.get_current_mapping_folder().get_mapping()
+        return self.get_current_mapping_file().get_mapping()
 
 
 pass_map_command_context = click.make_pass_decorator(MapCommandContext)
@@ -78,7 +103,7 @@ def main(context: AnonAPIContext, ctx):
 
     # both anonapi_context and base click ctx are passed to be able change ctx.obj
     ctx.obj = MapCommandContext(
-        current_path=context.current_dir, settings=context.settings
+        current_dir=context.current_dir, settings=context.settings
     )
 
 
@@ -87,9 +112,10 @@ def main(context: AnonAPIContext, ctx):
 @handle_anonapi_exceptions
 def status(context: MapCommandContext):
     """Show mapping in current directory"""
-
-    mapping = context.get_current_mapping()
-    logger.info(mapping.to_string())
+    mapping_file = context.get_current_mapping_file()
+    info = mapping_file.get_mapping().to_string()  # do this to fail early
+    logger.info(f"Mapping at {mapping_file}")
+    logger.info(info)
 
 
 def get_initial_options(settings: AnonClientSettings) -> List[Parameter]:
@@ -115,12 +141,31 @@ def get_initial_options(settings: AnonClientSettings) -> List[Parameter]:
 @pass_map_command_context
 @handle_anonapi_exceptions
 def init(context: MapCommandContext):
-    """Save a default mapping in the current folder"""
-    folder = context.get_current_mapping_folder()
+    """Save a default mapping in a default location in the current folder"""
+    mapping_file = MappingFile(Path(context.current_dir) / DEFAULT_MAPPING_NAME)
+    mapping_file.save_mapping(create_example_mapping(context))
+    logger.info(f"Initialised example mapping in {mapping_file.file_path}")
+    activate_mapping(context.settings, mapping_path=mapping_file.file_path)
 
-    mapping = create_example_mapping(context)
-    folder.save_mapping(mapping)
-    logger.info(f"Initialised example mapping in {folder.DEFAULT_FILENAME}")
+
+@click.command()
+@pass_map_command_context
+@handle_anonapi_exceptions
+def activate(context: MapCommandContext):
+    """All subsequent mapping actions will target this folder"""
+    mapping_file_path = Path(context.current_dir) / DEFAULT_MAPPING_NAME
+    if not mapping_file_path.exists():
+        raise MapperException(
+            f"Could not find mapping file at " f"'{mapping_file_path}'"
+        )
+    activate_mapping(context.settings, mapping_path=mapping_file_path)
+
+
+def activate_mapping(settings: AnonClientSettings, mapping_path: Path):
+    """Internal method called from multiple click methods"""
+    settings.active_mapping_file = mapping_path
+    settings.save()
+    logger.info(f"Activated mapping at {mapping_path}")
 
 
 def create_example_mapping(context: MapCommandContext = None) -> Mapping:
@@ -134,9 +179,9 @@ def create_example_mapping(context: MapCommandContext = None) -> Mapping:
     """
     if not context:
         context = MapCommandContext(
-            current_path=os.getcwd(), settings=DefaultAnonClientSettings()
+            current_dir=os.getcwd(), settings=DefaultAnonClientSettings()
         )
-    options = [RootSourcePath(context.current_path)] + get_initial_options(
+    options = [RootSourcePath(context.current_dir)] + get_initial_options(
         context.settings
     )
     mapping = Mapping(
@@ -153,12 +198,13 @@ def create_example_mapping(context: MapCommandContext = None) -> Mapping:
 @pass_map_command_context
 @handle_anonapi_exceptions
 def delete(context: MapCommandContext):
-    """Delete mapping in current folder"""
-    folder = context.get_current_mapping_folder()
-    if not folder.has_mapping():
-        raise ClickException("No mapping defined in current folder")
-    folder.delete_mapping()
-    logger.info(f"Removed mapping in current dir")
+    """Delete current active mapping"""
+    path = context.get_current_mapping_file().file_path
+    try:
+        os.remove(path)
+        logger.info(f"Removed mapping at {path}")
+    except FileNotFoundError as e:
+        raise MapperException(f"Error deleting mapping: {e}")
 
 
 @click.command()
@@ -181,11 +227,12 @@ def add_study_folders(context: MapCommandContext, paths, check_dicom):
     paths = [path for wildcard in paths for path in wildcard]
     logger.info(f"Adding {len(paths)} paths to mapping")
 
-    mapping = context.get_current_mapping()
+    mapping_file = context.get_current_mapping_file()
+    mapping = mapping_file.get_mapping()
     for path in paths:
         logger.info(f"Adding '{path}' to mapping")
         fileselection = find_dicom_files(
-            Path(path), cwd=context.current_path, check_dicom=check_dicom
+            Path(path), cwd=context.current_dir, check_dicom=check_dicom
         )
         # add defaults
         row = [
@@ -195,7 +242,7 @@ def add_study_folders(context: MapCommandContext, paths, check_dicom):
         ]
         mapping.grid.append_row(row)
         # save each time so we don't loose all when an error occurs
-        context.get_current_mapping_folder().save_mapping(mapping)
+        mapping_file.save_mapping(mapping)
         logger.info("")  # extra newline makes separate folder adding more readable
     logger.info(f"Done. Added '{paths}' to mapping")
 
@@ -247,14 +294,15 @@ def find_dicom_files(
 @handle_anonapi_exceptions
 def add_selection(context: MapCommandContext, selection):
     """Add selection file to mapping"""
-    mapping = context.get_current_mapping()
+    mapping_file = context.get_current_mapping_file()
+    mapping = mapping_file.get_mapping()
     identifier = SourceIdentifierFactory().get_source_identifier_for_obj(selection)
-    # make identifier root_path relative to mapping
+    # make identifier root_path relative to current dir
     try:
-        identifier.identifier = context.get_current_mapping_folder().make_relative(
-            identifier.identifier
-        )
-    except MapperException as e:
+        # TODO: clean up identifier structure. The line below smells from yards away
+        identifier.identifier = identifier.identifier.relative_to(context.current_dir)
+
+    except ValueError as e:
         raise BadParameter(f"Selection file must be inside mapping folder:{e}")
 
     def random_string(k):
@@ -276,7 +324,7 @@ def add_selection(context: MapCommandContext, selection):
         ]
     )
 
-    context.get_current_mapping_folder().save_mapping(mapping)
+    mapping_file.save_mapping(mapping)
     logger.info(f"Done. Added '{identifier}' to mapping")
 
 
@@ -284,20 +332,13 @@ def add_selection(context: MapCommandContext, selection):
 @pass_map_command_context
 @handle_anonapi_exceptions
 def edit(context: MapCommandContext):
-    """Edit the current mapping in OS default editor"""
-    mapping_folder = context.get_current_mapping_folder()
-    if mapping_folder.has_mapping():
-        click.launch(str(mapping_folder.full_path()))
+    """Edit the active mapping in OS default editor"""
+    path = context.get_current_mapping_file().file_path
+    if path.exists():
+        click.launch(str(path))
     else:
-        logger.info("No mapping file defined in current folder")
+        raise MapperException(f"No mapping file found at {path}")
 
 
-for func in [
-    status,
-    init,
-    delete,
-    add_study_folders,
-    edit,
-    add_selection,
-]:
+for func in [status, init, delete, add_study_folders, edit, add_selection, activate]:
     main.add_command(func)

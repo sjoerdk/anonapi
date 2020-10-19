@@ -100,7 +100,7 @@ class AnonAPIContext:
         return server
 
     def current_dir(self):
-        """Return full root_path to the folder this command line mock_context is
+        """Return full path to the folder this context is
         called from
         """
         return self.current_dir

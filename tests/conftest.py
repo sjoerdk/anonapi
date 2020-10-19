@@ -184,22 +184,23 @@ def mock_main_runner_with_mapping(mock_main_runner, a_folder_with_mapping):
 @fixture()
 def mock_from_mapping_runner(mock_main_runner_with_mapping):
     """Mock runner that has everything to make a call to from-mapping work:
-    * Mapping defined in current dir
+    * Mapping defined in current dir and activated
     * Default job rows are non-empty
     """
 
-    mock_main_runner_with_mapping.get_context().settings.job_default_parameters = [
+    settings = mock_main_runner_with_mapping.get_context().settings
+    settings.job_default_parameters = [
         Project(value="Test_project"),
         DestinationPath(value=Path("//test/output/root_path")),
     ]
+    current_dir = mock_main_runner_with_mapping.get_context().current_dir
+    settings.active_mapping_file = current_dir / "anon_mapping.csv"
 
     return mock_main_runner_with_mapping
 
 
 class MockContextCliRunner(CliRunner):
-    """a click.testing.CliRunner that always passes a mocked context to any call,
-    making sure any operations on current dir are done in a temp folder
-    """
+    """a click.testing.CliRunner that always passes a mocked context to any call"""
 
     def __init__(self, *args, mock_context, **kwargs):
 
@@ -244,13 +245,8 @@ class AnonAPIContextRunner(MockContextCliRunner):
         """
         self.mock_context.current_dir = path
 
-    def get_context(self):
-        """Get the context instance that is injected by this runner
-
-        Returns
-        -------
-        AnonAPIContext
-        """
+    def get_context(self) -> AnonAPIContext:
+        """Get the context instance that is injected by this runner"""
         return self.mock_context
 
 

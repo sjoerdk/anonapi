@@ -182,3 +182,18 @@ def test_load_v1_4_settings_alternate(test_settings_folder):
     AnonClientSettingsFromFile(
         test_settings_folder / "settings_pre_1_4_alternate.yml"
     )  # should just not crash
+
+
+def test_settings_save_load_active_mapping(test_settings_folder):
+    """Recreates error saving Path objects in settings
+
+    Did not realise that YAML saves Path instances as weird full lists. Probably
+    the most universal, but I want the settings file to be human readable in that
+    does not do it. Casting Path to string for serialization now
+    """
+    settings = AnonClientSettingsFromFile(test_settings_folder / "settings.yml")
+    path = Path("/some/path/settingsfile")
+    settings.active_mapping_file = path
+    settings.save()
+    loaded = AnonClientSettingsFromFile(test_settings_folder / "settings.yml")
+    assert loaded.active_mapping_file == path

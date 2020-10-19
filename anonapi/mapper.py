@@ -31,6 +31,8 @@ from io import StringIO
 from pathlib import Path
 from os import path
 
+DEFAULT_MAPPING_NAME = "anon_mapping.csv"  # Filename for mapping if not specified
+
 
 class Mapping:
     """Everything needed for creating anonymization jobs
@@ -393,100 +395,36 @@ class JobParameterGrid:
         return output
 
 
-class MappingFolder:
-    """Folder that might contain a mapping.
+class MappingFile:
+    """A file that contains a mapping"""
 
-    Uses a single default filename that it expects mapping to be saved under.
-
-    """
-
-    DEFAULT_FILENAME = "anon_mapping.csv"
-
-    def __init__(self, folder_path):
-        """
-
-        Parameters
-        ----------
-        root_path: Pathlike
-            root_path to this folder
-        """
-        self.folder_path = Path(folder_path)
-
-    def full_path(self):
-        return self.folder_path / self.DEFAULT_FILENAME
-
-    def make_relative(self, path):
-        """Make the given root_path relative to this mapping folder
-
-        Parameters
-        ----------
-        path: Pathlike
-
-        Returns
-        -------
-        Path
-            Path relative to this mapping folder
-
-        Raises
-        ------
-        MapperException
-            When root_path cannot be made relative
-
-        """
-        path = Path(path)
-        if not path.is_absolute():
-            return path
-        try:
-            return path.relative_to(self.folder_path)
-        except ValueError as e:
-            raise MapperException(f"Error making root_path relative: {e}")
-
-    def make_absolute(self, path):
-        """Get absolute root_path to the given root_path, assuming it is in this mapping folder
-
-        Parameters
-        ----------
-        path: Pathlike
-
-        Returns
-        -------
-        Path
-            Absolute root_path, assuming mapping folder as base folder
-
-        Raises
-        ------
-        MapperException
-            When given root_path is already absolute
-
-        """
-        path = Path(path)
-        if path.is_absolute():
-            raise MapperException("Cannot make absolute root_path absolute")
-        return self.folder_path / Path(path)
-
-    def has_mapping(self):
-        """Is there a mapping file in this folder?"""
-        return self.full_path().exists()
+    def __init__(self, file_path: Path):
+        self.file_path = file_path
 
     def save_mapping(self, mapping: Mapping):
-        with open(self.full_path(), "w", newline="") as f:
+        with open(self.file_path, "w", newline="") as f:
             mapping.save_to(f)
 
-    def load_mapping(self):
+    def load_mapping(self) -> Mapping:
         """Load Mapping from default location in this folder
 
         Returns
         -------
         Mapping
 
+        Raises
+        ------
+        MappingLoadError
+            If mapping cannot be loaded
+
         """
-        with open(self.full_path(), "r", newline="") as f:
-            return Mapping.load(f)
+        with open(self.file_path, "r", newline="") as f:
+            try:
+                return Mapping.load(f)
+            except FileNotFoundError as e:
+                raise MappingLoadError(f"Could not load mapping: {e}")
 
-    def delete_mapping(self):
-        os.remove(self.full_path())
-
-    def get_mapping(self):
+    def get_mapping(self) -> Mapping:
         """Load default mapping from this folder
 
         Returns
@@ -500,14 +438,11 @@ class MappingFolder:
             When no mapping could be loaded from current directory
 
         """
-
         try:
-            with open(self.full_path(), "r", newline="") as f:
+            with open(self.file_path, "r", newline="") as f:
                 return Mapping.load(f)
-        except FileNotFoundError:
-            raise NoMappingFoundError("No mapping defined in current directory")
-        except MapperException as e:
-            raise MappingLoadError(e)
+        except (FileNotFoundError, MapperException) as e:
+            raise MapperException(f"Could not load mapping: {e}")
 
 
 class ExampleJobParameterGrid(JobParameterGrid):
@@ -557,10 +492,6 @@ class ExampleJobParameterGrid(JobParameterGrid):
 
 
 class MapperException(AnonAPIException):
-    pass
-
-
-class NoMappingFoundError(MapperException):
     pass
 
 

@@ -58,7 +58,7 @@ class AnonClientSettings(YAMLSerializable):
             job_default_parameters = []
         self.job_default_parameters = job_default_parameters
         self.validate_ssl = validate_ssl
-        self.activate_mapping_file = active_mapping_file
+        self.active_mapping_file = active_mapping_file
 
     def get_active_server_key(self) -> Optional[str]:
         if self.active_server:
@@ -77,7 +77,7 @@ class AnonClientSettings(YAMLSerializable):
             "job_default_parameters": [
                 x.to_string() for x in self.job_default_parameters
             ],
-            "active_mapping_file": self.activate_mapping_file,
+            "active_mapping_file": str(self.active_mapping_file),
         }
 
     @classmethod
@@ -99,7 +99,7 @@ class AnonClientSettings(YAMLSerializable):
             user_token=dict_full["user_token"],
             validate_ssl=dict_full["validate_ssl"],
             job_default_parameters=cls.extract_default_parameters(dict_in),
-            active_mapping_file=dict_full["active_mapping_file"],
+            active_mapping_file=Path(dict_full["active_mapping_file"]),
         )
 
         settings.active_server = cls.determine_active_server(
@@ -185,18 +185,29 @@ class AnonClientSettings(YAMLSerializable):
         with open(filename, "w") as f:
             self.save_to(f)
 
+    def save(self):
+        """Dummy method to be able to call save() when testing with memory-only
+        settings
+        """
+        raise Warning(
+            "Settings not saved. " "There is no file associated with these settings"
+        )
+
 
 class DefaultAnonClientSettings(AnonClientSettings):
-    """A settings object with some default values. For testing and for writing
-    settings when none are available
+    """A settings object with some default values
+
+    Differs from its base class AnonClientSettings in that it will have dummy
+    values instead of only empty values when initialised without parameters
     """
 
-    def __init__(self):
-        """Create default settings object:
+    def __init__(self, active_mapping_file: Optional[Path] = None):
+        """Settings object with minimal default values. Should be valid as default
+         settings object.
 
         >>> servers = [RemoteAnonServer("test", "https://hostname_of_api")]
         >>> user_name='username'
-        >>> user_token='12345abc'
+        >>> user_token='token'
 
         """
         super().__init__(
@@ -207,6 +218,7 @@ class DefaultAnonClientSettings(AnonClientSettings):
                 Project(value="NOT_SET"),
                 DestinationPath(value=""),
             ],
+            active_mapping_file=active_mapping_file,
         )
 
 
@@ -230,6 +242,7 @@ class AnonClientSettingsFromFile(AnonClientSettings):
             user_token=settings.user_token,
             job_default_parameters=settings.job_default_parameters,
             validate_ssl=settings.validate_ssl,
+            active_mapping_file=settings.active_mapping_file,
         )
 
         self.active_server = settings.active_server
