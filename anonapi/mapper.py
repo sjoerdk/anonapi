@@ -227,7 +227,7 @@ class Mapping:
         str
         """
         output = self.description
-        output += "\n" + self.grid.to_table_string()
+        output += "\n" + self.grid.to_table_string(max_rows=5)
         return output
 
 
@@ -259,6 +259,7 @@ def sniff_dialect(f: TextIO, max_lines: int = 3) -> Dialect:
             if tried < max_lines:
                 continue
             else:
+                f.seek(0)
                 raise AnonAPIException(e)
 
     raise AnonAPIException("Could not determine dialect for csv file")
@@ -371,7 +372,7 @@ class JobParameterGrid:
         types = {type(param) for row in self.rows for param in row}
         return [x for x in ALL_PARAMETERS if x in types]
 
-    def to_table_string(self):
+    def to_table_string(self, max_rows: Optional[int] = None):
         """A source - patient_id command_table with a small header
 
         Returns
@@ -379,13 +380,21 @@ class JobParameterGrid:
         str:
             Nice input representation of this list, 80 chars wide, truncated if
             needed
+        max_rows: Optional[int]
+            If given, show at most this many rows of content. If not given,
+            prints all
 
         """
         # remember parameter list can be sparse
         table = defaultdict(list)
         types = [SourceIdentifierParameter, PseudoID]
 
-        for row in self.rows:
+        if max_rows is None:
+            rows = self.rows
+        else:
+            rows = self.rows[:max_rows]
+
+        for row in rows:
             typed_row = {type(x): x for x in row}
             for param_type in types:
                 try:
@@ -393,7 +402,14 @@ class JobParameterGrid:
                 except KeyError:
                     instance = param_type()
                 table[param_type.field_name].append(instance.value)
-        output = f"Parameter grid with {len(self.rows)} rows:\n\n"
+
+        if max_rows is None:
+            output = f"Parameter grid with {len(self.rows)} rows:\n\n"
+        else:
+            output = (
+                f"Parameter grid with {len(self.rows)} rows (showing at most "
+                f"{max_rows}):\n\n"
+            )
         output += tabulate(table, headers="keys", tablefmt="simple")
         return output
 

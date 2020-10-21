@@ -123,3 +123,15 @@ def test_reading_from_different_file_types(input_file_name):
         "accession_number,2234567.12345679",
         "pseudo_name,patient2",
     ]
+
+
+def test_reading_single_column():
+    """A single column should be valid, but contains no separators.
+    This should not be a problem
+    """
+    input_file = as_tabular_file(LOCAL_RESOURCE_PATH / "test_single_line.csv")
+    assert len(list(input_file.rows())) == 4  # there are 4 lines in this file
+
+    grid = extract_parameter_grid(input_file)
+    assert len(grid.rows) == 3
+    assert str(grid.rows[2][0].path) == "andanother"

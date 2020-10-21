@@ -119,7 +119,7 @@ def status(context: MapCommandContext):
     """Show mapping in current directory"""
     mapping_file = context.get_current_mapping_file()
     info = mapping_file.get_mapping().to_string()  # do this to fail early
-    logger.info(f"Mapping at {mapping_file}")
+    logger.info(f"Mapping at {mapping_file.file_path}")
     logger.info(info)
 
 

@@ -240,7 +240,15 @@ class CSVFile(TabularFile):
         logger.info(f"Parsing '{self.path}'..")
         try:
             with open(self.path, "r") as f:
-                rows = [row for row in csv.reader(f, dialect=sniff_dialect(f))]
+                try:
+                    dialect = sniff_dialect(f)
+                except AnonAPIException as e:
+                    dialect = "excel"
+                    logger.debug(
+                        f"could not determine dialect, guessing "
+                        f"'{dialect}'. Original error: '{e}'"
+                    )
+                rows = [row for row in csv.reader(f, dialect=dialect)]
         except FileNotFoundError as e:
             raise InputFileException(e)
 
@@ -368,7 +376,7 @@ def extract_parameter_grid(
 
     """
     if optional_column_types is None:
-        optional_column_types = [AccessionNumberColumn, PseudonymColumn]
+        optional_column_types = [FolderColumn, AccessionNumberColumn, PseudonymColumn]
     if required_column_types is None:
         required_column_types = []
 
