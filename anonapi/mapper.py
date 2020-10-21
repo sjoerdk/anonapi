@@ -23,7 +23,6 @@ from anonapi.parameters import (
     SourceIdentifierParameter,
     ParameterFactory,
     PseudoName,
-    PseudoID,
     Description,
     ALL_PARAMETERS,
     ParameterParsingError,
@@ -387,7 +386,7 @@ class JobParameterGrid:
         """
         # remember parameter list can be sparse
         table = defaultdict(list)
-        types = [SourceIdentifierParameter, PseudoID]
+        types = [SourceIdentifierParameter, PseudoName]
 
         if max_rows is None:
             rows = self.rows

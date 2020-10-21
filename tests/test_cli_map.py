@@ -126,7 +126,7 @@ def test_cli_map_info(mock_main_runner_with_mapping):
     result = runner.invoke(entrypoint.cli, "map status", catch_exceptions=False)
 
     assert result.exit_code == 0
-    assert "folder:folder/file4  patient4" in result.output
+    assert "folder:folder/file4  patientName4" in result.output
 
 
 def test_cli_map_info_empty_dir(mock_main_runner):

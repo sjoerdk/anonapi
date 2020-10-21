@@ -127,6 +127,21 @@ class JobParameterSet(ParameterSet):
 
         return dict_out
 
+    def fill_missing_parameters(self):
+        """Pseudo name and Pseudo ID have become almost interchangeable. It makes no
+        sense to set one and not the other. Make sure values are sane. Namely:
+        id set, name none -> rename to id
+        id none, name set -> rename to name
+        id none, name none -> keep as is
+        id set , name set -> keep as is
+        """
+        pseudo_id = self.get_param_by_type(PseudoID)
+        pseudo_name = self.get_param_by_type(PseudoName)
+        if pseudo_id is None and pseudo_name is not None:
+            self.parameters.append(PseudoID(pseudo_name.value))  # take name for both
+        elif pseudo_name is None and pseudo_id is not None:
+            self.parameters.append(PseudoName(pseudo_id.value))  # take id for both
+
     def validate(self):
         """Assert that this set can be used to create a job
 
@@ -393,8 +408,9 @@ def extract_job_sets(context, mapping: Mapping) -> List[JobParameterSet]:
         JobParameterSet(row, default_parameters=context.default_parameters())
         for row in mapping.rows
     ]
-    # validate each job set
+    # validate each job set and fill missing values
     for job_set in job_sets:
+        job_set.fill_missing_parameters()
         try:
             job_set.validate()
         except JobSetValidationError as e:

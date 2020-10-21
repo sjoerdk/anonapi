@@ -1,4 +1,5 @@
 from pathlib import PureWindowsPath
+from typing import List, Tuple
 
 import pytest
 
@@ -14,6 +15,7 @@ from anonapi.mapper import Mapping
 from anonapi.parameters import (
     DestinationPath,
     Project,
+    PseudoName,
     SourceIdentifierParameter,
     Description,
     SourceIdentifier,
@@ -242,6 +244,31 @@ def test_job_parameter_set_validate_non_unc_paths(all_parameters):
     root_source.value = PureWindowsPath(r"Z:\folder1")
     with pytest.raises(JobSetValidationError):
         param_set.validate()
+
+
+def test_job_parameter_set_fill_missing(all_parameters):
+    """Make sure Pseudo ID and Pseudo Name have reasonable values"""
+
+    assert fill_missing_test([PseudoID("an_id")]) == ("an_id", "an_id")
+    assert fill_missing_test([PseudoName("a_name")]) == ("a_name", "a_name")
+    assert fill_missing_test([PseudoName("a_name"), PseudoID("an_id")]) == (
+        "an_id",
+        "a_name",
+    )
+    param_set = JobParameterSet([])
+    param_set.fill_missing_parameters()
+    assert param_set.get_param_by_type(PseudoID) is None
+    assert param_set.get_param_by_type(PseudoName) is None
+
+
+def fill_missing_test(parameters: List[Parameter]) -> Tuple[str]:
+    """Convenience function for testing job parameter fill missing"""
+    param_set = JobParameterSet(parameters)
+    param_set.fill_missing_parameters()
+    return (
+        param_set.get_param_by_type(PseudoID).value,
+        param_set.get_param_by_type(PseudoName).value,
+    )
 
 
 def test_job_parameter_set_defaults():

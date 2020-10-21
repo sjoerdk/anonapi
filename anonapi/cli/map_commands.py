@@ -258,7 +258,7 @@ def add_study_folders(context: MapCommandContext, paths, input_file, check_dicom
         # save each time so we don't loose all when an error occurs
         mapping_file.save_mapping(mapping)
         logger.info("")  # extra newline makes separate folder adding more readable
-    logger.info(f"Done. Added '{paths}' to mapping")
+    logger.info(f"Done. Added '{[str(x) for x in input_rows.keys()]}' to mapping")
 
 
 def find_dicom_files(
