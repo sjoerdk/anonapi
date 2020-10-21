@@ -104,7 +104,7 @@ def a_folder_with_mapping_diverse(tmpdir):
 
 
 @fixture
-def folder_with_some_dicom_files(tmpdir):
+def folder_with_some_dicom_files(tmpdir) -> FileSelectionFolder:
     """A folder with some structure, some dicom files and some non-dicom files.
     No FileSelectionFile saved yet
     """

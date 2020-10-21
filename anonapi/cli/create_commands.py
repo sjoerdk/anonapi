@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 class JobParameterSet(ParameterSet):
-    """A collection of parameter_types that should create one job.
+    """A collection of parameters that should create one job.
 
     Offers validation and mapping to job-creation function keywords
     """
@@ -49,9 +49,26 @@ class JobParameterSet(ParameterSet):
         PIMSKey: "pims_keyfile_id",
     }
 
-    # these types of parameter_types are never sent to a function directly. They
+    # these types of parameters are never sent to a function directly. They
     # should be ignored when casting to kwargs
     NON_KEYWORD_PARAMETERS = [RootSourcePath]
+
+    def __init__(
+        self, parameters: List[Parameter], default_parameters: List[Parameter] = None
+    ):
+        """
+
+        Parameters
+        ----------
+        parameters: List[Parameter]
+            The parameters in this set
+        default_parameters: List[Parameter]
+            Include these parameters, unless overwritten in parameters
+        """
+        if default_parameters is None:
+            default_parameters = []
+        super().__init__(parameters=default_parameters)
+        self.update(parameters)
 
     @classmethod
     def is_non_keyword(cls, parameter):
@@ -68,7 +85,7 @@ class JobParameterSet(ParameterSet):
         Raises
         ------
         ParameterMappingException
-            If not all parameter_types can be mapped
+            If not all parameters can be mapped
 
         Returns
         -------
@@ -190,16 +207,16 @@ class CreateCommandsContext(AnonAPIContext):
         )
 
     def default_parameters(self) -> List[Parameter]:
-        """Default parameter_types from settings"""
+        """Default parameters from settings"""
         return self.settings.job_default_parameters
 
     def create_job_for_element(self, parameters: List[Parameter]):
-        """Create a job for the given parameter_types
+        """Create a job for the given parameters
 
         Parameters
         ----------
         parameters: List[Parameter]
-            The parameter_types to use
+            The parameters to use
 
         Raises
         ------
@@ -360,7 +377,7 @@ def create_jobs(
 
 
 def extract_job_sets(context, mapping: Mapping) -> List[JobParameterSet]:
-    """Extract sets of parameter_types each creating one job
+    """Extract sets of parameters each creating one job
 
     Raises
     ------
@@ -381,7 +398,7 @@ def extract_job_sets(context, mapping: Mapping) -> List[JobParameterSet]:
         try:
             job_set.validate()
         except JobSetValidationError as e:
-            raise ClickException(f"Error validating parameter_types: {e}")
+            raise ClickException(f"Error validating parameters: {e}")
     return job_sets
 
 

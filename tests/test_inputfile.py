@@ -1,19 +1,26 @@
 import pytest
 
 from anonapi.inputfile import (
+    AccessionNumberColumn,
+    ExcelFile,
     FolderColumn,
     InputFileException,
+    PseudonymColumn,
     extract_parameter_grid,
 )
 from tests import RESOURCE_PATH
+
+
+LOCAL_RESOURCE_PATH = RESOURCE_PATH / "test_inputfile"
 
 
 def test_extract_parameter_grid_simple():
     """Parse parameters from a simple xls file with two rows and some comments
     at the top
     """
-    input_file = RESOURCE_PATH / "test_inputfile" / "example_deid_form.xlsx"
+    input_file = ExcelFile(LOCAL_RESOURCE_PATH / "example_deid_form.xlsx")
     grid = extract_parameter_grid(input_file)
+
     assert [str(x) for x in grid.rows[0]] == [
         "accession_number,1234567.12345678",
         "pseudo_name,patient1",
@@ -24,11 +31,43 @@ def test_extract_parameter_grid_simple():
     ]
 
 
+def test_extract_parameter_grid_required():
+    """You can pass column types that must be found, otherwise error"""
+
+    input_file = ExcelFile(LOCAL_RESOURCE_PATH / "example_deid_form.xlsx")
+    with pytest.raises(InputFileException):
+        # file does not contain a 'folder' column. Requiring this should fail
+        extract_parameter_grid(
+            input_file,
+            optional_column_types=[AccessionNumberColumn, PseudonymColumn],
+            required_column_types=[FolderColumn],
+        )
+
+    # without requiring, missing column should not be a problem
+    extract_parameter_grid(
+        input_file,
+        optional_column_types=[FolderColumn, AccessionNumberColumn, PseudonymColumn],
+        required_column_types=[],
+    )
+
+    # This is dumb but possible.
+    extract_parameter_grid(
+        input_file,
+        optional_column_types=[
+            FolderColumn,
+            AccessionNumberColumn,
+            PseudonymColumn,
+            PseudonymColumn,
+        ],
+        required_column_types=[PseudonymColumn],
+    )
+
+
 def test_extract_parameter_grid_errors():
     """Tese a few situations that should raise errors"""
 
-    input_file = (
-        RESOURCE_PATH / "test_inputfile" / "example_deid_form_missing_values.xlsx"
+    input_file = ExcelFile(
+        LOCAL_RESOURCE_PATH / "example_deid_form_missing_values.xlsx"
     )
     with pytest.raises(InputFileException):
         extract_parameter_grid(input_file)
@@ -37,8 +76,8 @@ def test_extract_parameter_grid_errors():
 def test_extract_paths():
     """Parse a list of paths"""
 
-    input_file = RESOURCE_PATH / "test_inputfile" / "some_folder_names.xlsx"
-    grid = extract_parameter_grid(input_file, column_types=[FolderColumn])
+    input_file = ExcelFile(LOCAL_RESOURCE_PATH / "some_folder_names.xlsx")
+    grid = extract_parameter_grid(input_file, optional_column_types=[FolderColumn])
 
     assert len(grid.rows) == 3  # this should be three rows
     assert len(grid.rows[0]) == 1  # should just have picked up path, not other column
@@ -51,10 +90,10 @@ def test_extract_paths():
 
 def test_find_no_parameters():
     """When no column can be found, exceptions should be raised"""
-    input_file = (
-        RESOURCE_PATH / "test_inputfile" / "example_deid_form_missing_values.xlsx"
+    input_file = ExcelFile(
+        LOCAL_RESOURCE_PATH / "example_deid_form_missing_values.xlsx"
     )
 
     with pytest.raises(InputFileException):
         # FolderColumn is not present in this file
-        extract_parameter_grid(input_file, column_types=[FolderColumn])
+        extract_parameter_grid(input_file, optional_column_types=[FolderColumn])

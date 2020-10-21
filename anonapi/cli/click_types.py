@@ -44,6 +44,8 @@ class JobIDRangeParamType(ParamType):
 
 
 class AnonServerKeyParamType(ParamType):
+    """A key to a registered anonapi server. Yields nice message when not found"""
+
     name = "anon_server_key"
 
     def convert(self, value, param, ctx):
@@ -63,7 +65,7 @@ class AnonServerKeyParamType(ParamType):
 
 
 class FileSelectionFileParam(ParamType):
-    """A FileSelectionFile object"""
+    """A path to a file that can parsed as FileSelection"""
 
     name = "file_selection_file"
 

@@ -10,7 +10,7 @@ import string
 import random
 from copy import copy
 from datetime import datetime
-from typing import Any, List, Optional, Type
+from typing import Any, List, Optional, Tuple, Type
 
 from anonapi.exceptions import AnonAPIException
 from fileselection.fileselection import FileSelectionFile
@@ -482,42 +482,100 @@ class ParameterFactory:
     @staticmethod
     def generate_description() -> Description:
         """Description with curent date. Like 'generated_02_23_2020'"""
-        return Description(f"generated_{datetime.date.today().strftime('%B_%d_%Y')}")
+        return Description(f"generated_" f"{datetime.today().strftime('%B_%d_%Y')}")
 
 
 class ParameterSet:
-    """A collection of parameter_types with some convenient methods for checking
-    existence of specific parameter_types etc..
-
+    """Contains at most one instance of each parameter type. Allows questions like
+    'does this set contain a parameter of type X'. Also offers methods for updating
+    one set with another based on types
     """
 
-    def __init__(
-        self, parameters: List[Parameter], default_parameters: List[Parameter] = None
-    ):
+    def __init__(self, parameters: List[Parameter]):
         """
 
         Parameters
         ----------
         parameters: List[Parameter]
-            The parameter_types in this set
-        default_parameters: List[Parameter]
-            Include these parameter_types, unless overwritten in parameter_types
+            The parameters in this set
         """
-        if not default_parameters:
-            default_parameters = []
-        param_dict = {type(x): x for x in default_parameters}
-        param_dict.update({type(x): x for x in parameters})
+        self.parameters = parameters
+
+    def __iter__(self):
+        return iter(self.parameters)
+
+    def update(self, other: "ParameterSet"):
+        """Like dict.update(other). Add new parameters from other. If a parameter
+        already exists, overwrite with value from other
+        """
+        param_dict = {type(x): x for x in self.parameters}
+        param_dict.update({type(x): x for x in other})
         self.parameters = list(param_dict.values())
 
-    def get_param_by_type(self, type_in) -> Optional[Parameter]:
+    def get_param_by_type(self, type_in: Type[Parameter]) -> Optional[Parameter]:
         """Return the first Parameter instance that is (or derives from) type
         or None
         """
         return next((x for x in self.parameters if isinstance(x, type_in)), None)
 
     def get_params_by_type(self, type_in) -> List[Parameter]:
-        """Return all parameter_types that are type or subtype, or empty list"""
+        """Return all parameters that are type or subtype, or empty list"""
         return [x for x in self.parameters if isinstance(x, type_in)]
+
+    def get_source_parameter(self) -> SourceIdentifierParameter:
+        """Get the first parameter indicating a data source from this set
+
+        Returns
+        -------
+        SourceIdentifierParameter
+
+        Raises
+        ------
+        ParameterException
+            If there is no source identifier in this set
+        """
+        try:
+            return next(x for x in self.parameters if self.is_source_identifier(x))
+        except StopIteration:
+            raise ParameterException(f"No source parameter found in {self.parameters}")
+
+    def split_parameter(
+        self, type_in: Type[Parameter]
+    ) -> Tuple[Parameter, List[Parameter]]:
+        """Split this set into (the first) instance of parameter and rest.
+
+        Returns
+        -------
+        Tuple[Parameter,List[Parameter]]
+
+        Raises
+        ------
+        ParameterException
+            If no isntance of type_in can be found
+        """
+        param = self.get_param_by_type(type_in=type_in)
+        rest = [x for x in self.parameters if not x == param]
+
+        return param, rest
+
+    def split_source_parameter(
+        self,
+    ) -> Tuple[SourceIdentifierParameter, List[Parameter]]:
+        """Split this set into (the first) source parameter and rest.
+
+        Useful for creating jobs. A missing source parameter is often a deal breaker,
+        while other parameters are often optional
+
+        Returns
+        -------
+        Tuple[SourceIdentifierParameter,List[Parameter]]
+
+        Raises
+        ------
+        ParameterException
+            If no source parameter can be found
+        """
+        return self.split_parameter(type_in=SourceIdentifierParameter)
 
     @staticmethod
     def is_source_identifier(parameter):

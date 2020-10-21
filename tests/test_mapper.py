@@ -45,7 +45,7 @@ from tests.resources.test_mapper.example_sniffer_inputs import (
 
 @pytest.fixture()
 def a_grid_of_parameters():
-    """A grid of parameter_types that can be used to seed a JobParameterGrid
+    """A grid of parameters that can be used to seed a JobParameterGrid
 
     Returns
     -------

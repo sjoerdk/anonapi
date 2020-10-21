@@ -22,10 +22,12 @@ from anonapi.mapper import (
     MappingFile,
     MappingLoadError,
 )
-from anonapi.parameters import ParameterSet, SourceIdentifierParameter
+from anonapi.parameters import ParameterSet, PseudoName, SourceIdentifierParameter
 from anonapi.settings import DefaultAnonClientSettings
 from tests.conftest import AnonAPIContextRunner, MockContextCliRunner
 from tests import RESOURCE_PATH
+
+MAPPER_RESOURCE_PATH = RESOURCE_PATH / "test_mapper"
 
 
 @fixture
@@ -318,12 +320,48 @@ def test_cli_map_activate(mock_map_context_with_mapping):
     assert "Could not find mapping file at" in runner.invoke(activate).output
 
 
-def test_cli_map_add_paths_file(mock_main_runner):
+def test_cli_map_add_paths_file(
+    mock_map_context_with_mapping, folder_with_some_dicom_files, monkeypatch
+):
     """Add an xls file containing several paths and potentially pseudonyms
     to an existing mapping
     """
-    # TODO create this
-    # a paths file with pseudonyms
-    # a mapping
-    # add
-    pass
+    context = mock_map_context_with_mapping
+    runner = AnonAPIContextRunner(mock_context=context)
+
+    # assert mapping is as expected
+    mapping = context.get_current_mapping()
+    assert len(mapping.grid) == 20
+
+    # now try to add something from the directory with some dicom files
+    context.current_dir = folder_with_some_dicom_files.path
+    monkeypatch.setattr("os.getcwd", lambda: folder_with_some_dicom_files.path)
+
+    folders = [
+        x for x in folder_with_some_dicom_files.path.glob("*") if not x.is_file()
+    ]
+
+    # First run with regular command line input
+    result = runner.invoke(
+        add_study_folders, args=[str(folders[0])], catch_exceptions=False
+    )
+    assert result.exit_code == 0
+
+    # Then run with input file input (input file contains 2 folders + names)
+    input_file_path = MAPPER_RESOURCE_PATH / "inputfile" / "some_folder_names.xlsx"
+    result = runner.invoke(
+        add_study_folders, args=["-f", str(input_file_path)], catch_exceptions=False
+    )
+    assert result.exit_code == 0
+
+    # now three rows should have been added
+    added = context.get_current_mapping().grid.rows[20:]
+    assert len(added) == 3
+
+    # and the pseudo names from the input file should have been included
+    pseudo_names = [ParameterSet(x).get_param_by_type(PseudoName) for x in added]
+    assert pseudo_names[1].value == "studyA"
+    assert pseudo_names[2].value == "studyB"
+
+
+# TODO: tests for input file that does not contain source. should fail.

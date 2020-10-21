@@ -16,6 +16,8 @@ from anonapi.parameters import (
     FolderIdentifier,
     FileSelectionIdentifier,
     Parameter,
+    ParameterException,
+    ParameterSet,
     StudyInstanceUIDIdentifier,
     AccessionNumberIdentifier,
     SourceIdentifierParameter,
@@ -59,7 +61,7 @@ class Mapping:
         Parameters
         ----------
         grid: JobParameterGrid
-            The per-job command_table of parameter_types
+            The per-job command_table of parameters
         options: List[Parameter], optional
             List of rows that have been set for the entire mapping. Defaults to empty
         description: str, optional
@@ -185,10 +187,10 @@ class Mapping:
         return collected
 
     def rows(self):
-        """All parameter_types for each row. This includes the parameter_types in the
-        grid as well as the mapping-wide parameter_types in the options section.
+        """All parameters for each row. This includes the parameters in the
+        grid as well as the mapping-wide parameters in the options section.
 
-        Grid parameter_types overrule mapping-wide parameter_types
+        Grid parameters overrule mapping-wide parameters
 
         Returns
         -------
@@ -491,18 +493,46 @@ class ExampleJobParameterGrid(JobParameterGrid):
         super().__init__(rows=rows)
 
 
-class MapperException(AnonAPIException):
-    pass
+class MappingParameterSet(ParameterSet):
+    """A set of parameters forming one row in a mapping. Defines defaults and
+    restrictions
+    """
 
+    def __init__(self, parameters: List[Parameter]):
+        """Create a parameter set to put in a mapping. Missing input parameters will
+        be added with default values
 
-class MappingLoadError(MapperException):
-    pass
+        Parameters
+        ----------
+        parameters: List[Parameter]
+            The parameters in this set
 
+        Raises
+        ------
+        MapperException
+            If mapping does not contain a source parameter. Without a source this
+            is not valid to put in a mapping.
 
-class ColonDelimited(csv.excel):
-    """Excel csv dialect, but with colon ';' delimiter"""
+        """
+        super().__init__(parameters=self.get_default_parameters())
+        self.update(parameters)
+        try:
+            self.get_source_parameter()
+        except ParameterException as e:
+            raise MapperException(
+                f"Invalid set of parameters for mapping: no source found. Where"
+                f" should the data come from? Original error: {e}"
+            )
 
-    delimiter = ";"
+    @staticmethod
+    def get_default_parameters() -> ParameterSet:
+        """Generate some reasonable defaults for pseudo name and description"""
+        return ParameterSet(
+            parameters=[
+                ParameterFactory.generate_pseudo_name(),
+                ParameterFactory.generate_description(),
+            ]
+        )
 
 
 def get_local_dialect() -> Dialect:
@@ -515,3 +545,17 @@ def get_local_dialect() -> Dialect:
         return ColonDelimited()
     else:
         return csv.excel
+
+
+class MapperException(AnonAPIException):
+    pass
+
+
+class MappingLoadError(MapperException):
+    pass
+
+
+class ColonDelimited(csv.excel):
+    """Excel csv dialect, but with colon ';' delimiter"""
+
+    delimiter = ";"

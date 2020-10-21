@@ -12,7 +12,7 @@ import string
 
 from click.exceptions import BadParameter
 
-from anonapi.cli.click_parameters import WildcardFolder
+from anonapi.cli.click_parameters import PathParameterFile, WildcardFolder
 from anonapi.cli.click_types import FileSelectionFileParam
 from anonapi.selection import create_dicom_selection
 from anonapi.context import AnonAPIContext
@@ -23,10 +23,12 @@ from anonapi.mapper import (
     ExampleJobParameterGrid,
     MapperException,
     Mapping,
+    MappingParameterSet,
     get_local_dialect,
 )
 from anonapi.parameters import (
-    ParameterFactory,
+    ParameterSet,
+    PathParameter,
     SourceIdentifierFactory,
     DestinationPath,
     PseudoName,
@@ -145,7 +147,7 @@ def init(context: MapCommandContext):
     mapping_file = MappingFile(Path(context.current_dir) / DEFAULT_MAPPING_NAME)
     mapping_file.save_mapping(create_example_mapping(context))
     logger.info(f"Initialised example mapping in {mapping_file.file_path}")
-    activate_mapping(context.settings, mapping_path=mapping_file.file_path)
+    _activate(context.settings, mapping_path=mapping_file.file_path)
 
 
 @click.command()
@@ -158,10 +160,10 @@ def activate(context: MapCommandContext):
         raise MapperException(
             f"Could not find mapping file at " f"'{mapping_file_path}'"
         )
-    activate_mapping(context.settings, mapping_path=mapping_file_path)
+    _activate(context.settings, mapping_path=mapping_file_path)
 
 
-def activate_mapping(settings: AnonClientSettings, mapping_path: Path):
+def _activate(settings: AnonClientSettings, mapping_path: Path):
     """Internal method called from multiple click methods"""
     settings.active_mapping_file = mapping_path
     settings.save()
@@ -169,7 +171,7 @@ def activate_mapping(settings: AnonClientSettings, mapping_path: Path):
 
 
 def create_example_mapping(context: MapCommandContext = None) -> Mapping:
-    """A default mapping with some example parameter_types
+    """A default mapping with some example parameters
 
     Parameters
     ----------
@@ -210,37 +212,46 @@ def delete(context: MapCommandContext):
 @click.command()
 @pass_map_command_context
 @click.argument("paths", type=WildcardFolder(exists=True), nargs=-1)
+@click.option("-f", "--file", "input_file", type=PathParameterFile())
 @click.option(
     "--check-dicom/--no-check-dicom",
     default=False,
     help="--check-dicom: Open each file to check whether it is valid DICOM. "
     "--no-check-dicom: Add all files that look like DICOM (exclude files with"
-    " known file extensions like .txt or .xml)"
-    " Not checking is faster, but the anonymization fails if non-DICOM files"
-    " are included. off by default",
+    " known file extensions like .txt or .xml). off by default",
 )
 @handle_anonapi_exceptions
-def add_study_folders(context: MapCommandContext, paths, check_dicom):
+def add_study_folders(context: MapCommandContext, paths, input_file, check_dicom):
     """Add all dicom files in given folders to map"""
+    if input_file:
+        # an input file was given and parsed already. Use the rows from that.
+        # Split off the path to add from any other parameters in that row
+        input_rows = {}
+        for row in input_file.rows:
+            path_param, rest = ParameterSet(row).split_parameter(PathParameter)
+            input_rows[path_param.path] = rest
 
-    # flatten paths, which is a tuple (due to nargs -1) of lists (due to wildcards)
-    paths = [path for wildcard in paths for path in wildcard]
-    logger.info(f"Adding {len(paths)} paths to mapping")
+    else:
+        # No file to add, add folders given as input.
+        # flatten paths, which is a tuple (due to nargs -1) of lists (due to
+        # wildcards)
+        paths = [path for wildcard in paths for path in wildcard]
+        input_rows = {path: [] for path in paths}
+
+    logger.info(f"Adding {len(input_rows)} paths to mapping")
 
     mapping_file = context.get_current_mapping_file()
     mapping = mapping_file.get_mapping()
-    for path in paths:
+    for path, params in input_rows.items():
         logger.info(f"Adding '{path}' to mapping")
         fileselection = find_dicom_files(
             Path(path), cwd=context.current_dir, check_dicom=check_dicom
         )
-        # add defaults
-        row = [
-            fileselection,
-            ParameterFactory.generate_pseudo_name(),
-            ParameterFactory.generate_pseudo_name(),
-        ]
-        mapping.grid.append_row(row)
+        # assert this is a valid set of parameters and add defaults if needed
+        mapping.grid.append_row(
+            MappingParameterSet(parameters=[fileselection] + params).parameters
+        )
+
         # save each time so we don't loose all when an error occurs
         mapping_file.save_mapping(mapping)
         logger.info("")  # extra newline makes separate folder adding more readable

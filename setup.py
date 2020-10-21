@@ -20,6 +20,7 @@ requirements = [
     "tabulate",
     "requests",
     "factory_boy",
+    "openpyxl",
 ]
 
 setup_requirements = [

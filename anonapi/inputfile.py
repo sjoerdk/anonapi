@@ -1,13 +1,16 @@
-"""Classes and functions Reading job parameter_types from csv and excel files
+"""Classes and functions Reading job parameters from csv and excel files
 
 These files contain tabular data with identifiers such as accession numbers
 and optionally pseudonyms.
-It is often easier to add such a file to a mapping then to alter-copy-paste between
-files
+It is often easier to add such a file to a mapping programatically then to
+copy-paste between open files
 """
+import logging
+from pathlib import Path
 from typing import Iterator, List, Type, Union, Optional
 
 from openpyxl.reader.excel import load_workbook
+from openpyxl.utils.exceptions import InvalidFileException
 
 from anonapi.exceptions import AnonAPIException
 from anonapi.mapper import JobParameterGrid
@@ -19,6 +22,9 @@ from anonapi.parameters import (
     PathParameter,
     PseudoName,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 class ParameterColumn:
@@ -107,13 +113,13 @@ class ParameterColumn:
 
 class AccessionNumberColumn(ParameterColumn):
 
-    header_names = ["Accession Number", "Acc Nr"]
+    header_names = ["accession number", "acc nr"]
     parameter_type: Type[Parameter] = AccessionNumber
 
 
 class PseudonymColumn(ParameterColumn):
 
-    header_names = ["PseudoID", "Pseudonym"]
+    header_names = ["pseudoID", "pseudonym", "name"]
     parameter_type: Type[Parameter] = PseudoName
 
 
@@ -121,6 +127,118 @@ class FolderColumn(ParameterColumn):
 
     header_names = ["folder", "map", "path"]
     parameter_type: Type[Parameter] = PathParameter
+
+
+ALL_COLUMN_TYPES = [AccessionNumberColumn, PseudonymColumn, FolderColumn]
+
+
+class TabularFile:
+    """A file containing data in rows and columns
+
+    Offers a consistent way of accessing excel files, csv files and any other formats
+    """
+
+    def rows(self) -> Iterator[List[str]]:
+        """Iterates over each row in file
+
+        Returns
+        -------
+        Iterator[List[str]]
+            Returns list of strings for each row in file
+
+        Raises
+        ------
+        InputFileException
+            If anything goes wrong loading or parsing the file
+
+        """
+        raise NotImplementedError("Overwrite this method in child classes")
+
+
+class ExcelFile(TabularFile):
+    """An xls or xlsx file
+
+    Some simplifying assumptions:
+    * Only reads first tab, ignores any others
+    * Only reads string values. Does not read any formula
+    """
+
+    def __init__(self, path: Path):
+        self.path = path
+
+    def __str__(self):
+        return f"Excel file at f{self.path}"
+
+    def rows(self) -> Iterator[List[str]]:
+        """Iterates over each row in file
+
+        Returns
+        -------
+        Iterator[List[str]]
+            Returns list of strings for each row in file
+
+        Raises
+        ------
+        InputFileException
+            If anything goes wrong loading or parsing the file
+
+        """
+        logger.info(f"Parsing '{self.path}'..")
+        try:
+            wb2 = load_workbook(self.path)
+        except (InvalidFileException, FileNotFoundError) as e:
+            raise InputFileException(f"Error reading '{self.path}':{e}")
+
+        sheet = wb2[wb2.sheetnames[0]]  # read first sheet, ignore others
+
+        return self.cast_rows_to_string(sheet.values)
+
+    @staticmethod
+    def cast_rows_to_string(iterator: Iterator[List]) -> Iterator[List[Optional[str]]]:
+        """For standardizing data from grid-like files. Make everything string,
+        except None values. Keep those None.
+        """
+
+        def str_preserve_none(input):
+            if input is None:
+                return None
+            else:
+                return str(input)
+
+        for row in iterator:
+            yield list(map(str_preserve_none, row))
+
+
+def as_tabular_file(path: Union[str, Path]) -> TabularFile:
+    """Create a TabularFile out of path, based on extension
+
+    Parameters
+    ----------
+    path: Union[str, Path]
+        path to tabular file
+
+    Returns
+    -------
+    TabularFile
+        A suitable child class
+
+    Raises
+    ------
+    InputFileException
+        If no suitable TabularFile class can be found for this path
+    """
+    path = Path(path)  # cast string to Path
+    suffix = path.suffix.lower()
+    if suffix in [".xls", ".xlsx"]:
+        logger.debug(f"I think {path} is an Excel file")
+        return ExcelFile(path)
+    elif suffix in [".csv", ".txt"]:
+        logger.debug(f"I think {path} is a csv file")
+        raise NotImplementedError()
+    else:
+        raise InputFileException(
+            f"Unknown extension '{suffix}' I don't know how to read this file."
+        )
 
 
 def parse_columns(
@@ -141,6 +259,10 @@ def parse_columns(
     for idx, item in enumerate(row):
         for column_type in column_types:
             if column_type.matches_header(item):
+                logger.debug(
+                    f"Found column {column_type.header_name} (name in "
+                    f"file '{item}') in column {idx}"
+                )
                 columns.append(column_type(column=idx))
 
     return columns
@@ -184,34 +306,22 @@ def find_column_headers(
     )
 
 
-def cast_rows_to_string(iterator: Iterator[List]) -> Iterator[List[Optional[str]]]:
-    """For standardizing data from grid-like files. Make everything string,
-    except None values. Keep those None.
-
-    """
-
-    def str_preserve_none(input):
-        if input is None:
-            return None
-        else:
-            return str(input)
-
-    for row in iterator:
-        yield list(map(str_preserve_none, row))
-
-
 def extract_parameter_grid(
-    file_path: str, column_types: List[Type[ParameterColumn]] = None
+    file: TabularFile,
+    optional_column_types: List[Type[ParameterColumn]] = None,
+    required_column_types: List[Type[ParameterColumn]] = None,
 ) -> JobParameterGrid:
     """Read an xls file and try to extract a grid of parameters
 
     Parameters
     ----------
-    file_path: str
+    file: TabularFile
         Extract from this file
-    column_types: List[Type[ParameterColumn]], optional
+    optional_column_types: List[Type[ParameterColumn]], optional
         Search for these column types. Defaults to AccessionNumber and Pseudonym
-
+    required_column_types: List[Type[ParameterColumn]], optional
+        Search for these column types. Fail if not found.
+        Defaults to empty list
 
     Raises
     ------
@@ -219,20 +329,25 @@ def extract_parameter_grid(
         If parsing or reading fails for any reason
 
     """
-    # read in xlsx reader
-    if column_types is None:
-        column_types = [AccessionNumberColumn, PseudonymColumn]
+    if optional_column_types is None:
+        optional_column_types = [AccessionNumberColumn, PseudonymColumn]
+    if required_column_types is None:
+        required_column_types = []
 
-    wb2 = load_workbook(file_path)
-    sheet = wb2[wb2.sheetnames[0]]
+    row_iterator = file.rows()
 
-    row_iterator = cast_rows_to_string(sheet.values)
-
-    columns = find_column_headers(row_iterator, column_types=column_types)
+    columns = find_column_headers(
+        row_iterator, column_types=optional_column_types + required_column_types
+    )
+    for required in required_column_types:
+        if not any(isinstance(x, required) for x in columns):
+            raise InputFileParseException(
+                f"Required column '{required.header_name()}' not found in file"
+            )
 
     column_headers_idx = columns[0].header_row_idx
 
-    # column headers found. Build a grid one row at a time
+    # column headers found. Now build a grid one row at a time
     grid = []
     for idx, row in enumerate(row_iterator):
         try:
@@ -288,15 +403,6 @@ def parse_row(row: List[str], columns: List[ParameterColumn]) -> List[Parameter]
             f" but columns [{[str(x) for x in empty]}] are empty. What do you want?"
         )
     return [column.parameter_from_row(row) for column in columns]
-
-
-def columns_are_all_empty(row: List[str], columns: List[ParameterColumn]) -> bool:
-    return all(column.has_empty_value(row) for column in columns)
-
-
-def columns_are_partially_empty(row: List[str], columns: List[ParameterColumn]) -> bool:
-    empty = [column.has_empty_value(row) for column in columns]
-    return any(empty) and not all(empty)
 
 
 class InputFileException(AnonAPIException):

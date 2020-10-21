@@ -257,7 +257,7 @@ class AnonApiContext:
 
     @property
     def all_parameters_table(self) -> str:
-        """Valid sphinx output listing all parameter_types"""
+        """Valid sphinx output listing all parameters"""
         return self.to_sphinx_table(ALL_PARAMETERS).as_string()
 
     @property
