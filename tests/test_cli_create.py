@@ -138,11 +138,11 @@ def test_create_from_mapping_relative_path(
         context=mock_from_mapping_runner.mock_context
     ).get_mapping()
 
-    def all_paths(mapping_in):
+    def all_paths(mapping_in: Mapping):
         """List[str] of all paths in mapping"""
         return [
             str(x)
-            for y in mapping_in.rows()
+            for y in mapping_in.rows
             for x in y
             if isinstance(x, SourceIdentifierParameter)
         ]

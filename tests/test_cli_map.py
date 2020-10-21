@@ -86,7 +86,7 @@ def test_cli_map_add_selection(
     mapping = runner_with_mapping.mock_context.get_current_mapping()
     assert len(mapping) == 21
     assert "fileselection:a_folder/a_file_selection.txt" in "".join(
-        [str(x) for y in mapping.rows() for x in y]
+        [str(x) for y in mapping.rows for x in y]
     )
 
 
@@ -362,6 +362,3 @@ def test_cli_map_add_paths_file(
     pseudo_names = [ParameterSet(x).get_param_by_type(PseudoName) for x in added]
     assert pseudo_names[1].value == "studyA"
     assert pseudo_names[2].value == "studyB"
-
-
-# TODO: tests for input file that does not contain source. should fail.

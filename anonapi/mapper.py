@@ -186,6 +186,7 @@ class Mapping:
 
         return collected
 
+    @property
     def rows(self):
         """All parameters for each row. This includes the parameters in the
         grid as well as the mapping-wide parameters in the options section.

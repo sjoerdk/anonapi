@@ -103,7 +103,7 @@ def test_mapping_load_save():
     with open(mapping_file, "r") as f:
         mapping = Mapping.load(f)
     assert "some comment" in mapping.description
-    assert len(mapping.rows()) == 20
+    assert len(mapping.rows) == 20
     assert len(mapping.options) == 2
 
     output_file = StringIO(newline="")
@@ -114,8 +114,8 @@ def test_mapping_load_save():
     # saved and loaded again should be the same as original
     assert mapping.description == loaded.description
     assert [str(x) for x in mapping.options] == [str(x) for x in loaded.options]
-    assert [str(param) for row in mapping.rows() for param in row] == [
-        str(param) for row in loaded.rows() for param in row
+    assert [str(param) for row in mapping.rows for param in row] == [
+        str(param) for row in loaded.rows for param in row
     ]
 
 
@@ -179,7 +179,7 @@ def test_mapping_add_options():
     # mapping also defines a pims key as option
     mapping = Mapping(grid=JobParameterGrid(a_grid), options=[PIMSKey("GeneralKey")])
 
-    rows = mapping.rows()
+    rows = mapping.rows
     assert rows[0][0].value == "important!"
     assert rows[1][0].value == "GeneralKey"
 
@@ -233,8 +233,8 @@ def test_mapping_folder_read_write(tmpdir, a_grid_of_parameters):
     assert path.exists()
 
     # and content should be as expected
-    assert [str(x) for row in mapping_file.load_mapping().rows() for x in row] == [
-        str(x) for row in mapping.rows() for x in row
+    assert [str(x) for row in mapping_file.load_mapping().rows for x in row] == [
+        str(x) for row in mapping.rows for x in row
     ]
 
 

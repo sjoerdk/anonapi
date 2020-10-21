@@ -391,7 +391,7 @@ def extract_job_sets(context, mapping: Mapping) -> List[JobParameterSet]:
     # add defaults to each row
     job_sets = [
         JobParameterSet(row, default_parameters=context.default_parameters())
-        for row in mapping.rows()
+        for row in mapping.rows
     ]
     # validate each job set
     for job_set in job_sets:

@@ -6,12 +6,14 @@ from anonapi.inputfile import (
     FolderColumn,
     InputFileException,
     PseudonymColumn,
+    as_tabular_file,
     extract_parameter_grid,
 )
 from tests import RESOURCE_PATH
 
 
 LOCAL_RESOURCE_PATH = RESOURCE_PATH / "test_inputfile"
+FORMATS_PATH = LOCAL_RESOURCE_PATH / "formats"
 
 
 def test_extract_parameter_grid_simple():
@@ -97,3 +99,27 @@ def test_find_no_parameters():
     with pytest.raises(InputFileException):
         # FolderColumn is not present in this file
         extract_parameter_grid(input_file, optional_column_types=[FolderColumn])
+
+
+@pytest.mark.parametrize(
+    "input_file_name",
+    [
+        "test_colon_sep.csv",
+        "test_comma_sep.csv",
+        "test_comma_sep.txt",
+        "test_excel_2007-2013_XML.xlsx",
+    ],
+)
+def test_reading_from_different_file_types(input_file_name):
+    """Load the same data written to different file formats. Should all work"""
+    input_file = as_tabular_file(FORMATS_PATH / input_file_name)
+    grid = extract_parameter_grid(input_file)
+
+    assert [str(x) for x in grid.rows[0]] == [
+        "accession_number,1234567.12345678",
+        "pseudo_name,patient1",
+    ]
+    assert [str(x) for x in grid.rows[1]] == [
+        "accession_number,2234567.12345679",
+        "pseudo_name,patient2",
+    ]

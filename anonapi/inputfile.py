@@ -5,6 +5,7 @@ and optionally pseudonyms.
 It is often easier to add such a file to a mapping programatically then to
 copy-paste between open files
 """
+import csv
 import logging
 from pathlib import Path
 from typing import Iterator, List, Type, Union, Optional
@@ -13,7 +14,7 @@ from openpyxl.reader.excel import load_workbook
 from openpyxl.utils.exceptions import InvalidFileException
 
 from anonapi.exceptions import AnonAPIException
-from anonapi.mapper import JobParameterGrid
+from anonapi.mapper import JobParameterGrid, sniff_dialect
 from anonapi.parameters import (
     AccessionNumber,
     Parameter,
@@ -167,7 +168,7 @@ class ExcelFile(TabularFile):
         self.path = path
 
     def __str__(self):
-        return f"Excel file at f{self.path}"
+        return f"Excel file at '{self.path}'"
 
     def rows(self) -> Iterator[List[str]]:
         """Iterates over each row in file
@@ -209,6 +210,43 @@ class ExcelFile(TabularFile):
             yield list(map(str_preserve_none, row))
 
 
+class CSVFile(TabularFile):
+    """A comma separated text file. Also accepts colon separated"""
+
+    def __init__(self, path: Path):
+        self.path = path
+
+    def __str__(self):
+        return f"CSVFile at '{self.path}'"
+
+    def rows(self) -> Iterator[List[str]]:
+        """Iterates over each row in file
+
+        Notes
+        -----
+        Reads entire file into memory so might not work well for larger files
+
+        Returns
+        -------
+        Iterator[List[str]]
+            Returns list of strings for each row in file
+
+        Raises
+        ------
+        InputFileException
+            If anything goes wrong loading or parsing the file
+
+        """
+        logger.info(f"Parsing '{self.path}'..")
+        try:
+            with open(self.path, "r") as f:
+                rows = [row for row in csv.reader(f, dialect=sniff_dialect(f))]
+        except FileNotFoundError as e:
+            raise InputFileException(e)
+
+        return iter(rows)
+
+
 def as_tabular_file(path: Union[str, Path]) -> TabularFile:
     """Create a TabularFile out of path, based on extension
 
@@ -234,7 +272,7 @@ def as_tabular_file(path: Union[str, Path]) -> TabularFile:
         return ExcelFile(path)
     elif suffix in [".csv", ".txt"]:
         logger.debug(f"I think {path} is a csv file")
-        raise NotImplementedError()
+        return CSVFile(path)
     else:
         raise InputFileException(
             f"Unknown extension '{suffix}' I don't know how to read this file."
