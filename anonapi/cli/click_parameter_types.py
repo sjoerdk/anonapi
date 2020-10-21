@@ -126,7 +126,10 @@ class WildcardFolder(ParamType):
 
 
 class TabularParameterFile(ParamType):
-    """A file containing parameters in a tabular format"""
+    """A file path to a file containing parameters in a tabular format
+
+    Will parse file and return the parsed results
+    """
 
     name = "tabular parameter file"
     required_column_types = []  # fail if not found

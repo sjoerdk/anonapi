@@ -225,7 +225,7 @@ def delete(context: MapCommandContext):
 )
 @handle_anonapi_exceptions
 def add_study_folders(context: MapCommandContext, paths, input_file, check_dicom):
-    """Add all dicom files in given folders to map"""
+    """Add all dicom files in given folders to mapping"""
     if input_file:
         # an input file was given and parsed already. Use the rows from that.
         # Split off the path to add from any other parameters in that row
