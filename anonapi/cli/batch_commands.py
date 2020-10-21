@@ -7,7 +7,7 @@ import click
 from click.exceptions import ClickException
 
 from anonapi.batch import JobBatch
-from anonapi.cli.click_types import JobIDRangeParamType
+from anonapi.cli.click_parameter_types import JobIDRangeParamType
 from anonapi.context import (
     AnonAPIContext,
     AnonAPIContextException,

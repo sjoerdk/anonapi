@@ -5,7 +5,7 @@ from typing import List
 
 import click
 
-from anonapi.cli.click_types import JobIDRangeParamType
+from anonapi.cli.click_parameter_types import JobIDRangeParamType
 from anonapi.context import AnonAPIContext, command_group_function
 from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
 

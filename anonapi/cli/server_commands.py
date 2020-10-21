@@ -3,7 +3,7 @@ import logging
 
 import click
 
-from anonapi.cli.click_types import AnonServerKeyParamType
+from anonapi.cli.click_parameter_types import AnonServerKeyParamType
 from anonapi.context import AnonAPIContext, command_group_function
 from anonapi.decorators import pass_anonapi_context
 from anonapi.objects import RemoteAnonServer

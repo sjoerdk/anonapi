@@ -3,7 +3,7 @@ import os
 import pytest
 from click.exceptions import BadParameter
 
-from anonapi.cli.click_parameters import (
+from anonapi.cli.click_parameter_types import (
     AccessionNumberFile,
     PathParameterFile,
     TabularParameterFile,
