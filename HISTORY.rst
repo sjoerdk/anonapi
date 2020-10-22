@@ -2,6 +2,13 @@
 History
 =======
 
+1.5.0 (2020-10-22)
+------------------
+
+* Introduces csv and xlsx files as input to mapping functions. You can now add all paths
+  in a csv file to a mapping with one command
+
+
 1.4.0 (2020-10-20)
 ------------------
 
