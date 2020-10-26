@@ -1,4 +1,2 @@
-[paths]
-source =
-    ./anonapi/
-    /anonapi/
+[run]
+branch = True
