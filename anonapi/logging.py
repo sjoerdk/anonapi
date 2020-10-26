@@ -37,7 +37,7 @@ class AnonAPIFormatter(logging.Formatter):
     """
 
     def __init__(self, verbosity: Verbosity = Verbosities.TERSE):
-        super().__init__(self)
+        super().__init__()
         self.verbosity = verbosity
 
     @staticmethod
