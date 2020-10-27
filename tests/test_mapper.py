@@ -10,6 +10,7 @@ from anonapi.cli.map_commands import create_example_mapping
 from anonapi.exceptions import AnonAPIException
 from anonapi.mapper import (
     JobParameterGrid,
+    MapperException,
     MappingFile,
     MappingLoadError,
     Mapping,
@@ -165,6 +166,20 @@ def test_load_exceptions(file_to_open, expected_exception):
     with pytest.raises(expected_exception):
         with open(mapping_file, "r") as f:
             JobParameterGrid.load(f)
+
+
+def test_load_exception_contains_mapping_path():
+    """Recreates issue #277. Stacktrace for load errors should list the mapping file
+    path. This is very useful for debugging
+    """
+
+    mapping_file = MappingFile(
+        file_path=RESOURCE_PATH / "test_mapper" / "example_corrupt_mapping.csv"
+    )
+
+    with pytest.raises(MapperException) as e:
+        mapping_file.get_mapping()
+    assert str(mapping_file.file_path) in str(e)
 
 
 def test_mapping_add_options():

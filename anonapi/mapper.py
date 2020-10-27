@@ -460,7 +460,9 @@ class MappingFile:
             with open(self.file_path, "r", newline="") as f:
                 return Mapping.load(f)
         except (FileNotFoundError, MapperException) as e:
-            raise MapperException(f"Could not load mapping: {e}")
+            raise MapperException(
+                f"Could not load mapping at " f"'{self.file_path}': {e}"
+            )
 
 
 class ExampleJobParameterGrid(JobParameterGrid):
