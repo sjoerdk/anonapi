@@ -4,6 +4,10 @@
 
 [Full Changelog](https://github.com/sjoerdk/anonapi/compare/v1.5.0...HEAD)
 
+**Implemented enhancements:**
+
+- Auto-generate changelog [\#276](https://github.com/sjoerdk/anonapi/issues/276)
+
 **Fixed bugs:**
 
 - Logging setup causes exception in python 3.8 [\#271](https://github.com/sjoerdk/anonapi/issues/271)
@@ -15,6 +19,9 @@
 ## [v1.5.0](https://github.com/sjoerdk/anonapi/tree/v1.5.0) (2020-10-22)
 
 [Full Changelog](https://github.com/sjoerdk/anonapi/compare/v1.4.1...v1.5.0)
+
+Introduces csv and xlsx files as input to mapping functions. You can now add all paths
+in a csv file to a mapping with one command
 
 ## [v1.4.1](https://github.com/sjoerdk/anonapi/tree/v1.4.1) (2020-10-22)
 
