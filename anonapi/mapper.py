@@ -7,7 +7,7 @@ import locale
 import os
 
 from csv import Dialect
-from typing import List, Optional, TextIO, Union
+from typing import Dict, List, Optional, TextIO, Union
 
 from tabulate import tabulate
 
@@ -344,17 +344,43 @@ class JobParameterGrid:
         parameters = []
         try:
             for row in reader:
-                parameters.append(
-                    [
-                        ParameterFactory.parse_from_key_value(key, val)
-                        for key, val in row.items()
-                    ]
-                )
-
+                parameters.append(JobParameterGrid.parse_job_parameter_row(row))
         except ParameterParsingError as e:
             raise MappingLoadError(f"Problem parsing '{row}': {e}")
 
         return cls(parameters)
+
+    @staticmethod
+    def parse_job_parameter_row(row: Dict[str, str]) -> List[Parameter]:
+        """Parse a dict of strings as Parameters, perform some initial checks for
+        more informative error messages
+
+        Parameters
+        ----------
+        Dict[str, str]
+            dict with parameter key: parameter value. As output by csv.DictReader
+
+        Returns
+        -------
+        List[Parameter]
+
+        Raises
+        ------
+        ParameterParsingError
+        """
+        # check common problem: missing column header
+        keys = [x for x in row.keys() if x]  # remove None and empty
+        values = list(row.values())
+        if len(keys) < len(values):
+            raise ParameterParsingError(
+                f"Missing column header. I've got {len(values)} "
+                f"values: {values} but only {len(keys)} headers: "
+                f"({keys}). I don't know which is which now."
+            )
+
+        return [
+            ParameterFactory.parse_from_key_value(key, val) for key, val in row.items()
+        ]
 
     def parameter_types(self):
         """Sorted list of all classes of Parameter found in this list

@@ -182,6 +182,20 @@ def test_load_exception_contains_mapping_path():
     assert str(mapping_file.file_path) in str(e)
 
 
+def test_load_exception_missing_column_header():
+    """Recreates issue #273. Missing a column header, a simple problem, causes a
+    cryptic exception about parsing values with None and searching for commas
+    """
+
+    mapping_file = MappingFile(
+        file_path=RESOURCE_PATH / "test_mapper" / "mapping_missing_column_header.csv"
+    )
+
+    with pytest.raises(MapperException) as e:
+        mapping_file.get_mapping()
+    assert "Missing column" in str(e.value)
+
+
 def test_mapping_add_options():
     """Options in a mapping should be added to each row, unless overwritten by grid"""
 

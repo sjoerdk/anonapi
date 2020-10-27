@@ -435,7 +435,7 @@ class ParameterFactory:
     def parse_from_key_value(
         key, value, parameter_types: Optional[List[Type[Parameter]]] = None
     ) -> Parameter:
-        """
+        """Parse a key and value string into a valid Parmameter object
 
         Parameters
         ----------
