@@ -84,6 +84,11 @@ class AnonClientSettings(YAMLSerializable):
     def from_dict(cls, dict_in: Dict) -> "AnonClientSettings":
         """Build a AnonClientSettings instance from dict, handle
         missing values by substituting defaults
+
+        Raises
+        ------
+        ValueError
+            If a settings object cannot be created from dict_in
         """
         # Baseline is all defaults
         dict_full = DefaultAnonClientSettings().to_dict()

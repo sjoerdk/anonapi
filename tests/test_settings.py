@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from anonapi.cli import entrypoint
+from anonapi.exceptions import AnonAPIException
 from anonapi.parameters import Project
 from anonapi.settings import (
     AnonClientSettingsException,
@@ -175,6 +176,16 @@ def test_load_v1_4_settings(test_settings_folder):
     assert_test_settings_file_contents(
         AnonClientSettingsFromFile(test_settings_folder / "settings.yml")
     )
+
+
+def test_load_garbage():
+    """Loading complete garbage should yield normal exception"""
+    with pytest.raises(AnonAPIException):
+        AnonClientSettings.load_from(
+            StringIO("Not a dictionary\n probably yaml though")
+        )
+    with pytest.raises(AnonAPIException):
+        AnonClientSettings.load_from("just a string??")
 
 
 def test_load_v1_4_settings_alternate(test_settings_folder):

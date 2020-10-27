@@ -21,8 +21,13 @@ class YAMLSerializable:
 
     @classmethod
     def from_dict(cls, dict_in: Dict) -> object:
-        """Basis for json serialization. Overwrite this in child classes to yield
-        an instance of the the child class
+        """Create object from dict. Basis for json serialization. Overwrite this in
+        child classes to yield an instance of the the child class
+
+        Raises
+        ------
+        ValueError
+            If an object cannot be created from dict_in
         """
         raise NotImplementedError()
 
@@ -50,10 +55,15 @@ class YAMLSerializable:
         PersistenceException
             When anything goes wrong during loading
         """
-        try:
-            return cls.from_dict(yaml.safe_load(f))
-        except KeyError as e:
-            raise PersistenceException(f"YAML load error. Key not found: {e}")
+        content = yaml.safe_load(f)
+        # check input here because exceptions later on will not be as informative
+        if not isinstance(content, dict):
+            raise PersistenceException(
+                f"Loaded content is not a dictionary,"
+                f" but rather {type(content)}. I can't "
+                f"load this"
+            )
+        return cls.from_dict(content)
 
     def save_to(self, f: TextIO):
         """Save object to JSON stream
