@@ -1,5 +1,5 @@
 import locale
-from io import StringIO
+from io import StringIO, TextIOWrapper
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -7,7 +7,6 @@ import pytest
 from fileselection.fileselection import FileSelectionFile
 
 from anonapi.cli.map_commands import create_example_mapping
-from anonapi.exceptions import AnonAPIException
 from anonapi.mapper import (
     JobParameterGrid,
     MapperException,
@@ -196,6 +195,18 @@ def test_load_exception_missing_column_header():
     assert "Missing column" in str(e.value)
 
 
+def test_load_single_column_mapping():
+    """Recreates issue #264. A Single column does not have separators. This
+    caused a parse error. This should just work
+    """
+
+    mapping = MappingFile(
+        file_path=RESOURCE_PATH / "test_mapper" / "mapping_single_column.csv"
+    ).get_mapping()
+
+    assert len(mapping.rows) == 2
+
+
 def test_mapping_add_options():
     """Options in a mapping should be added to each row, unless overwritten by grid"""
 
@@ -279,19 +290,18 @@ def test_open_file():
     confusing
     """
 
-    mapping_file = RESOURCE_PATH / "test_mapper" / "with_mapping_wide_settings.csv"
-    with open(mapping_file, "r") as f:
-        f.readlines = Mock(
-            side_effect=OSError(
-                "raw readinto() returned invalid length 4294967283 "
-                "(should have been between 0 and 8192)"
-            )
+    mock = Mock(spec=TextIOWrapper)
+    mock.__iter__ = Mock(
+        side_effect=OSError(
+            "raw readinto() returned invalid length 4294967283 "
+            "(should have been between 0 and 8192)"
         )
-        with pytest.raises(MappingLoadError) as e:
+    )
 
-            _ = Mapping.load(f)
+    with pytest.raises(MappingLoadError) as e:
+        _ = Mapping.load(mock)
 
-        assert "opened in any editor?" in str(e)
+    assert "opened in any editor?" in str(e)
 
 
 @pytest.mark.parametrize(
@@ -311,15 +321,15 @@ def test_sniff_dialect(content, delimiter):
 
 
 def test_sniff_dialect_exception():
-    with pytest.raises(AnonAPIException) as e:
+    with pytest.raises(MapperException) as e:
         sniff_dialect(StringIO(initial_value="Just not a csv file."))
     assert "Could not determine dialect" in str(e)
 
-    with pytest.raises(AnonAPIException) as e:
+    with pytest.raises(MapperException) as e:
         sniff_dialect(
             StringIO(initial_value="\n".join(["line1", "line2", "line3", "line4"]))
         )
-    assert "Could not determine delimiter" in str(e)
+    assert "Could not determine dialect" in str(e)
 
 
 @pytest.mark.parametrize(
@@ -329,9 +339,10 @@ def test_read_write_dialect(content, delimiter):
     """The csv dialect in a mapping should not change when reading and writing"""
 
     temp_file = StringIO()
-    Mapping.load(StringIO(initial_value=content)).save_to(temp_file)
+    mapping = Mapping.load(StringIO(initial_value=content))
+    mapping.save_to(temp_file)
     temp_file.seek(0)
-    assert sniff_dialect(temp_file, max_lines=10).delimiter == delimiter
+    assert sniff_dialect(temp_file).delimiter == delimiter
     temp_file.seek(0)
     Mapping.load(temp_file)  # Mapping should still be valid
 
@@ -349,11 +360,11 @@ def test_write_new_mapping(monkeypatch, locale_setting, delimiter):
         temp_file = StringIO()
         create_example_mapping().save_to(temp_file)
         temp_file.seek(0)
-        assert sniff_dialect(temp_file, max_lines=10).delimiter == delimiter
+        lines = temp_file.readlines()
+        assert sniff_dialect(lines).delimiter == delimiter
 
         # Check that the correct delimiter is used in different parts of mapping
-        last_lines = StringIO("".join(temp_file.readlines()[10:12]))
-        assert sniff_dialect(last_lines).delimiter == delimiter
+        assert sniff_dialect(lines[10:12]).delimiter == delimiter
 
 
 def test_example_mapping_save_correct_csv():

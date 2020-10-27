@@ -4,10 +4,11 @@ Pre-processing step for creating IDIS jobs
 """
 import csv
 import locale
+import logging
 import os
 
 from csv import Dialect
-from typing import Dict, List, Optional, TextIO, Union
+from typing import Dict, Iterable, List, Optional, TextIO, Union
 
 from tabulate import tabulate
 
@@ -33,6 +34,8 @@ from pathlib import Path
 from os import path
 
 DEFAULT_MAPPING_NAME = "anon_mapping.csv"  # Filename for mapping if not specified
+
+logger = logging.getLogger(__name__)
 
 
 class Mapping:
@@ -109,12 +112,17 @@ class Mapping:
         f.write(mapping_content.read())
 
     @classmethod
-    def load(cls, f):
-        """Load a mapping from a csv file stream"""
-        # split content into three sections
+    def load(cls, lines: Iterable[str]):
+        """Load a mapping from lines
+
+        Parameters
+        ----------
+        lines: Iterable[str]
+            Load object from these lines
+        """
 
         try:
-            sections = cls.parse_sections(f)
+            lines = [x for x in lines]  # make sure open file handles are read through
         except OSError as e:
             if "raw readinto() returned invalid length" in str(e):
                 raise MappingLoadError(
@@ -125,6 +133,8 @@ class Mapping:
                 # Unsure which error this is. Can't handle this here.
                 raise
 
+        # split content into three sections
+        sections = cls.parse_sections(lines)
         description = "".join(sections[cls.DESCRIPTION_HEADER])
 
         options = [
@@ -132,19 +142,24 @@ class Mapping:
             for line in sections[cls.OPTIONS_HEADER]
         ]
 
-        grid_content = StringIO(os.linesep.join(sections[cls.GRID_HEADER]))
-        dialect = sniff_dialect(grid_content)
-        grid = JobParameterGrid.load(grid_content)
-        return cls(grid=grid, options=options, description=description, dialect=dialect)
+        grid_content = os.linesep.join(sections[cls.GRID_HEADER])
+        grid = JobParameterGrid.load(StringIO(grid_content))
+        return cls(
+            grid=grid,
+            options=options,
+            description=description,
+            dialect=sniff_dialect_safe(lines),
+        )
 
     @classmethod
-    def parse_sections(cls, f):
+    def parse_sections(cls, lines: Iterable[str]):
         """A mapping csv file consists of three sections divided by column_types.
          Try to parse each one. Also cleans each line
 
         Parameters
         ----------
-        f: file handled opened with read flag
+        lines: Iterable[str]
+            lines to parse
 
         Returns
         -------
@@ -163,7 +178,7 @@ class Mapping:
         headers_to_find = cls.ALL_HEADERS.copy()
         header_to_find = headers_to_find.pop(0)
         current_header = None
-        for line in f.readlines():
+        for line in lines:
             line = line.replace("\r", "").replace("\n", "").rstrip(",").rstrip(";")
             if not line:  # skip empty lines
                 continue
@@ -230,38 +245,50 @@ class Mapping:
         return output
 
 
-def sniff_dialect(f: TextIO, max_lines: int = 3) -> Dialect:
+def sniff_dialect(lines: Iterable[str]) -> Dialect:
     """Try to find out the separator character etc. from given opened csv file
 
     Parameters
     ----------
-    f: TextIO
-        Open file handle to csv file
-    max_lines: int, optional
-        sniff this many lines. If dialect is still not found then,
-        Raise exception. Defaults to 3
+    lines: Iterable[str]
+        Lines to sniff
 
     Raises
     ------
-    AnonAPIException:
+    MapperException:
         When dialect cannot be determined
 
     """
-    tried = 0
-    for line in f:
-        tried += 1
-        try:
-            dialect = csv.Sniffer().sniff(line, delimiters=";,")
-            f.seek(0)
-            return dialect
-        except csv.Error as e:
-            if tried < max_lines:
-                continue
-            else:
-                f.seek(0)
-                raise AnonAPIException(e)
 
-    raise AnonAPIException("Could not determine dialect for csv file")
+    for line in lines:
+        try:
+            return csv.Sniffer().sniff(line, delimiters=";,")
+        except csv.Error:
+            continue  # just try all lines
+    raise MapperException("Could not determine dialect for csv file")
+
+
+def sniff_dialect_safe(
+    lines: Iterable[str], default: Optional[str] = "excel"
+) -> Dialect:
+    """Try to find out the separator character etc. from given opened csv file.
+    Return default if not found
+
+    Parameters
+    ----------
+    lines: Iterable[str]
+        lines to sniff
+    default: Optional[str]
+        return this dialect when dialect cannot be determined. Defaults to 'excel'
+    """
+    try:
+        return sniff_dialect(lines)
+    except MapperException as e:  # this could be a single-column mapping
+        logger.debug(
+            f"could not determine dialect, guessing "
+            f"'{default}'. Original error: '{e}'"
+        )
+        return default
 
 
 class JobParameterGrid:
@@ -339,8 +366,9 @@ class JobParameterGrid:
             If mapping could not be loaded
 
         """
-        dialect = sniff_dialect(f)
-        reader = csv.DictReader(f, dialect=dialect)
+        lines = f.readlines()
+        dialect = sniff_dialect_safe(lines)
+        reader = csv.DictReader(lines, dialect=dialect)
         parameters = []
         try:
             for row in reader:

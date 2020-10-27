@@ -14,7 +14,7 @@ from openpyxl.reader.excel import load_workbook
 from openpyxl.utils.exceptions import InvalidFileException
 
 from anonapi.exceptions import AnonAPIException
-from anonapi.mapper import JobParameterGrid, sniff_dialect
+from anonapi.mapper import JobParameterGrid, sniff_dialect_safe
 from anonapi.parameters import (
     AccessionNumber,
     Parameter,
@@ -240,15 +240,10 @@ class CSVFile(TabularFile):
         logger.info(f"Parsing '{self.path}'..")
         try:
             with open(self.path, "r") as f:
-                try:
-                    dialect = sniff_dialect(f)
-                except AnonAPIException as e:
-                    dialect = "excel"
-                    logger.debug(
-                        f"could not determine dialect, guessing "
-                        f"'{dialect}'. Original error: '{e}'"
-                    )
-                rows = [row for row in csv.reader(f, dialect=dialect)]
+                lines = f.readlines()
+                rows = [
+                    row for row in csv.reader(lines, dialect=sniff_dialect_safe(lines))
+                ]
         except FileNotFoundError as e:
             raise InputFileException(e)
 
