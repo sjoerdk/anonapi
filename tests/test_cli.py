@@ -127,27 +127,39 @@ def test_command_line_tool_server_status(mock_main_runner, mock_requests):
     runner = mock_main_runner
 
     # basic check. Call a server that responds with an expected anonapi json response
-    # API_CALL_NOT_DEFINED is a response that is used to check the liveness of a server currently.
+    # API_CALL_NOT_DEFINED is a response that is used to check the liveness of
+    # a server currently.
     mock_requests.set_response_text(RequestsMockResponseExamples.API_CALL_NOT_DEFINED)
     result = runner.invoke(entrypoint.cli, ["server", "status"])
 
     assert "OK" in result.output
     assert mock_requests.requests.get.call_count == 1
 
-    # now test a non-responsive server:
-    mock_requests.reset()
-    mock_requests.set_response_exception(requests.exceptions.ConnectionError)
-    result = runner.invoke(entrypoint.cli, ["server", "status"])
 
-    assert "ERROR" in result.output
-    assert mock_requests.requests.get.call_count == 1
-
-    # now test a server that exists but responds weirdly:
-    mock_requests.reset()
+def test_cli_server_status_weird_response(mock_main_runner, mock_requests):
+    """If the server added is not an API server"""
     mock_requests.set_response_text("Hello, welcome to an unrelated server")
-    result = runner.invoke(entrypoint.cli, ["server", "status"])
+    result = mock_main_runner.invoke(
+        entrypoint.cli, ["server", "status"], catch_exceptions=False
+    )
 
     assert "is not responding properly" in result.output
+    assert mock_requests.requests.get.call_count == 1
+
+
+def test_cli_server_status_non_responsive_server(mock_main_runner, mock_requests):
+    """Anon server status command with a server that does not respond"""
+
+    mock_requests.reset()
+    mock_requests.set_response_exception(
+        requests.exceptions.ConnectionError(
+            "Some long technical thing about" " max retries exceeded"
+        )
+    )
+
+    result = mock_main_runner.invoke(entrypoint.cli, ["server", "status"])
+
+    assert "cannot be reached" in result.output
     assert mock_requests.requests.get.call_count == 1
 
 
@@ -376,22 +388,13 @@ def test_command_line_tool_user_commands(mock_main_runner):
     [
         ("server jobs", requests.exceptions.ConnectionError, "Error getting jobs"),
         ("job info 123", requests.exceptions.ConnectionError, "Error"),
-        (
-            "server status",
-            requests.exceptions.ConnectionError,
-            "is not responding properly",
-        ),
+        ("server status", requests.exceptions.ConnectionError, "cannot be reached",),
         (
             "job cancel 123",
             requests.exceptions.RequestException,
             "Error cancelling job",
         ),
         ("job reset 123", requests.exceptions.ConnectionError, "Error resetting job"),
-        (
-            "server status",
-            requests.exceptions.ConnectionError,
-            "is not responding properly",
-        ),
         ("batch status", APIClientException, "Error getting jobs"),
         ("batch status", APIParseResponseException, "Error parsing server response"),
         ("server jobs", APIParseResponseException, "Error parsing server response"),

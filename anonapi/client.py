@@ -1,9 +1,12 @@
 """Anonymization web API client. Can interface with Anonymization server to retrieve,
 create, modify anonymization jobs
 """
+from typing import Dict
 
 import requests
 import json
+
+from requests.models import Response
 
 from anonapi.exceptions import AnonAPIException
 from anonapi.objects import RemoteAnonServer
@@ -44,7 +47,7 @@ class WebAPIClient:
     def __str__(self):
         return f"WebAPIClient for {self.username}@{self.hostname}"
 
-    def get(self, function_name, **kwargs):
+    def get(self, function_name, **kwargs) -> Dict:
         """Call this api, get response back
 
         Parameters
@@ -69,9 +72,11 @@ class WebAPIClient:
             when API call is successful, but the API returns some reason for error
             (for example 'job_id not found', or 'missing parameter')
 
-        APIClientException:
-            When server cannot be found
+        ServerNotResponding(APIClientException):
+            When server is not responding at all
 
+        APIClientException:
+            When server is responding, but the response cannot be parsed
         """
 
         function_url = self.hostname + "/" + function_name
@@ -84,10 +89,9 @@ class WebAPIClient:
                 headers={"Authorization": f"Token {self.token}"},
             )
         except requests.exceptions.RequestException as e:
-            raise APIClientException(e)
+            raise ServerNotResponding(e)
 
-        self.interpret_response(response)
-        return json.loads(response.text)
+        return self.parse_response(response)
 
     def post(self, function_name, **kwargs):
         """Call this api, get response back
@@ -114,8 +118,11 @@ class WebAPIClient:
             when API call is successful, but the API returns some reason for error (for example 'job_id not found',
             or 'missing parameter')
 
+        ServerNotResponding(APIClientException):
+            When server is not responding at all
+
         APIClientException:
-            When server cannot be found
+            When server is responding, but the response cannot be parsed
         """
 
         function_url = self.hostname + "/" + function_name
@@ -127,9 +134,9 @@ class WebAPIClient:
                 headers={"Authorization": f"Token {self.token}"},
             )
         except requests.exceptions.RequestException as e:
-            raise APIClientException(e)
+            raise ServerNotResponding(e)
 
-        self.interpret_response(response)
+        self.parse_response(response)
         return json.loads(response.text)
 
     def add_user_name_to_args(self, args_in):
@@ -173,81 +180,87 @@ class WebAPIClient:
 
         return response["documentation"]
 
-    def interpret_response(self, response):
-        """Check HTTP response and throw helpful python exception if needed.
+    def parse_json(self, text: str) -> Dict:
+        """Parse string as json
 
-        Will raise errors for any response code other than 200(OK) and 404(Not found)
-
-        Parameters
-        ----------
-        response: :obj:`requests.models.Response`
-            A response such as it is returned by the python requests library
+        Raises
+        ------
+        APIClientException
+            If parsing fails
 
         Returns
         -------
-            Nothing
+        Dict
+            Json parsed
+        """
+        try:
+            return json.loads(text)
+        except json.decoder.JSONDecodeError:
+            msg = f"response from {self} was not JSON. Is this a web API url?"
+            raise APIClientException(msg)
+
+    def parse_response(self, response: Response) -> Dict:
+        """Extract a anonAPI dictionary from raw HTTP response
+
+        Parameters
+        ----------
+        response: Response
+            A response such as it is returned by the python requests library
 
         Raises
         ------
         APIClientAuthorizationFailedException:
             When username and or token is not accepted
         APIClientAPIException:
-            When API call succeeds, but the API itself returns an error. For example 'missing parameter'.
+            When API call succeeds, but the API itself returns an error. For example
+            'missing parameter'.
         APIClientException:
             When any unexpected response is returned
 
         """
 
         if response.status_code == 200:
-            # response succeeded, no further checking needed
-            return
+            return self.parse_json(response.text)
 
         elif response.status_code == 404:
-            # 404 does not mean the API is unresponsive. This is returned for calling a function that does not
-            # exist. The response is 404 and a helpful help message.
+            # 404 does not mean the API is unresponsive. This is returned for
+            # calling a function that does not exist for example.
 
-            # differentiate a 'good' API 404 from just any non API 404 response (bad). API 404 should be json parsable
-            # and contain a key 'documentation'
-            try:
-                json_parsed = json.loads(response.text)
-            except json.decoder.JSONDecodeError:
-                msg = f"response from {self} was not JSON. Is this a web API url?"
-                raise APIClientException(msg)
-            if "documentation" not in json_parsed.keys():
-                msg = f"No documentation found when calling {self} is this a web API?"
-                raise APIClientException(msg)
-            # if this all works its a valid API 404. No problem
-            return
+            # differentiate a 'good' API 404 from just any non API 404 response
+            # (bad). API 404 should be json parsable and contain a key 'documentation'
+            json_parsed = self.parse_json(response.text)
+            if "documentation" in json_parsed.keys():
+                return json_parsed
+            else:
+                raise APIClientException(
+                    f"No documentation found when calling {self} is this a web API?"
+                )
 
         elif response.status_code == 401:
-            msg = "Server '{}' returned 401 - Unauthorized, Your credentials do not seem to work".format(
-                self.hostname
+            raise APIClientAuthorizationFailedException(
+                f"Server '{self.hostname}' returned 401 - Unauthorized, Your"
+                f" credentials do not seem to work"
             )
-            raise APIClientAuthorizationFailedException(msg)
 
         elif response.status_code == 400:
-            error_response = json.loads(response.text)
-
-            if "errors" in error_response.keys():
-                errors = error_response["errors"]
-            else:
-                errors = error_response
-
-            msg = f"API returns errors: {response.text}"
-            raise APIClientAPIException(msg, api_errors=errors)
+            # API responds correctly, but indicates an error. Pass this error on
+            raise APIClientAPIException(
+                f"API returns errors: {response.text}",
+                api_errors=self.parse_json(response.text).get("errors", None),
+            )
 
         elif response.status_code == 405:
-            msg = (
-                "'{0}' returned 405 - Method not allowed. Probably you are using GET where POST is "
-                "needed, or vice versa. See APIClient.get_documentation() for usage"
-            ).format(self)
-            raise APIClientException(msg)
+            raise APIClientException(
+                f"'{self}' returned 405 - Method not allowed. Probably you are "
+                f"using GET where POST is needed, or vice versa. See "
+                f"APIClient.get_documentation() for usage"
+            )
 
         else:
-            msg = "Unexpected response from {}: code '{}', reason '{}'".format(
-                self, response.status_code, response.reason
+            raise APIClientException(
+                f"Unexpected response from {self}: code '{response.status_code}'"
+                f", reason '{response.reason}'"
             )
-            raise APIClientException(msg)
 
 
 class AnonClientTool:
@@ -292,7 +305,7 @@ class AnonClientTool:
         )
         return client
 
-    def get_server_status(self, server: RemoteAnonServer):
+    def get_server_status(self, server: RemoteAnonServer) -> str:
         """
 
         Returns
@@ -302,12 +315,15 @@ class AnonClientTool:
         """
         client = self.get_client(server.url)
         try:
-            client.get_documentation()  # don't care about documentation return value now, just using as test
-            status = f"OK: {server} is online and responsive"
+            client.get_documentation()  # just test connectivity here
+            return f"OK: {server} is online and responsive"
+        except ServerNotResponding as e:
+            return (
+                f"Server '{server}' cannot be reached. Is the URL correct?. "
+                f"Original Error:\n {str(e)}"
+            )
         except APIClientException as e:
-            status = f"ERROR: {server} is not responding properly. Error:\n {str(e)}"
-
-        return status
+            return f"ERROR: '{server}' is not responding properly. Error:\n {str(e)}"
 
     def get_job_info(self, server: RemoteAnonServer, job_id: int) -> JobInfo:
         """Full description of a single job
@@ -603,6 +619,12 @@ class ClientInterfaceException(AnonAPIException):
 
 class APIClientException(AnonAPIException):
     """A general problem with the APIClient"""
+
+    pass
+
+
+class ServerNotResponding(APIClientException):
+    """API server is not responding at all"""
 
     pass
 
