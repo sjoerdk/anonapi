@@ -148,3 +148,13 @@ To re-generate, run:
     $ github_changelog_generator -u sjoerdk -p anonapi --token <your token>
 
 To get a github token, see here: https://github.com/github-changelog-generator/github-changelog-generator#github-token
+
+Updating docs
+~~~~~~~~~~~~~
+CI will generate and publish sphinx docs on readthedocs for tagged commits. Updating the sphinx docs in `/docs/sphinx`
+will be enough in many cases. Some parts of the sphinx documentation are generated. In particular the `concepts.rst` and
+`command_reference.rst` pages contain lists of all CLI commands that are generated from the CLI code directly.
+To re-generate these, run
+
+   `/docs/generator/generate_command_reference.rst.py`
+

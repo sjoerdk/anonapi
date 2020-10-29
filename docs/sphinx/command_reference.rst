@@ -47,7 +47,7 @@ Overview of job functions:
 Command            Description                                                   
 ================== ==============================================================
 cancel             Set job status to inactive                                    
-info               Print job info                                                
+info               Print full info for one or more jobs                          
 list               List info for multiple jobs                                   
 reset              Reset job, process again                                      
 set-opt-out-ignore Set opt-out ignore with given reason for job_id               
@@ -110,20 +110,21 @@ that folder. For example:
 
 batch command overview:
 
-=========== =====================================================================
-Command     Description                                                          
-=========== =====================================================================
-add         Add ids to current batch. Space-separated (1 2 3) or range (1-40)    
-cancel      Cancel every job in the current batch                                
-delete      Delete batch in current folder                                       
-info        Show batch in current directory                                      
-init        Save an empty batch in the current folder, for current server        
-remove      Remove ids from current batch. Space-separated (1 2 3) or range (1-40
-reset       Reset every job in the current batch                                 
-reset-error Reset all jobs with error status in the current batch                
-show-error  Show full error message for all error jobs in batch                  
-status      Print status overview for all jobs in batch                          
-=========== =====================================================================
+============= ===================================================================
+Command       Description                                                        
+============= ===================================================================
+add           Add ids to current batch. Space-separated (1 2 3) or range (1-40)  
+cancel        Cancel every job in the current batch                              
+cancel-active Cancel unprocessed (active) jobs, leave done and error             
+delete        Delete batch in current folder                                     
+info          Show batch in current directory                                    
+init          Save an empty batch in the current folder, for current server      
+remove        Remove ids from current batch. Space-separated (1 2 3) or range (1-
+reset         Reset every job in the current batch                               
+reset-error   Reset all jobs with error status in the current batch              
+show-error    Show full error message for all error jobs in batch                
+status        Print status overview for all jobs in batch                        
+============= ===================================================================
 
 
 For convenience, it is possible to pass job ids for batch add and batch remove as ranges:
@@ -188,11 +189,12 @@ Overview of map functions:
 ================= ===============================================================
 Command           Description                                                    
 ================= ===============================================================
+activate          All subsequent mapping actions will target this folder         
 add-selection     Add selection file to mapping                                  
-add-study-folders Add all dicom files in given folder to map                     
-delete            Delete mapping in current folder                               
-edit              Edit the current mapping in OS default editor                  
-init              Save a default mapping in the current folder                   
+add-study-folders Add all dicom files in given folders to mapping                
+delete            Delete current active mapping                                  
+edit              Edit the active mapping in OS default editor                   
+init              Save a default mapping in a default location in the current fol
 status            Show mapping in current directory                              
 ================= ===============================================================
 
@@ -201,14 +203,18 @@ status            Show mapping in current directory
 add-study-folders
 -----------------
 
-Add the given folder or space-separated list of folders to :ref:`mapping <concepts_mapping>`. This is done by finding
+Add the given folders to :ref:`mapping <concepts_mapping>`. This is done by finding
 all dicom files in the folder and any folders below it, adding those to a :ref:`file selection <concepts_selection>`,
-and then adding the file selection to the mapping.
+and then adding the file selection to the mapping. You can add multiple folders at once by using an
+:ref:`concepts_input_file`.
 
 Options:
 
+-f, --file
+	add all study folders in this xlsx or csv file to mapping. Looks for column 'folder' in file. If a column 'pseudoID' is present,adds these instead of auto-generating
+
 --check-dicom/ --no-check-dicom
-	--check-dicom: Open each file to check whether it is valid DICOM. --no-check-dicom: Add all files that look like DICOM (exclude files with known file extensions like .txt or .xml) Not checking is faster, but the anonymization fails if non-DICOM files are included. off by default
+	--check-dicom: Open each file to check whether it is valid DICOM. --no-check-dicom: Add all files that look like DICOM (exclude files with known file extensions like .txt or .xml). off by default
 
 Example:
 
@@ -235,7 +241,7 @@ Wildcards
 Folder paths can contain asterisk ``*`` characters as wildcards. For example:
 
 +-----------------------------------+------------------------------------+
-| Command                           |  matches_header paths (examples)          |
+| Command                           |  matches_header paths (examples)   |
 +===================================+====================================+
 | `add-study-folders folder*`       | ``folderA``, ``folderB``           |
 +-----------------------------------+------------------------------------+

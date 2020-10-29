@@ -215,7 +215,15 @@ def delete(context: MapCommandContext):
 @click.command()
 @pass_map_command_context
 @click.argument("paths", type=WildcardFolder(exists=True), nargs=-1)
-@click.option("-f", "--file", "input_file", type=PathParameterFile())
+@click.option(
+    "-f",
+    "--file",
+    "input_file",
+    type=PathParameterFile(),
+    help="add all study folders in this xlsx or csv file to mapping. Looks "
+    "for column 'folder' in file. If a column 'pseudoID' is present,"
+    "adds these instead of auto-generating",
+)
 @click.option(
     "--check-dicom/--no-check-dicom",
     default=False,

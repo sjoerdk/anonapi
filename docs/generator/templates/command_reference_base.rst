@@ -156,9 +156,10 @@ Overview of map functions:
 add-study-folders
 -----------------
 
-Add the given folder or space-separated list of folders to :ref:`mapping <concepts_mapping>`. This is done by finding
+Add the given folders to :ref:`mapping <concepts_mapping>`. This is done by finding
 all dicom files in the folder and any folders below it, adding those to a :ref:`file selection <concepts_selection>`,
-and then adding the file selection to the mapping.
+and then adding the file selection to the mapping. You can add multiple folders at once by using an
+:ref:`concepts_input_file`.
 
 Options:
 
@@ -189,7 +190,7 @@ Wildcards
 Folder paths can contain asterisk ``*`` characters as wildcards. For example:
 
 +-----------------------------------+------------------------------------+
-| Command                           |  matches_header paths (examples)          |
+| Command                           |  matches_header paths (examples)   |
 +===================================+====================================+
 | `add-study-folders folder*`       | ``folderA``, ``folderB``           |
 +-----------------------------------+------------------------------------+

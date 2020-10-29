@@ -285,11 +285,12 @@ class Project(Parameter):
 
 
 class PathParameter(Parameter):
-    """A parameter that can refer to a root_path on disk or share
+    """A parameter that can refer to a path on disk or share
 
     Always has a 'path' property that can get and set the path part
     """
 
+    field_name = "path"
     description = "A parameter describing a path"
 
     def __init__(self, value: PureWindowsPath = None):
