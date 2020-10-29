@@ -117,12 +117,34 @@ $ py.test tests.test_anonapi
 Deploying
 ---------
 
-A reminder for the maintainers on how to deploy.
-Make sure all your changes are committed.
+A reminder for the maintainers on how to deploy. General steps for a full deploy:
+
+    * Check in all your changes locally
+    * Make sure all test run and coverage is 90% or better
+    * Push to master
+    * update changelog (see below)
+
+Checking in code
+~~~~~~~~~~~~~~~~
+Make sure all your changes are committed and all tests run. Make sure coverage is 90% or better
 Then run::
 
-$ bumpversion patch # possible: major / minor / patch
+$ bumpversion patch # possible: major / minor / patch (use semantic versioning https://semver.org/)
 $ git push
 $ git push --tags
 
-Travis will then deploy to PyPI if tests pass.
+Updating the changelog
+~~~~~~~~~~~~~~~~~~~~~~
+anonapi auto-generates change logs from github issues using
+https://github.com/github-changelog-generator/github-changelog-generator
+
+General points about working with this generator:
+
+    * Label github issues with 'bug', 'enhancement' to make them show up better in the overview
+    * To add summary information to the changelog for any version, see here: https://github.com/github-changelog-generator/github-changelog-generator#using-the-summary-section-feature
+
+To re-generate, run:
+
+    $ github_changelog_generator -u sjoerdk -p anonapi --token <your token>
+
+To get a github token, see here: https://github.com/github-changelog-generator/github-changelog-generator#github-token
