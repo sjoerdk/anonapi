@@ -98,7 +98,7 @@ class JobParameterSet(ParameterSet):
 
         # make all parameter paths absolute
         try:
-            absolute_parameters = self.with_unc_paths()
+            absolute_parameters = self.make_unc_paths(self.parameters)
         except NoAbsoluteRootPathException as e:
             raise ParameterMappingException(e)
 
@@ -142,6 +142,11 @@ class JobParameterSet(ParameterSet):
         elif pseudo_name is None and pseudo_id is not None:
             self.parameters.append(PseudoName(pseudo_id.value))  # take id for both
 
+    def has_path_source(self) -> bool:
+        """Set of parameters defines a source that is a path"""
+
+        return any(self.is_path_type(x) for x in self.parameters)
+
     def validate(self):
         """Assert that this set can be used to create a job
 
@@ -155,15 +160,20 @@ class JobParameterSet(ParameterSet):
             if not self.get_param_by_type(required):
                 raise JobSetValidationError(f"Missing required parameter {required}")
 
+        if not self.has_path_source():
+            # If this set has no path source, root source does not matter
+            _, params = self.split_parameter(type_in=RootSourcePath)
+        else:
+            params = self.parameters
         try:
-            self.with_unc_paths()
+            self.make_unc_paths(params)
         except ParameterMappingException as e:
             raise JobSetValidationError(
                 f"Error: {e}. Source and destination need to be absolute windows"
                 f" paths."
             )
 
-    def with_unc_paths(self):
+    def make_unc_paths(self, parameters: List[Parameter]):
         """A copy of this JobParameterSet where all paths are absolute UNC
         paths. No relative paths, no mapped drive letters
 
@@ -174,8 +184,10 @@ class JobParameterSet(ParameterSet):
         """
         # make sure that all relative paths can be resolved
         absolute_params = []
-        for param in self.parameters:
+        for param in parameters:
             if hasattr(param, "path") and param.path:
+                # TODO code smell. Does this random info have to be checked here?
+                # rewrite
                 # there is a path, try to make absolute and check unc
                 if not param.path.is_absolute():
                     param = param.as_absolute(self.get_absolute_root_path())
@@ -334,7 +346,7 @@ def from_mapping(context: CreateCommandsContext, dry_run):
         context.client_tool.create_path_job = mock_create
         context.client_tool.create_pacs_job = mock_create
 
-    job_sets = extract_job_sets(context, context.get_mapping())
+    job_sets = extract_job_sets(context.default_parameters(), context.get_mapping())
 
     # inspect project name and destination to present the next question to the user
     project_names = set()
@@ -391,8 +403,17 @@ def create_jobs(
     return created_job_ids
 
 
-def extract_job_sets(context, mapping: Mapping) -> List[JobParameterSet]:
+def extract_job_sets(
+    default_parameters: List[Parameter], mapping: Mapping
+) -> List[JobParameterSet]:
     """Extract sets of parameters each creating one job
+
+    Parameters
+    ----------
+    default_parameters: List[Parameter]
+        These parameters will always be included for each job
+    mapping: Mapping
+        Extract from this mapping
 
     Raises
     ------
@@ -405,7 +426,7 @@ def extract_job_sets(context, mapping: Mapping) -> List[JobParameterSet]:
     """
     # add defaults to each row
     job_sets = [
-        JobParameterSet(row, default_parameters=context.default_parameters())
+        JobParameterSet(row, default_parameters=default_parameters)
         for row in mapping.rows
     ]
     # validate each job set and fill missing values

@@ -6,12 +6,13 @@ import pytest
 from anonapi.batch import BatchFolder
 from anonapi.cli.create_commands import (
     CreateCommandsContext,
+    from_mapping,
     main,
     JobParameterSet,
     ParameterMappingException,
     JobSetValidationError,
 )
-from anonapi.mapper import Mapping
+from anonapi.mapper import JobParameterGrid, Mapping
 from anonapi.parameters import (
     DestinationPath,
     Project,
@@ -26,6 +27,8 @@ from anonapi.parameters import (
     ParameterSet,
 )
 from tests import RESOURCE_PATH
+from tests.conftest import AnonAPIContextRunner
+from tests.factories import FolderIdentifierFactory, StudyInstanceUIDIdentifierFactory
 from tests.mock_responses import RequestsMockResponseExamples
 
 
@@ -36,6 +39,11 @@ def mock_requests_for_job_creation(mock_requests):
     """
     mock_requests.set_response(RequestsMockResponseExamples.JOB_CREATED_RESPONSE)
     return mock_requests
+
+
+@pytest.fixture()
+def a_create_command_context(mock_api_context) -> CreateCommandsContext:
+    return CreateCommandsContext(mock_api_context)
 
 
 def test_create_from_mapping_no_mapping(mock_main_runner):
@@ -174,12 +182,78 @@ def test_create_from_mapping_dry_run(
     assert mock_requests_for_job_creation.requests.post.call_count == 0
 
 
+def create_from_mapping_helper(
+    root_source_path: str, destination_path: str, identifiers: List[SourceIdentifier]
+):
+    """Helper function that sets up a mapping to recreate #265"""
+    return Mapping(
+        options=[RootSourcePath(root_source_path), DestinationPath(destination_path)],
+        grid=JobParameterGrid(
+            rows=[[SourceIdentifierParameter(x) for x in identifiers]]
+        ),
+    )
+
+
+def test_create_from_mapping_invalid_root_source(
+    a_create_command_context, mock_requests_for_job_creation
+):
+    """The default mapping often contains a non-unc root source value, as a stand in
+    until the user enters the actual unc path.
+    If the mapping contains no path-based jobs then there should be no error
+    Recreates #265
+    """
+    # The destination path is valid, but the root source is not.
+    # there are no folder-based rows so root source is not needed
+    mapping = create_from_mapping_helper(
+        root_source_path="/not_unc",
+        destination_path=r"\\proper\unc",
+        identifiers=[
+            StudyInstanceUIDIdentifierFactory(),
+            StudyInstanceUIDIdentifierFactory(),
+        ],
+    )
+
+    a_create_command_context.get_mapping = lambda: mapping
+    runner = AnonAPIContextRunner(mock_context=a_create_command_context)
+    result = runner.invoke(from_mapping, catch_exceptions=False)
+    assert result.exit_code == 0  # this should not cause an issue
+
+    # if there would be a path parameter in there though, it should cause
+    # an issue because create a job with an invalid root should not happen
+    mapping.grid.rows.append([SourceIdentifierParameter(FolderIdentifierFactory())])
+    assert runner.invoke(from_mapping, catch_exceptions=False).exit_code == 1
+
+
+def test_create_from_mapping_invalid_destination_path(
+    a_create_command_context, mock_requests_for_job_creation
+):
+    """Companion to test_create_from_mapping_invalid_root_source. If there are no
+    path jobs to be made, still make a problem if destination path is not valid
+    Recreates #265
+    """
+    mapping = create_from_mapping_helper(
+        root_source_path="/not_unc",
+        destination_path=r"/also_not_unc",
+        identifiers=[
+            StudyInstanceUIDIdentifierFactory(),
+            StudyInstanceUIDIdentifierFactory(),
+        ],
+    )
+
+    a_create_command_context.get_mapping = lambda: mapping
+    runner = AnonAPIContextRunner(mock_context=a_create_command_context)
+    result = runner.invoke(from_mapping, catch_exceptions=False)
+    assert result.exit_code == 1  # This run should not succeed
+
+
 def test_create_from_mapping_folder_and_pacs(
     mock_from_mapping_runner,
     a_folder_with_mapping_diverse,
     mock_requests_for_job_creation,
 ):
-    """PACS identifiers should generate slightly different jobs then Folder identifiers."""
+    """PACS identifiers should generate slightly different jobs then Folder
+    identifiers
+    """
     mock_requests = mock_requests_for_job_creation
     mock_from_mapping_runner.set_mock_current_dir(a_folder_with_mapping_diverse)
 

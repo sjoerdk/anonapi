@@ -10,7 +10,7 @@ import string
 import random
 from copy import copy
 from datetime import datetime
-from typing import Any, List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 from anonapi.exceptions import AnonAPIException
 from fileselection.fileselection import FileSelectionFile
@@ -146,7 +146,7 @@ class SourceIdentifierFactory:
         FileSelectionIdentifier,
     ]
 
-    def get_source_identifier_for_key(self, key):
+    def get_source_identifier_for_key(self, key: str) -> SourceIdentifier:
         """Cast given key input back to identifier object
 
         Parameters
@@ -576,6 +576,13 @@ class ParameterSet:
             If no source parameter can be found
         """
         return self.split_parameter(type_in=SourceIdentifierParameter)
+
+    def as_dict(self) -> Dict[str, Parameter]:
+        """Dictionary {field name: Parameter with this field_name}. Makes it easier
+        to retrieve a parameter of a specific type
+
+        """
+        return {x.field_name: x for x in self.parameters}
 
     @staticmethod
     def is_source_identifier(parameter):
