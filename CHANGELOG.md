@@ -1,16 +1,22 @@
 # Changelog
 
-## [Unreleased](https://github.com/sjoerdk/anonapi/tree/HEAD)
+## [v1.5.1](https://github.com/sjoerdk/anonapi/tree/v1.5.1) (2020-10-29)
 
-[Full Changelog](https://github.com/sjoerdk/anonapi/compare/v1.5.0...HEAD)
+[Full Changelog](https://github.com/sjoerdk/anonapi/compare/v1.5.0...v1.5.1)
 
 **Implemented enhancements:**
 
+- Add mapping location to mapping exception output [\#277](https://github.com/sjoerdk/anonapi/issues/277)
 - Auto-generate changelog [\#276](https://github.com/sjoerdk/anonapi/issues/276)
+- Missing column header in mapping will yield confusing error [\#273](https://github.com/sjoerdk/anonapi/issues/273)
+- anon map add-study-folders with no parameters will try to add 0 items [\#259](https://github.com/sjoerdk/anonapi/issues/259)
+- 404 message is cryptic [\#256](https://github.com/sjoerdk/anonapi/issues/256)
 
 **Fixed bugs:**
 
 - Logging setup causes exception in python 3.8 [\#271](https://github.com/sjoerdk/anonapi/issues/271)
+- Do not complain about root\_source if root\_source is not used [\#265](https://github.com/sjoerdk/anonapi/issues/265)
+- unfounded Could not determine delimiter  [\#264](https://github.com/sjoerdk/anonapi/issues/264)
 
 **Closed issues:**
 
