@@ -208,6 +208,25 @@ Folder paths can contain asterisk ``*`` characters as wildcards. For example:
 
     For folders with many files, on a slow shared folder, add-study-folders --check-dicom might take several minutes to complete.
 
+.. _map_add_accession_numbers:
+
+add-accession-numbers
+---------------------
+
+Add the given accession numbers to the active :ref:`mapping <concepts_mapping>`. You can add multiple accession numbers
+at once by passing multiple values separated by spaces:
+
+.. code-block:: console
+
+    $ anon map add-accession-numbers 1234567.12345673 1111112.12345673 2222222.12345673
+
+Alternatively you can use the `--input-file` flag with an :ref:`concepts_input_file` to add multiple accession numbers
+and pseudonyms at once. For example:
+
+.. code-block:: console
+
+    $ anon map add-accession-numbers --input-file myfile.csv
+
 
 .. _map_add_selection_file:
 

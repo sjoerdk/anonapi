@@ -13,6 +13,7 @@ import string
 from click.exceptions import BadParameter
 
 from anonapi.cli.click_parameter_types import (
+    AccessionNumberFile,
     FileSelectionFileParam,
     PathParameterFile,
     WildcardFolder,
@@ -30,6 +31,7 @@ from anonapi.mapper import (
     get_local_dialect,
 )
 from anonapi.parameters import (
+    AccessionNumber,
     ParameterSet,
     PathParameter,
     SourceIdentifierFactory,
@@ -217,7 +219,7 @@ def delete(context: MapCommandContext):
 @click.argument("paths", type=WildcardFolder(exists=True), nargs=-1)
 @click.option(
     "-f",
-    "--file",
+    "--input-file",
     "input_file",
     type=PathParameterFile(),
     help="add all study folders in this xlsx or csv file to mapping. Looks "
@@ -267,6 +269,49 @@ def add_study_folders(context: MapCommandContext, paths, input_file, check_dicom
         mapping_file.save_mapping(mapping)
         logger.info("")  # extra newline makes separate folder adding more readable
     logger.info(f"Done. Added '{[str(x) for x in input_rows.keys()]}' to mapping")
+
+
+@click.command()
+@pass_map_command_context
+@click.argument("accession_numbers", type=str, nargs=-1)
+@click.option(
+    "-f",
+    "--input-file",
+    "input_file",
+    type=AccessionNumberFile(),
+    help="add all accession numbers xlsx or csv file to mapping. Looks "
+    "for column 'accession_number' in file. If a column 'pseudoID' is present,"
+    "adds these instead of auto-generating pseudonym",
+)
+@handle_anonapi_exceptions
+def add_accession_numbers(context: MapCommandContext, accession_numbers, input_file):
+    """Add accession numbers to an existing mapping"""
+    if input_file:
+        # an input file was given and parsed already. Use the rows from that.
+        # Split off the path to add from any other parameters in that row
+        input_rows = []
+        for row in input_file.rows:
+            accession_number, rest = ParameterSet(row).split_parameter(AccessionNumber)
+            input_rows.append(
+                [SourceIdentifierParameter(accession_number.to_string(delimiter=":"))]
+                + rest
+            )
+    else:
+        # accession numbers were given in cli directly, make into source parameters
+        input_rows = [
+            [SourceIdentifierParameter(AccessionNumber(x).to_string(delimiter=":"))]
+            for x in accession_numbers
+        ]
+
+    mapping_file = context.get_current_mapping_file()
+    mapping = mapping_file.get_mapping()
+    for row in input_rows:
+        # assert this is a valid set of parameters and add defaults if needed
+        logger.info(f"Adding {row[0].value}")
+        mapping.grid.append_row(MappingParameterSet(parameters=row).parameters)
+
+    mapping_file.save_mapping(mapping)
+    logger.info(f"Done. Added {len(input_rows)} accession numbers")
 
 
 def find_dicom_files(
@@ -362,5 +407,14 @@ def edit(context: MapCommandContext):
         raise MapperException(f"No mapping file found at {path}")
 
 
-for func in [status, init, delete, add_study_folders, edit, add_selection, activate]:
+for func in [
+    status,
+    init,
+    delete,
+    add_study_folders,
+    add_accession_numbers,
+    edit,
+    add_selection,
+    activate,
+]:
     main.add_command(func)

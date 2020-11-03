@@ -301,8 +301,8 @@ def parse_columns(
         for column_type in column_types:
             if column_type.matches_header(item):
                 logger.debug(
-                    f"Found column {column_type.header_name} (name in "
-                    f"file '{item}') in column {idx}"
+                    f"Matched '{item}' in row {row}, column {idx} to column type "
+                    f"'{column_type.header_name()}'"
                 )
                 columns.append(column_type(column=idx))
 
@@ -333,10 +333,15 @@ def find_column_headers(
         When no column headers can be found
 
     """
+    logger.debug(f"Starting column header search..")
 
     for idx, row in enumerate(row_iterator):
         columns = parse_columns(row, column_types=column_types)
         if columns:
+            logger.debug(
+                f"Found {[str(x) for x in columns]} in row {idx}. "
+                f"Stopping column search"
+            )
             # add column header row idx for better error messages later
             for column in columns:
                 column.header_row_idx = idx

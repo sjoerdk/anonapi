@@ -77,8 +77,8 @@ Mapping
     source      Data to anonymize comes from this source                             
     =========== =====================================================================
 
-    The value of the `source` parameter is a :ref:`source identifier <concepts_source_identifier>`. The different types of identifiers are
-    listed below.
+    The value of the `source` parameter is a :ref:`source identifier <concepts_source_identifier>`. The different types
+    of identifiers are listed below.
 
 For an overview of map functions, see :ref:`map`.
 

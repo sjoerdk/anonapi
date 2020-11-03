@@ -186,17 +186,18 @@ anonymization jobs
 
 Overview of map functions:
 
-================= ===============================================================
-Command           Description                                                    
-================= ===============================================================
-activate          All subsequent mapping actions will target this folder         
-add-selection     Add selection file to mapping                                  
-add-study-folders Add all dicom files in given folders to mapping                
-delete            Delete current active mapping                                  
-edit              Edit the active mapping in OS default editor                   
-init              Save a default mapping in a default location in the current fol
-status            Show mapping in current directory                              
-================= ===============================================================
+===================== ===========================================================
+Command               Description                                                
+===================== ===========================================================
+activate              All subsequent mapping actions will target this folder     
+add-accession-numbers Add accession numbers to an existing mapping               
+add-selection         Add selection file to mapping                              
+add-study-folders     Add all dicom files in given folders to mapping            
+delete                Delete current active mapping                              
+edit                  Edit the active mapping in OS default editor               
+init                  Save a default mapping in a default location in the current
+status                Show mapping in current directory                          
+===================== ===========================================================
 
 .. _map_add_study_folders:
 
@@ -210,7 +211,7 @@ and then adding the file selection to the mapping. You can add multiple folders 
 
 Options:
 
--f, --file
+-f, --input-file
 	add all study folders in this xlsx or csv file to mapping. Looks for column 'folder' in file. If a column 'pseudoID' is present,adds these instead of auto-generating
 
 --check-dicom/ --no-check-dicom
@@ -258,6 +259,25 @@ Folder paths can contain asterisk ``*`` characters as wildcards. For example:
 .. note::
 
     For folders with many files, on a slow shared folder, add-study-folders --check-dicom might take several minutes to complete.
+
+.. _map_add_accession_numbers:
+
+add-accession-numbers
+---------------------
+
+Add the given accession numbers to the active :ref:`mapping <concepts_mapping>`. You can add multiple accession numbers
+at once by passing multiple values separated by spaces:
+
+.. code-block:: console
+
+    $ anon map add-accession-numbers 1234567.12345673 1111112.12345673 2222222.12345673
+
+Alternatively you can use the `--input-file` flag with an :ref:`concepts_input_file` to add multiple accession numbers
+and pseudonyms at once. For example:
+
+.. code-block:: console
+
+    $ anon map add-accession-numbers --input-file myfile.csv
 
 
 .. _map_add_selection_file:

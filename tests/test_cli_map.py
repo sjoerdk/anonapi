@@ -9,6 +9,7 @@ from anonapi.cli import entrypoint
 from anonapi.cli.map_commands import (
     MapCommandContext,
     activate,
+    add_accession_numbers,
     add_selection,
     delete,
     edit,
@@ -19,6 +20,7 @@ from anonapi.cli.map_commands import (
 
 from anonapi.mapper import (
     DEFAULT_MAPPING_NAME,
+    Mapping,
     MappingFile,
     MappingLoadError,
 )
@@ -28,6 +30,16 @@ from tests.conftest import AnonAPIContextRunner, MockContextCliRunner
 from tests import RESOURCE_PATH
 
 MAPPER_RESOURCE_PATH = RESOURCE_PATH / "test_mapper"
+
+
+class MappingContextRunner(AnonAPIContextRunner):
+    """A click runner that always injects a MapCommandContext instance"""
+
+    def __init__(self, mock_context: MapCommandContext):
+        super().__init__(mock_context=mock_context)
+
+    def get_current_mapping(self) -> Mapping:
+        return self.mock_context.get_current_mapping()
 
 
 @fixture
@@ -51,9 +63,9 @@ def mock_map_context_with_mapping(a_folder_with_mapping) -> MapCommandContext:
 
 
 @fixture
-def runner_with_mapping(mock_map_context_with_mapping) -> AnonAPIContextRunner:
+def runner_with_mapping(mock_map_context_with_mapping) -> MappingContextRunner:
     """A click CLIRunner with MapCommandContext that has a valid active mapping"""
-    return AnonAPIContextRunner(mock_context=mock_map_context_with_mapping)
+    return MappingContextRunner(mock_context=mock_map_context_with_mapping)
 
 
 @fixture
@@ -362,3 +374,31 @@ def test_cli_map_add_paths_file(
     pseudo_names = [ParameterSet(x).get_param_by_type(PseudoName) for x in added]
     assert pseudo_names[1].value == "studyA"
     assert pseudo_names[2].value == "studyB"
+
+
+def test_cli_map_add_accession_numbers(runner_with_mapping):
+    """Add some accession numbers to a mapping"""
+    result = runner_with_mapping.invoke(add_accession_numbers, ["12344556.12342345"])
+    assert result.exit_code == 0
+    mapping = runner_with_mapping.get_current_mapping()
+    # TODO: make accessing a specific parameter in a row easier. Not like below.
+    assert (
+        ParameterSet(mapping.rows[-1]).as_dict()["source"].value.identifier
+        == "12344556.12342345"
+    )
+
+
+def test_cli_map_add_accession_numbers_file(runner_with_mapping):
+    """Add some accession numbers to a mapping"""
+
+    input_file_path = MAPPER_RESOURCE_PATH / "inputfile" / "some_accession_numbers.xlsx"
+    result = runner_with_mapping.invoke(
+        add_accession_numbers, ["--input-file", str(input_file_path)]
+    )
+    assert result.exit_code == 0
+    mapping = runner_with_mapping.get_current_mapping()
+    assert (
+        ParameterSet(mapping.rows[-1]).as_dict()["source"].value.identifier
+        == "123456.12321313"
+    )
+    assert ParameterSet(mapping.rows[-1]).as_dict()["pseudo_name"].value == "study3"
