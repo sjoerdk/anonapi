@@ -1,5 +1,25 @@
 # Changelog
 
+## [v1.5.3](https://github.com/sjoerdk/anonapi/tree/v1.5.3) (2020-11-03)
+
+[Full Changelog](https://github.com/sjoerdk/anonapi/compare/v1.5.2...v1.5.3)
+
+**Implemented enhancements:**
+
+- mapping file for path mappings should not have to be at data source [\#252](https://github.com/sjoerdk/anonapi/issues/252)
+
+**Closed issues:**
+
+- Add csv or xls file as input for map functions [\#260](https://github.com/sjoerdk/anonapi/issues/260)
+
+## [v1.5.2](https://github.com/sjoerdk/anonapi/tree/v1.5.2) (2020-10-29)
+
+[Full Changelog](https://github.com/sjoerdk/anonapi/compare/v1.5.1...v1.5.2)
+
+**Implemented enhancements:**
+
+- Update sphinx documentation with active mapping [\#278](https://github.com/sjoerdk/anonapi/issues/278)
+
 ## [v1.5.1](https://github.com/sjoerdk/anonapi/tree/v1.5.1) (2020-10-29)
 
 [Full Changelog](https://github.com/sjoerdk/anonapi/compare/v1.5.0...v1.5.1)
