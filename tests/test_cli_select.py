@@ -4,11 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 from fileselection.fileselection import FileSelectionFolder, FileSelectionFile
-from anonapi.cli.select_commands import (
-    main,
-    SelectCommandContext,
-    CLIMessages,
-)
+from anonapi.cli.select_commands import main, SelectCommandContext, CLIMessages
 from anonapi.selection import looks_like_dicom_file
 
 

@@ -57,6 +57,15 @@ def test_settings_load(test_settings_folder):
     assert_test_settings_file_contents(settings)
 
 
+def test_settings_load_active_mapping_none(tmp_path):
+    """A common situation for newly installed anonapi recreates #282"""
+    # write default settings
+    settings_path = tmp_path / "test_settings.yaml"
+    DefaultAnonClientSettings(active_mapping_file=None).save_to_file(settings_path)
+    settings = AnonClientSettingsFromFile(settings_path)
+    assert settings.active_mapping_file is None
+
+
 def test_settings_from_file(test_settings_folder):
     # load settings
     settings = AnonClientSettingsFromFile(path=test_settings_folder / "settings.yml")

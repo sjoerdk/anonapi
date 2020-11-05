@@ -68,6 +68,10 @@ class AnonClientSettings(YAMLSerializable):
 
     def to_dict(self) -> dict:
         """Dictionary representation of this class. For serialization"""
+        if self.active_mapping_file is None:
+            active_mapping_file = None
+        else:
+            active_mapping_file = str(self.active_mapping_file)
         return {
             "servers": {x.name: x.url for x in self.servers},
             "active_server_name": self.get_active_server_key(),
@@ -77,7 +81,7 @@ class AnonClientSettings(YAMLSerializable):
             "job_default_parameters": [
                 x.to_string() for x in self.job_default_parameters
             ],
-            "active_mapping_file": str(self.active_mapping_file),
+            "active_mapping_file": active_mapping_file,
         }
 
     @classmethod
@@ -95,6 +99,11 @@ class AnonClientSettings(YAMLSerializable):
         # Overwrite defaults with any keys given in input
         dict_full.update(dict_in)
 
+        if dict_full["active_mapping_file"]:
+            active_mapping_file = Path(dict_full["active_mapping_file"])
+        else:
+            active_mapping_file = None
+
         settings = cls(
             servers=[
                 RemoteAnonServer(name, url)
@@ -104,7 +113,7 @@ class AnonClientSettings(YAMLSerializable):
             user_token=dict_full["user_token"],
             validate_ssl=dict_full["validate_ssl"],
             job_default_parameters=cls.extract_default_parameters(dict_in),
-            active_mapping_file=Path(dict_full["active_mapping_file"]),
+            active_mapping_file=active_mapping_file,
         )
 
         settings.active_server = cls.determine_active_server(
@@ -251,6 +260,9 @@ class AnonClientSettingsFromFile(AnonClientSettings):
         )
 
         self.active_server = settings.active_server
+
+    def __str__(self):
+        return f"AnonClientSettingsFromFile at {self.path}"
 
     def save(self):
         with open(self.path, "w") as f:
