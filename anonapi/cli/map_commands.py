@@ -79,7 +79,9 @@ class MapCommandContext:
 
         """
         if not self.active_mapping_file_path():
-            raise MapperException("No active mapping")
+            raise MapperException(
+                "No active mapping. Please " "use 'anon map active <mapping_file>'"
+            )
         return MappingFile(self.settings.active_mapping_file)
 
     def get_current_mapping(self) -> Mapping:

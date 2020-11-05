@@ -16,6 +16,7 @@ from anonapi.cli.map_commands import (
     find_dicom_files,
     add_study_folders,
     init,
+    status,
 )
 
 from anonapi.mapper import (
@@ -75,7 +76,9 @@ def mock_map_context_without(tmpdir) -> MapCommandContext:
 
 @fixture
 def runner_without_mapping(tmpdir):
-    """A click CLIRunner that passes MapCommandContext without active mapping"""
+    """A click CLIRunner that passes MapCommandContext without active mapping
+    (active mapping is None)
+    """
     return MockContextCliRunner(
         mock_context=MapCommandContext(
             current_dir=tmpdir, settings=DefaultAnonClientSettings()
@@ -147,6 +150,17 @@ def test_cli_map_info_empty_dir(mock_main_runner):
     """
     runner = mock_main_runner
     result = runner.invoke(entrypoint.cli, "map status", catch_exceptions=False)
+
+    assert result.exit_code == 1
+    assert "No active mapping" in result.output
+
+
+def test_cli_map_info_no_active_mapping(runner_without_mapping):
+    """Running info on a directory not containing a mapping file should yield a
+    nice 'no mapping' message
+    """
+
+    result = runner_without_mapping.invoke(status, catch_exceptions=False)
 
     assert result.exit_code == 1
     assert "No active mapping" in result.output
