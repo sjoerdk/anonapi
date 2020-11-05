@@ -73,12 +73,48 @@ Step 2: add input to mapping
 
       anon map edit
 
-And make sure ``project`` and ``destination_path`` are correct. The value root_source_path can be left as is.
+And make the following edits:
 
+* ``project`` should have the correct anonymization project (usually 'Wetenschap-Algemeen')
+
+* ``destination_path`` should be an be a :ref:`UNC path <concepts_unc_paths>` (like `\\\\server\\share`) where you want
+  your anonymized data to be written.
+
+* Under `## Mapping ##`, delete the first four lines as they are default examples.
+
+.. image:: static/post_anon_init_common_edits.png
+   :scale: 100 %
+   :alt: command edits after anon map init
 
 
 Step 3: create jobs
 -------------------
 
+Make sure you have a :ref:`command prompt<usage_starting_a_command_prompt_windows_in_folder>` in your
+:ref:`project folder<anonymize_from_pacs_requirements>` ``C:\project_folder``. Then run the following:
+
+.. code-block:: text
+
+    $ anon create from-mapping
+
+This will create all jobs defined in your mapping file and save a reference to them as a :ref:`batch <concepts_batch>`.
+
+
 Step 4: monitor job batch
 -------------------------
+
+To see how your jobs are doing use
+
+.. code-block:: text
+
+    $ anon batch status
+
+
+To print error messages for all failed jobs use
+
+.. code-block:: text
+
+    $ anon batch show-error
+
+
+Other batch commands can be found :ref:`here <batch>`.
