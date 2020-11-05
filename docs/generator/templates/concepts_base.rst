@@ -73,7 +73,7 @@ For an overview of map functions, see :ref:`map`.
 Input file
 ==========
 A csv or excel file that contains one or more columns with folders, pseudonyms or accession numbers. A file like this
-can be used as an input for :ref:`map` functions such as :ref:`map_add_study_folders`.
+can be used as an input for :ref:`map` functions such as :ref:`map_add_study_folders` to add multiple values at once.
 
 Example input file containing folders and pseudonyms:
 

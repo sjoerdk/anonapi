@@ -4,20 +4,42 @@
 Usage
 =====
 
-Information on how to achieve certain goals using anonapi. For detailed information on specific commands, see :doc:`command_reference`
+Information on how to combine one or more anonapi :ref:`commands<command_reference>` to do things like resetting jobs, working
+with multiple jobs. For more detailed step-by-step instructions on performing a specific task, see :ref:`manual`
+
 
 .. _usage_starting_a_command_prompt:
 
 Starting a command prompt
 =========================
-After :doc:`installation` and :doc:`configuration` you can use the CLI from a command prompt. The way to do this varies
-between windows and linux:
+After :doc:`installation` and :doc:`configuration` you can use the CLI from a terminal, or command prompt:
+
+
 
 Windows
-    Press the start menu and type ``cmd`` and press enter. For more info see
-    see `here <https://www.lifewire.com/how-to-open-command-prompt-2618089>`_. Certain anonapi commands, such as
-    :ref:`batch`, work in specific folders. To open command prompt in a specific folder in windows see `here
-    <https://helpdeskgeek.com/how-to/open-command-prompt-folder-windows-explorer/>`_
+-------
+
+To start a command prompt: press the windows ``start menu`` -> type ``cmd``  press ``enter``
+
+.. image:: static/windows_open_cmd.png
+   :scale: 100 %
+   :alt: opening a command prompt in windows
+
+
+.. _usage_starting_a_command_prompt_windows_in_folder:
+
+
+To start a command prompt in a specific folder: find the folder in windows explorer, then ``shift + right-click`` on
+that folder -> ``Open command prompt here``  (Dutch: `Opdrachtvenster hier openen`).
+
+.. image:: static/windows_open_cmd_in_folder.png
+   :scale: 100 %
+   :alt: opening a command prompt in a specific folder in windows
+
+.. image:: static/windows_command_line.png
+   :scale: 100 %
+   :alt: A command line in windows opened in a specific folder
+
 
 Linux
     This varies between distributions. Common ways are pressing Meta+t, ``Konsole`` on ubuntu, or ``Terminal``. For more info see
@@ -252,9 +274,8 @@ The mapping needs to be edited in two ways:
 
 * the `root_source_path` parameter needs to be changed into a :ref:`UNC path<concepts_unc_paths>` for the anonymization
   server to be able to find the data.
-    .. tip::
-
-        To find out the UNC path for a windows drive letter or a linux mount, see :ref:`concepts_finding_a_unc_path`
+  .. tip::
+    To find out the UNC path for a windows drive letter or a linux mount, see :ref:`concepts_finding_a_unc_path`
 
 * initially the mapping contains several rows with example data. These can be removed
 * The `destination_path` parameter will probably need to be changed
