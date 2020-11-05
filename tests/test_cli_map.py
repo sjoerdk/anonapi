@@ -309,12 +309,9 @@ def test_cli_map_delete(mock_map_context_with_mapping):
     assert "No such file or directory" in result.output
 
 
-def test_cli_map_edit(mock_map_context_with_mapping, monkeypatch):
+def test_cli_map_edit(mock_map_context_with_mapping, mock_launch):
     context = mock_map_context_with_mapping
     runner = AnonAPIContextRunner(mock_context=context)
-
-    mock_launch = Mock()
-    monkeypatch.setattr("anonapi.cli.map_commands.click.launch", mock_launch)
 
     result = runner.invoke(edit, catch_exceptions=False)
 

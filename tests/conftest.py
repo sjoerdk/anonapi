@@ -4,7 +4,9 @@ tests, amongs other things
 import logging
 import shutil
 from pathlib import Path
+from unittest.mock import Mock
 
+import click
 from _pytest.fixtures import fixture
 from click.testing import CliRunner
 from fileselection.fileselection import FileSelectionFolder
@@ -69,6 +71,14 @@ def mocked_requests_client():
 
 
 @fixture
+def mock_launch(monkeypatch) -> Mock:
+    """Replaces click.launch() with a mock"""
+    mock_launch = Mock(spec=click.launch)
+    monkeypatch.setattr("click.launch", mock_launch)
+    return mock_launch
+
+
+@fixture
 def a_folder_with_mapping(tmpdir):
     shutil.copyfile(
         RESOURCE_PATH / "test_cli" / "anon_mapping.csv",
@@ -128,7 +138,7 @@ def a_file_selection(tmpdir):
 
 
 @fixture
-def mock_api_context(tmpdir):
+def mock_api_context(tmpdir) -> AnonAPIContext:
     """Context required by many anonapi commands. Will yield a temp folder as
     current_dir
     """

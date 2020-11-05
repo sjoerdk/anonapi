@@ -39,7 +39,7 @@ def show(context: AnonAPIContext):
 def edit(context: AnonAPIContext):
     """Open settings in default editor"""
     try:
-        click.launch(context.settings.path)
+        click.launch(str(context.settings.path))
     except AttributeError:
         logger.error(
             f"No path associated with settings {context.settings}. I "

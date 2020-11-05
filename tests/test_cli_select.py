@@ -1,6 +1,5 @@
 """Tests for anonapi.cli.select_commands"""
 from pathlib import Path
-from unittest.mock import Mock
 
 import pytest
 from fileselection.fileselection import FileSelectionFolder, FileSelectionFile
@@ -106,9 +105,7 @@ def test_select_add_exclude(mock_main_runner, folder_with_some_dicom_files):
     assert len(selection_folder.load_file_selection().selected_paths) == 2
 
 
-def test_select_edit(mock_main_runner, initialised_selection_folder, monkeypatch):
-    mock_launch = Mock()
-    monkeypatch.setattr("anonapi.cli.select_commands.click.launch", mock_launch)
+def test_select_edit(mock_main_runner, initialised_selection_folder, mock_launch):
 
     result = mock_main_runner.invoke(main, "edit")
     assert result.exit_code == 0
