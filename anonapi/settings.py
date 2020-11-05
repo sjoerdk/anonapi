@@ -261,6 +261,9 @@ class AnonClientSettingsFromFile(AnonClientSettings):
 
         self.active_server = settings.active_server
 
+    def __str__(self):
+        return f"AnonClientSettingsFromFile at {self.path}"
+
     def save(self):
         with open(self.path, "w") as f:
             self.save_to(f)
