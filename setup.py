@@ -42,7 +42,7 @@ setup(
         "Programming Language :: Python :: 3.8",
     ],
     description="Client and tools for working with the anoymization web API",
-    python_requires=">=3.6",
+    python_requires="~=3.6",
     install_requires=requirements,
     license="MIT license",
     long_description=readme + "\n\n" + history,
