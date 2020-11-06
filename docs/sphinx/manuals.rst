@@ -73,7 +73,14 @@ Step 2: add input to mapping
 
       anon map edit
 
-And make the following edits:
+If values are not sorted into columns properly do the following:
+
+    * ``select column A`` -> click menu ``Data`` -> click ``Text to Columns``
+    * In the menu choose``delimited`` -> click ``Next``
+    * Under 'delimiters' check either ``Comma`` or ``Semicolon`` -> click ``Next``
+
+
+make the following edits (as shown in the image below):
 
 * ``project`` should have the correct anonymization project (usually 'Wetenschap-Algemeen')
 
