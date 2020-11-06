@@ -98,7 +98,7 @@ anonapi.settings module
 .. _anonapi_testresources:
 
 anonapi.testresources module
------------------------
+----------------------------
 
 .. automodule:: anonapi.testresources
    :members:

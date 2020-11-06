@@ -1,13 +1,13 @@
-.. _manual:
+.. _tutorials:
 
-===========
-User Manual
-===========
+=========
+Tutorials
+=========
 
-Detailed step-by-step guides on how to perform particular tasks with anonapi.
+Step-by-step instructions on how to perform particular tasks with anonapi.
 
 .. Note::
-    The guides use windows paths and screenshots, but all commands work the same way for linux. In addition,
+    These instructions use windows paths and screenshots, but all commands work the same way for linux. In addition,
     :ref:`input files<concepts_input_file>` are referred to as excel files, but csv format is also accepted
 
 
@@ -20,15 +20,15 @@ How to anonymize data when you have a list of accession numbers
 
 Requirements
 ------------
-This guide assumes you already have the following:
+For this tutorial you need the following:
 
 * ``C:\project_folder`` - A folder that will hold records of the jobs created. Anonymized data does not have to go into this folder.
 
 * ``C:\project_folder\accession_numbers.xlsx`` - An excel or csv :ref:`input file<concepts_input_file>` containing
-  a list of accession numbers that you want to anonymize. This file could be anywhere, but for convenience it is in the
-  project folder in this guide.
+  a list of accession numbers that you want to anonymize. This file could be anywhere, but for convenience it is inside the
+  project folder in this tutorial.
 
-The path and file above are just examples used in this guide. They can be anything you like.
+The path and file above are just examples. They can be anything you like.
 
 Step 1: prepare input file
 --------------------------

@@ -21,7 +21,7 @@ communicating with servers running `anonymization_server`_ code. You can use the
    installation
    configuration
    usage
-   manuals
+   tutorials
    command_reference
    concepts
    troubleshooting
