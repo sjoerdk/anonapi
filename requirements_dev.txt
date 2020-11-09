@@ -5,12 +5,12 @@ factory-boy==3.1.0
 flake8==3.8.4
 Click==7.1.2
 openpyxl==3.0.5
-pytest==6.1.1
+pytest==6.1.2
 pytest-runner==5.2
 pydicom==2.1.1
-tqdm==4.50.2
+tqdm==4.51.0
 sphinx_rtd_theme==0.5.0
-Sphinx==3.2.1
+Sphinx==3.3.0
 sphinx-autodoc-typehints==1.11.0
 tox==3.20.1
 twine==3.2.0
