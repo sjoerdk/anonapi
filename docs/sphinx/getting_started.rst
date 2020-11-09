@@ -9,7 +9,7 @@ Installation
 .. highlight:: shell
 
 
-To install AnonAPI, run this command in your terminal:
+To install AnonAPI, run this command in a :ref:`command prompt<usage_starting_a_command_prompt>`:
 
 .. code-block:: console
 

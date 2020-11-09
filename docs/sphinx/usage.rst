@@ -12,8 +12,7 @@ with multiple jobs. For more detailed step-by-step instructions on performing a 
 
 Starting a command prompt
 =========================
-After :ref:`installation` and :ref:`configuration` you can use the CLI from a terminal, or command prompt:
-
+Anonapi commands are given from a command line or command prompt:
 
 Windows
 -------
@@ -26,7 +25,6 @@ To start a command prompt: press the windows ``start menu`` -> type ``cmd``  pre
 
 
 .. _usage_starting_a_command_prompt_windows_in_folder:
-
 
 To start a command prompt in a specific folder: find the folder in windows explorer, then ``shift + right-click`` on
 that folder -> ``Open command prompt here``  (Dutch: `Opdrachtvenster hier openen`).
