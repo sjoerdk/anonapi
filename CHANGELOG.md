@@ -1,5 +1,26 @@
 # Changelog
 
+## [v1.5.4](https://github.com/sjoerdk/anonapi/tree/v1.5.4) (2020-11-09)
+
+[Full Changelog](https://github.com/sjoerdk/anonapi/compare/v1.5.3...v1.5.4)
+
+**Implemented enhancements:**
+
+- Add tutorials for anonymizing from PACS, share [\#284](https://github.com/sjoerdk/anonapi/issues/284)
+
+**Fixed bugs:**
+
+- Fresh install of anonapi with active mapping = None will yield confusing error [\#282](https://github.com/sjoerdk/anonapi/issues/282)
+
+**Merged pull requests:**
+
+- Update pydicom to 2.1.1 [\#283](https://github.com/sjoerdk/anonapi/pull/283) ([pyup-bot](https://github.com/pyup-bot))
+- Update sphinx to 3.3.0 [\#281](https://github.com/sjoerdk/anonapi/pull/281) ([pyup-bot](https://github.com/pyup-bot))
+- Update pytest to 6.1.2 [\#279](https://github.com/sjoerdk/anonapi/pull/279) ([pyup-bot](https://github.com/pyup-bot))
+- Update tqdm to 4.51.0 [\#272](https://github.com/sjoerdk/anonapi/pull/272) ([pyup-bot](https://github.com/pyup-bot))
+- Update pip to 20.2.4 [\#270](https://github.com/sjoerdk/anonapi/pull/270) ([pyup-bot](https://github.com/pyup-bot))
+- Update sphinx-autodoc-typehints to 1.11.1 [\#269](https://github.com/sjoerdk/anonapi/pull/269) ([pyup-bot](https://github.com/pyup-bot))
+
 ## [v1.5.3](https://github.com/sjoerdk/anonapi/tree/v1.5.3) (2020-11-03)
 
 [Full Changelog](https://github.com/sjoerdk/anonapi/compare/v1.5.2...v1.5.3)
