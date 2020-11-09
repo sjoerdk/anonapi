@@ -147,7 +147,8 @@ For this tutorial you need the following:
   that you wish to anonymize. The folders `may` contain subfolders and/or non-DICOM files. Files in subfolders will be
   included. Non-DICOM files will be ignored. For this tutorial, we will assume the following simple structure with 5
   patients:
-  .. image:: static/server_share_mydata_example.png
+
+    .. image:: static/server_share_mydata_example.png
         :scale: 100 %
         :alt: command edits after anon map init
 
