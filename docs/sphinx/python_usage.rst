@@ -23,6 +23,7 @@ To use it in a python file:
     # Get some information on first few jobs
     jobs_info = client.get("get_jobs")
 
+
 Testing
 =======
 The :mod:`anonapi.testresources` module can be used to generate mock responses without the need for a live server:

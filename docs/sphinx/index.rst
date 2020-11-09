@@ -1,16 +1,30 @@
-anonapi Documentation
+anonapi documentation
 =====================
 
-The Anonymization server web API makes it possible to anonymize data either from disk or from PACS. It does so by
-communicating with servers running `anonymization_server`_ code. You can use the anonapi lib in two ways:
+Getting started
+---------------
+If you have not installed anonapi before, try :doc:`getting_started` or :ref:`quick_start`
 
-* Via command line. This does not require programming knowledge. To quickly get going using the command line,
-  see :ref:`quick_start`
-* From python. This allows for more detailed control, but requires python coding knowledge. For more information on this,
-  see :ref:`python_usage`
+Tutorials
+---------
+Step-by-step instruction on how to anonymize data can be found in the :ref:`tutorials` section
+
+Usage
+-----
+More detailed than tutorials, The :ref:`Usage` section contains details on things like canceling jobs, working with
+multiple jobs at once, etc.
+
+Command reference
+-----------------
+The :ref:`command reference section <command_reference>` Lists all available anonapi commands and their options
 
 
-.. _anonymization_server: https://github.com/DIAGNijmegen/anonymization_server
+For developers
+--------------
+* Full API reference can be found in :doc:`modules`
+* Code examples and pointers for testing are in the :ref:`python usage<python_usage>` section
+* For code standard, PR guide and tips on updating the docs see :doc:`contributing`
+
 
 .. toctree::
    :maxdepth: 2
@@ -18,8 +32,7 @@ communicating with servers running `anonymization_server`_ code. You can use the
 
    readme
    quickstart
-   installation
-   configuration
+   getting_started
    usage
    tutorials
    command_reference
@@ -29,6 +42,7 @@ communicating with servers running `anonymization_server`_ code. You can use the
    modules
    contributing
    authors
+   release_notes
 
 Indices and tables
 ==================

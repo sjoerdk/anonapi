@@ -14,10 +14,12 @@ Quick start
 .. code-block:: console
 
     $ pip install anonapi
-    $ anon settings user set-username z1234             # replace z1234 with your username
+    $ anon settings user set-username z1234    # replace z1234 with your username
     $ anon server add server1 https://anonapi  # replace https://anonapi with actual url
     $ anon server activate server1
     $ anon server jobs                         # get some info on the jobs running on server1
 
 
 More commands can be found in :ref:`usage` and in the :ref:`command_reference`
+
+For more details on installation and configuration see :doc:`gettings started<getting_started>`.

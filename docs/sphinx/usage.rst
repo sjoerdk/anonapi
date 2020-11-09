@@ -5,15 +5,14 @@ Usage
 =====
 
 Information on how to combine one or more anonapi :ref:`commands<command_reference>` to do things like resetting jobs, working
-with multiple jobs. For more detailed step-by-step instructions on performing a specific task, see :ref:`manual`
+with multiple jobs. For more detailed step-by-step instructions on performing a specific task, see :ref:`tutorials`
 
 
 .. _usage_starting_a_command_prompt:
 
 Starting a command prompt
 =========================
-After :doc:`installation` and :doc:`configuration` you can use the CLI from a terminal, or command prompt:
-
+After :ref:`installation` and :ref:`configuration` you can use the CLI from a terminal, or command prompt:
 
 
 Windows
@@ -274,8 +273,9 @@ The mapping needs to be edited in two ways:
 
 * the `root_source_path` parameter needs to be changed into a :ref:`UNC path<concepts_unc_paths>` for the anonymization
   server to be able to find the data.
-  .. tip::
-    To find out the UNC path for a windows drive letter or a linux mount, see :ref:`concepts_finding_a_unc_path`
+
+    .. tip::
+        To find out the UNC path for a windows drive letter or a linux mount, see :ref:`concepts_finding_a_unc_path`
 
 * initially the mapping contains several rows with example data. These can be removed
 * The `destination_path` parameter will probably need to be changed

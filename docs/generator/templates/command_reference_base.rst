@@ -7,7 +7,7 @@ Command reference
 Information on specific anonapi CLI functions. For more how-to's on achieving specific goals, see :doc:`usage`
 
 
-.. note::
+.. tip::
     Detailed help on commands is often available directly from the command prompt by adding ``--help`` to any command. See :ref:`getting_info_on_commands`
 
 status

@@ -11,7 +11,7 @@ Information on some key concepts in the anonapi CLI
 Batch
 =====
 
-A file holding one or more job ids. This makes it possible to easily query or modify several jobs at once. See :ref:`batch`
+A file holding one or more job ids. This makes it possible to easily query or modify several jobs at once. See the :ref:`batch command<batch>`.
 
 .. _concepts_mapping:
 

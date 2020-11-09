@@ -1,6 +1,39 @@
+===============
+Getting started
+===============
+
+.. _installation:
+
+Installation
+============
 .. highlight:: shell
 
-=============
+
+To install AnonAPI, run this command in your terminal:
+
+.. code-block:: console
+
+    $ pip install anonapi
+
+This is the preferred method to install AnonAPI, as it will always install the most recent stable release.
+
+If you don't have `pip`_ installed, this `Python installation guide`_ can guide
+you through the process.
+
+.. _pip: https://pip.pypa.io
+.. _Python installation guide: http://docs.python-guide.org/en/latest/starting/installation/
+
+
+If you installed anonapi before and want to upgrade to the latest version:
+
+.. code-block:: console
+
+    $ pip install --upgrade anonapi
+
+
+
+.. _configuration:
+
 Configuration
 =============
 
@@ -50,6 +83,3 @@ Obtain an API token. This might require your z-number password)
 .. code-block:: console
 
     $ anon settings user get-token
-
-
-
