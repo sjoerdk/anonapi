@@ -6,8 +6,11 @@ Put these in separate module because rows appear in several guises throughout
 the job creation process and I want a unified type
 
 """
+import string
+import random
 from copy import copy
-from typing import Any, List, Optional, Type
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 from anonapi.exceptions import AnonAPIException
 from fileselection.fileselection import FileSelectionFile
@@ -15,18 +18,16 @@ from pathlib import Path, PureWindowsPath
 
 
 class SourceIdentifier:
-    """A input representing a place where data is coming from
+    """An input representing a place where data is coming from
 
     Attributes
     ----------
-    key: str
-        Class level attribute to identify this class of identifiers
     identifier: str
         Instance level attribute giving the actual value for this identifier.
         For example a specific root_path or UID
     """
 
-    key = "base"  # key with which this class is identified
+    key: str = "base"  # key with which this class is identified
 
     def __init__(self, identifier):
         self.identifier = self.parse_identifier(identifier)
@@ -61,7 +62,7 @@ class SourceIdentifier:
 
         Parameters
         ----------
-        identifier, str
+        identifier: str
             Valid source identifier, like 'root_path:/tmp/'
 
         Raises
@@ -145,7 +146,7 @@ class SourceIdentifierFactory:
         FileSelectionIdentifier,
     ]
 
-    def get_source_identifier_for_key(self, key):
+    def get_source_identifier_for_key(self, key: str) -> SourceIdentifier:
         """Cast given key input back to identifier object
 
         Parameters
@@ -284,11 +285,12 @@ class Project(Parameter):
 
 
 class PathParameter(Parameter):
-    """A parameter that can refer to a root_path on disk or share
+    """A parameter that can refer to a path on disk or share
 
     Always has a 'path' property that can get and set the path part
     """
 
+    field_name = "path"
     description = "A parameter describing a path"
 
     def __init__(self, value: PureWindowsPath = None):
@@ -340,6 +342,19 @@ class SourceIdentifierParameter(PathParameter):
         """
         super().__init__()
         self.value = SourceIdentifierFactory().get_source_identifier_for_key(str(value))
+
+    @classmethod
+    def init_from_source_identifier(cls, obj: SourceIdentifier):
+        """Create a source identifier with the given source
+
+        TODO: rewrite this. This method shows that the whole class tree needs
+         rewriting. Why is SourceIdentifier not a Parameter? This makes no sense
+         and is very hard to follow. Also. Why is SourceIdentifier a PathParameter
+         even though it has non-path children such as StudyInstanceUIDIdentifier?
+        """
+        base = cls(value="base:empty")  # dummy value just to make __init__ pass..
+        base.value = obj
+        return base
 
     @property
     def path(self) -> Optional[Path]:
@@ -421,7 +436,7 @@ class ParameterFactory:
     def parse_from_key_value(
         key, value, parameter_types: Optional[List[Type[Parameter]]] = None
     ) -> Parameter:
-        """
+        """Parse a key and value string into a valid Parmameter object
 
         Parameters
         ----------
@@ -458,40 +473,117 @@ class ParameterFactory:
             f"Tried {[x.field_name for x in ALL_PARAMETERS]}"
         )
 
+    @staticmethod
+    def generate_pseudo_name() -> PseudoName:
+        """Random pseudonym parameter. 8 characters, like '8GW7FEDQ'"""
+        return PseudoName(
+            "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        )
+
+    @staticmethod
+    def generate_description() -> Description:
+        """Description with curent date. Like 'generated_02_23_2020'"""
+        return Description(f"generated_" f"{datetime.today().strftime('%B_%d_%Y')}")
+
 
 class ParameterSet:
-    """A collection of parameter_types with some convenient methods for checking
-    existence of specific parameter_types etc..
-
+    """Contains at most one instance of each parameter type. Allows questions like
+    'does this set contain a parameter of type X'. Also offers methods for updating
+    one set with another based on types
     """
 
-    def __init__(
-        self, parameters: List[Parameter], default_parameters: List[Parameter] = None
-    ):
+    def __init__(self, parameters: List[Parameter]):
         """
 
         Parameters
         ----------
         parameters: List[Parameter]
-            The parameter_types in this set
-        default_parameters: List[Parameter]
-            Include these parameter_types, unless overwritten in parameter_types
+            The parameters in this set
         """
-        if not default_parameters:
-            default_parameters = []
-        param_dict = {type(x): x for x in default_parameters}
-        param_dict.update({type(x): x for x in parameters})
+        self.parameters = parameters
+
+    def __iter__(self):
+        return iter(self.parameters)
+
+    def update(self, other: "ParameterSet"):
+        """Like dict.update(other). Add new parameters from other. If a parameter
+        already exists, overwrite with value from other
+        """
+        param_dict = {type(x): x for x in self.parameters}
+        param_dict.update({type(x): x for x in other})
         self.parameters = list(param_dict.values())
 
-    def get_param_by_type(self, type_in) -> Optional[Parameter]:
+    def get_param_by_type(self, type_in: Type[Parameter]) -> Optional[Parameter]:
         """Return the first Parameter instance that is (or derives from) type
         or None
         """
         return next((x for x in self.parameters if isinstance(x, type_in)), None)
 
     def get_params_by_type(self, type_in) -> List[Parameter]:
-        """Return all parameter_types that are type or subtype, or empty list"""
+        """Return all parameters that are type or subtype, or empty list"""
         return [x for x in self.parameters if isinstance(x, type_in)]
+
+    def get_source_parameter(self) -> SourceIdentifierParameter:
+        """Get the first parameter indicating a data source from this set
+
+        Returns
+        -------
+        SourceIdentifierParameter
+
+        Raises
+        ------
+        ParameterException
+            If there is no source identifier in this set
+        """
+        try:
+            return next(x for x in self.parameters if self.is_source_identifier(x))
+        except StopIteration:
+            raise ParameterException(f"No source parameter found in {self.parameters}")
+
+    def split_parameter(
+        self, type_in: Type[Parameter]
+    ) -> Tuple[Parameter, List[Parameter]]:
+        """Split this set into (the first) instance of parameter and rest.
+
+        Returns
+        -------
+        Tuple[Parameter,List[Parameter]]
+
+        Raises
+        ------
+        ParameterException
+            If no isntance of type_in can be found
+        """
+        param = self.get_param_by_type(type_in=type_in)
+        rest = [x for x in self.parameters if not x == param]
+
+        return param, rest
+
+    def split_source_parameter(
+        self,
+    ) -> Tuple[SourceIdentifierParameter, List[Parameter]]:
+        """Split this set into (the first) source parameter and rest.
+
+        Useful for creating jobs. A missing source parameter is often a deal breaker,
+        while other parameters are often optional
+
+        Returns
+        -------
+        Tuple[SourceIdentifierParameter,List[Parameter]]
+
+        Raises
+        ------
+        ParameterException
+            If no source parameter can be found
+        """
+        return self.split_parameter(type_in=SourceIdentifierParameter)
+
+    def as_dict(self) -> Dict[str, Parameter]:
+        """Dictionary {field name: Parameter with this field_name}. Makes it easier
+        to retrieve a parameter of a specific type
+
+        """
+        return {x.field_name: x for x in self.parameters}
 
     @staticmethod
     def is_source_identifier(parameter):

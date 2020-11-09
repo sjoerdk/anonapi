@@ -6,8 +6,8 @@ from pathlib import Path
 import pytest
 
 from anonapi.cli import entrypoint
-from anonapi.objects import RemoteAnonServer
-from anonapi.parameters import DestinationPath, Project
+from anonapi.exceptions import AnonAPIException
+from anonapi.parameters import Project
 from anonapi.settings import (
     AnonClientSettingsException,
     AnonClientSettings,
@@ -38,19 +38,6 @@ def test_settings_file(test_settings_folder):
     return test_settings_folder / "settings.yml"
 
 
-@pytest.fixture
-def some_settings() -> AnonClientSettings:
-    return AnonClientSettings(
-        servers=[RemoteAnonServer(name="test", url="https://sometest")],
-        user_name="testuser",
-        user_token="abcdedtoken",
-        job_default_parameters=[
-            Project(value="testproject"),
-            DestinationPath(value=Path(r"\\server\share")),
-        ],
-    )
-
-
 def assert_test_settings_file_contents(settings: AnonClientSettings):
     """Asserts that the given settings do indeed contain the contents expected from
     test_settings/settings.yml
@@ -68,6 +55,14 @@ def assert_test_settings_file_contents(settings: AnonClientSettings):
 def test_settings_load(test_settings_folder):
     settings = AnonClientSettingsFromFile(test_settings_folder / "settings.yml")
     assert_test_settings_file_contents(settings)
+
+
+def test_settings_load_active_mapping_none(tmp_path):
+    """A common situation for newly installed anonapi recreates #282"""
+    settings_path = tmp_path / "test_settings.yaml"
+    DefaultAnonClientSettings(active_mapping_file=None).save_to_file(settings_path)
+    settings = AnonClientSettingsFromFile(settings_path)
+    assert settings.active_mapping_file is None
 
 
 def test_settings_from_file(test_settings_folder):
@@ -191,8 +186,33 @@ def test_load_v1_4_settings(test_settings_folder):
     )
 
 
+def test_load_garbage():
+    """Loading complete garbage should yield normal exception"""
+    with pytest.raises(AnonAPIException):
+        AnonClientSettings.load_from(
+            StringIO("Not a dictionary\n probably yaml though")
+        )
+    with pytest.raises(AnonAPIException):
+        AnonClientSettings.load_from("just a string??")
+
+
 def test_load_v1_4_settings_alternate(test_settings_folder):
     """Recreates live exception"""
     AnonClientSettingsFromFile(
         test_settings_folder / "settings_pre_1_4_alternate.yml"
     )  # should just not crash
+
+
+def test_settings_save_load_active_mapping(test_settings_folder):
+    """Recreates error saving Path objects in settings
+
+    Did not realise that YAML saves Path instances as weird full lists. Probably
+    the most universal, but I want the settings file to be human readable in that
+    does not do it. Casting Path to string for serialization now
+    """
+    settings = AnonClientSettingsFromFile(test_settings_folder / "settings.yml")
+    path = Path("/some/path/settingsfile")
+    settings.active_mapping_file = path
+    settings.save()
+    loaded = AnonClientSettingsFromFile(test_settings_folder / "settings.yml")
+    assert loaded.active_mapping_file == path

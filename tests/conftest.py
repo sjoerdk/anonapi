@@ -1,15 +1,19 @@
 """Conftest.py is loaded for each pytest. Contains fixtures shared by multiple
 tests, amongs other things
 """
+import logging
 import shutil
 from pathlib import Path
+from unittest.mock import Mock
 
+import click
 from _pytest.fixtures import fixture
 from click.testing import CliRunner
 from fileselection.fileselection import FileSelectionFolder
 
 from anonapi.context import AnonAPIContext
 from anonapi.client import WebAPIClient, AnonClientTool
+from anonapi.logging import AnonAPILogController
 from anonapi.objects import RemoteAnonServer
 from anonapi.parameters import DestinationPath, Project
 from anonapi.settings import DefaultAnonClientSettings
@@ -25,6 +29,14 @@ from tests.factories import (
     ProjectFactory,
 )
 from tests import RESOURCE_PATH
+
+
+@fixture(autouse=True)
+def use_logging():
+    """Many cli tests check stdout. Make sure internal logging actually writes
+    to stdout. Without this fixture log messages would not be written
+    """
+    AnonAPILogController(logging.getLogger())
 
 
 @fixture
@@ -56,6 +68,14 @@ def mocked_requests_client():
     requests_mock = RequestsMock()
     client.requestslib = requests_mock
     return client, requests_mock
+
+
+@fixture
+def mock_launch(monkeypatch) -> Mock:
+    """Replaces click.launch() with a mock"""
+    mock_launch = Mock(spec=click.launch)
+    monkeypatch.setattr("click.launch", mock_launch)
+    return mock_launch
 
 
 @fixture
@@ -94,7 +114,7 @@ def a_folder_with_mapping_diverse(tmpdir):
 
 
 @fixture
-def folder_with_some_dicom_files(tmpdir):
+def folder_with_some_dicom_files(tmpdir) -> FileSelectionFolder:
     """A folder with some structure, some dicom files and some non-dicom files.
     No FileSelectionFile saved yet
     """
@@ -118,7 +138,7 @@ def a_file_selection(tmpdir):
 
 
 @fixture
-def mock_api_context(tmpdir):
+def mock_api_context(tmpdir) -> AnonAPIContext:
     """Context required by many anonapi commands. Will yield a temp folder as
     current_dir
     """
@@ -174,22 +194,23 @@ def mock_main_runner_with_mapping(mock_main_runner, a_folder_with_mapping):
 @fixture()
 def mock_from_mapping_runner(mock_main_runner_with_mapping):
     """Mock runner that has everything to make a call to from-mapping work:
-    * Mapping defined in current dir
+    * Mapping defined in current dir and activated
     * Default job rows are non-empty
     """
 
-    mock_main_runner_with_mapping.get_context().settings.job_default_parameters = [
+    settings = mock_main_runner_with_mapping.get_context().settings
+    settings.job_default_parameters = [
         Project(value="Test_project"),
         DestinationPath(value=Path("//test/output/root_path")),
     ]
+    current_dir = mock_main_runner_with_mapping.get_context().current_dir
+    settings.active_mapping_file = current_dir / "anon_mapping.csv"
 
     return mock_main_runner_with_mapping
 
 
 class MockContextCliRunner(CliRunner):
-    """a click.testing.CliRunner that always passes a mocked context to any call,
-    making sure any operations on current dir are done in a temp folder
-    """
+    """a click.testing.CliRunner that always passes a mocked context to any call"""
 
     def __init__(self, *args, mock_context, **kwargs):
 
@@ -234,13 +255,8 @@ class AnonAPIContextRunner(MockContextCliRunner):
         """
         self.mock_context.current_dir = path
 
-    def get_context(self):
-        """Get the context instance that is injected by this runner
-
-        Returns
-        -------
-        AnonAPIContext
-        """
+    def get_context(self) -> AnonAPIContext:
+        """Get the context instance that is injected by this runner"""
         return self.mock_context
 
 

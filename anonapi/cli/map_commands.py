@@ -1,4 +1,5 @@
 """Click group and commands for the 'map' subcommand"""
+import logging
 import os
 from pathlib import Path
 from typing import List, Optional
@@ -9,21 +10,30 @@ import getpass
 import random
 import string
 
-from click.exceptions import BadParameter, ClickException
+from click.exceptions import BadParameter
 
-from anonapi.cli.click_parameters import WildcardFolder
-from anonapi.cli.click_types import FileSelectionFileParam
-from anonapi.cli.select_commands import create_dicom_selection_click
+from anonapi.cli.click_parameter_types import (
+    AccessionNumberFile,
+    FileSelectionFileParam,
+    PathParameterFile,
+    WildcardFolder,
+)
+from anonapi.selection import create_dicom_selection
 from anonapi.context import AnonAPIContext
 from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
 from anonapi.mapper import (
-    MappingFolder,
+    DEFAULT_MAPPING_NAME,
+    MappingFile,
     ExampleJobParameterGrid,
     MapperException,
     Mapping,
+    MappingParameterSet,
     get_local_dialect,
 )
 from anonapi.parameters import (
+    AccessionNumber,
+    ParameterSet,
+    PathParameter,
     SourceIdentifierFactory,
     DestinationPath,
     PseudoName,
@@ -37,16 +47,44 @@ from anonapi.parameters import (
 )
 from anonapi.settings import AnonClientSettings, DefaultAnonClientSettings
 
+logger = logging.getLogger(__name__)
+
 
 class MapCommandContext:
-    def __init__(self, current_path, settings: AnonClientSettings):
-        self.current_path = current_path
+    def __init__(self, current_dir, settings: AnonClientSettings):
+        self.current_dir = current_dir
         self.settings = settings
 
-    def get_current_mapping_folder(self):
-        return MappingFolder(self.current_path)
+    def active_mapping_file_path(self) -> Optional[Path]:
+        return self.settings.active_mapping_file
 
-    def get_current_mapping(self):
+    def get_current_mapping_file(self) -> MappingFile:
+        """Get active MappingFile object. If none is active raise exception
+
+        Notes
+        -----
+        Active mapping file has not been parsed or even checked for existence.
+        This method might return a MappingFile that points to a non-existant file
+        or to a file with invalid Format. Use MappingFile.get_mapping() to be sure
+        of existence and validity
+
+        Returns
+        -------
+        MappingFile
+
+        Raises
+        ------
+        MapperException
+            If there is no active mapping file
+
+        """
+        if not self.active_mapping_file_path():
+            raise MapperException(
+                "No active mapping. Please " "use 'anon map active <mapping_file>'"
+            )
+        return MappingFile(self.settings.active_mapping_file)
+
+    def get_current_mapping(self) -> Mapping:
         """Load mapping from the current directory
 
         Returns
@@ -60,7 +98,7 @@ class MapCommandContext:
             When no mapping could be loaded from current directory
 
         """
-        return self.get_current_mapping_folder().get_mapping()
+        return self.get_current_mapping_file().get_mapping()
 
 
 pass_map_command_context = click.make_pass_decorator(MapCommandContext)
@@ -74,18 +112,19 @@ def main(context: AnonAPIContext, ctx):
 
     # both anonapi_context and base click ctx are passed to be able change ctx.obj
     ctx.obj = MapCommandContext(
-        current_path=context.current_dir, settings=context.settings
+        current_dir=context.current_dir, settings=context.settings
     )
 
 
 @click.command()
-@handle_anonapi_exceptions
 @pass_map_command_context
+@handle_anonapi_exceptions
 def status(context: MapCommandContext):
     """Show mapping in current directory"""
-
-    mapping = context.get_current_mapping()
-    click.echo(mapping.to_string())
+    mapping_file = context.get_current_mapping_file()
+    info = mapping_file.get_mapping().to_string()  # do this to fail early
+    logger.info(f"Mapping at {mapping_file.file_path}")
+    logger.info(info)
 
 
 def get_initial_options(settings: AnonClientSettings) -> List[Parameter]:
@@ -109,17 +148,37 @@ def get_initial_options(settings: AnonClientSettings) -> List[Parameter]:
 
 @click.command()
 @pass_map_command_context
+@handle_anonapi_exceptions
 def init(context: MapCommandContext):
-    """Save a default mapping in the current folder"""
-    folder = context.get_current_mapping_folder()
+    """Save a default mapping in a default location in the current folder"""
+    mapping_file = MappingFile(Path(context.current_dir) / DEFAULT_MAPPING_NAME)
+    mapping_file.save_mapping(create_example_mapping(context))
+    logger.info(f"Initialised example mapping in {mapping_file.file_path}")
+    _activate(context.settings, mapping_path=mapping_file.file_path)
 
-    mapping = create_example_mapping(context)
-    folder.save_mapping(mapping)
-    click.echo(f"Initialised example mapping in {folder.DEFAULT_FILENAME}")
+
+@click.command()
+@pass_map_command_context
+@handle_anonapi_exceptions
+def activate(context: MapCommandContext):
+    """All subsequent mapping actions will target this folder"""
+    mapping_file_path = Path(context.current_dir) / DEFAULT_MAPPING_NAME
+    if not mapping_file_path.exists():
+        raise MapperException(
+            f"Could not find mapping file at " f"'{mapping_file_path}'"
+        )
+    _activate(context.settings, mapping_path=mapping_file_path)
+
+
+def _activate(settings: AnonClientSettings, mapping_path: Path):
+    """Internal method called from multiple click methods"""
+    settings.active_mapping_file = mapping_path
+    settings.save()
+    logger.info(f"Activated mapping at {mapping_path}")
 
 
 def create_example_mapping(context: MapCommandContext = None) -> Mapping:
-    """A default mapping with some example parameter_types
+    """A default mapping with some example parameters
 
     Parameters
     ----------
@@ -129,9 +188,9 @@ def create_example_mapping(context: MapCommandContext = None) -> Mapping:
     """
     if not context:
         context = MapCommandContext(
-            current_path=os.getcwd(), settings=DefaultAnonClientSettings()
+            current_dir=os.getcwd(), settings=DefaultAnonClientSettings()
         )
-    options = [RootSourcePath(context.current_path)] + get_initial_options(
+    options = [RootSourcePath(context.current_dir)] + get_initial_options(
         context.settings
     )
     mapping = Mapping(
@@ -146,64 +205,126 @@ def create_example_mapping(context: MapCommandContext = None) -> Mapping:
 
 @click.command()
 @pass_map_command_context
-def delete(context: MapCommandContext):
-    """Delete mapping in current folder"""
-    folder = context.get_current_mapping_folder()
-    if not folder.has_mapping():
-        raise ClickException("No mapping defined in current folder")
-    folder.delete_mapping()
-    click.echo(f"Removed mapping in current dir")
-
-
 @handle_anonapi_exceptions
-def get_mapping(context):
-    return context.get_current_mapping()
+def delete(context: MapCommandContext):
+    """Delete current active mapping"""
+    path = context.get_current_mapping_file().file_path
+    try:
+        os.remove(path)
+        logger.info(f"Removed mapping at {path}")
+    except FileNotFoundError as e:
+        raise MapperException(f"Error deleting mapping: {e}")
 
 
 @click.command()
 @pass_map_command_context
 @click.argument("paths", type=WildcardFolder(exists=True), nargs=-1)
 @click.option(
+    "-f",
+    "--input-file",
+    "input_file",
+    type=PathParameterFile(),
+    help="add all study folders in this xlsx or csv file to mapping. Looks "
+    "for column 'folder' in file. If a column 'pseudoID' is present,"
+    "adds these instead of auto-generating",
+)
+@click.option(
     "--check-dicom/--no-check-dicom",
     default=False,
     help="--check-dicom: Open each file to check whether it is valid DICOM. "
     "--no-check-dicom: Add all files that look like DICOM (exclude files with"
-    " known file extensions like .txt or .xml)"
-    " Not checking is faster, but the anonymization fails if non-DICOM files"
-    " are included. off by default",
+    " known file extensions like .txt or .xml). off by default",
 )
-def add_study_folders(context: MapCommandContext, paths, check_dicom):
-    """Add all dicom files in given folder to map"""
+@handle_anonapi_exceptions
+def add_study_folders(context: MapCommandContext, paths, input_file, check_dicom):
+    """Add all dicom files in given folders to mapping"""
+    if input_file:
+        # an input file was given and parsed already. Use the rows from that.
+        # Split off the path to add from any other parameters in that row
+        input_rows = {}
+        for row in input_file.rows:
+            path_param, rest = ParameterSet(row).split_parameter(PathParameter)
+            input_rows[path_param.path] = rest
 
-    # flatten paths, which is a tuple (due to nargs -1) of lists (due to wildcards)
-    paths = [path for wildcard in paths for path in wildcard]
-    click.echo(f"Adding {len(paths)} paths to mapping")
+    else:
+        # No file to add, add folders given as input.
+        # flatten paths, which is a tuple (due to nargs -1) of lists (due to
+        # wildcards)
+        paths = [path for wildcard in paths for path in wildcard]
+        input_rows = {path: [] for path in paths}
 
-    for path in paths:
-        mapping = add_path_to_mapping_click(
-            Path(path),
-            get_mapping(context),
-            cwd=context.current_path,
-            check_dicom=check_dicom,
+    logger.info(f"Adding {len(input_rows)} paths to mapping")
+
+    mapping_file = context.get_current_mapping_file()
+    mapping = mapping_file.get_mapping()
+    for path, params in input_rows.items():
+        logger.info(f"Adding '{path}' to mapping")
+        fileselection = find_dicom_files(
+            Path(path), cwd=context.current_dir, check_dicom=check_dicom
         )
-        context.get_current_mapping_folder().save_mapping(mapping)
-        click.echo("")  # make adding of separate folders more readable
-    click.echo(f"Done. Added '{paths}' to mapping")
+        # assert this is a valid set of parameters and add defaults if needed
+        mapping.grid.append_row(
+            MappingParameterSet(parameters=[fileselection] + params).parameters
+        )
+
+        # save each time so we don't loose all when an error occurs
+        mapping_file.save_mapping(mapping)
+        logger.info("")  # extra newline makes separate folder adding more readable
+    logger.info(f"Done. Added '{[str(x) for x in input_rows.keys()]}' to mapping")
 
 
-def add_path_to_mapping_click(
-    path: Path, mapping: Mapping, check_dicom: bool = True, cwd: Optional[Path] = None
-):
-    """Create a fileselection in the given path and add it to the given mapping
+@click.command()
+@pass_map_command_context
+@click.argument("accession_numbers", type=str, nargs=-1)
+@click.option(
+    "-f",
+    "--input-file",
+    "input_file",
+    type=AccessionNumberFile(),
+    help="add all accession numbers xlsx or csv file to mapping. Looks "
+    "for column 'accession_number' in file. If a column 'pseudoID' is present,"
+    "adds these instead of auto-generating pseudonym",
+)
+@handle_anonapi_exceptions
+def add_accession_numbers(context: MapCommandContext, accession_numbers, input_file):
+    """Add accession numbers to an existing mapping"""
+    if input_file:
+        # an input file was given and parsed already. Use the rows from that.
+        # Split off the path to add from any other parameters in that row
+        input_rows = []
+        for row in input_file.rows:
+            accession_number, rest = ParameterSet(row).split_parameter(AccessionNumber)
+            input_rows.append(
+                [SourceIdentifierParameter(accession_number.to_string(delimiter=":"))]
+                + rest
+            )
+    else:
+        # accession numbers were given in cli directly, make into source parameters
+        input_rows = [
+            [SourceIdentifierParameter(AccessionNumber(x).to_string(delimiter=":"))]
+            for x in accession_numbers
+        ]
 
-    Meant to be called from a click function. Contains calls to click.echo().
+    mapping_file = context.get_current_mapping_file()
+    mapping = mapping_file.get_mapping()
+    for row in input_rows:
+        # assert this is a valid set of parameters and add defaults if needed
+        logger.info(f"Adding {row[0].value}")
+        mapping.grid.append_row(MappingParameterSet(parameters=row).parameters)
+
+    mapping_file.save_mapping(mapping)
+    logger.info(f"Done. Added {len(input_rows)} accession numbers")
+
+
+def find_dicom_files(
+    path: Path, check_dicom: bool = True, cwd: Optional[Path] = None
+) -> SourceIdentifierParameter:
+    """Finds all DICOM files in the given path and saves this as fileselection
 
     Parameters
     ----------
     path: Path
         Path to create fileselection in
-    mapping: Mapping
-        Mapping to add the fileselection to
     check_dicom: bool, optional
         open each file to see whether it is valid DICOM. Setting False is faster
         but could include files that will fail the job in IDIS. Defaults to True
@@ -218,11 +339,11 @@ def add_path_to_mapping_click(
 
     Returns
     -------
-    Mapping
-        The mapping with path added
+    SourceIdentifierParameter
+        A reference to the fileselection created
     """
     # create a selection from all dicom files in given root_path
-    file_selection = create_dicom_selection_click(path, check_dicom)
+    file_selection = create_dicom_selection(path, check_dicom)
 
     # make path relative if requested
     if cwd:
@@ -231,32 +352,26 @@ def add_path_to_mapping_click(
             file_selection.data_file_path = path.relative_to(cwd)
 
     # how to refer to this new file selection
-    file_selection_identifier = FileSelectionIdentifier.from_object(file_selection)
-
-    patient_name = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
-    description = f"generated_{datetime.date.today().strftime('%B_%d_%Y')}"
-    row = [
-        SourceIdentifierParameter(file_selection_identifier),
-        PseudoName(patient_name),
-        Description(description),
-    ]
-    mapping.grid.rows.append(row)
-    return mapping
+    return SourceIdentifierParameter.init_from_source_identifier(
+        FileSelectionIdentifier.from_object(file_selection)
+    )
 
 
 @click.command()
 @pass_map_command_context
 @click.argument("selection", type=FileSelectionFileParam())
+@handle_anonapi_exceptions
 def add_selection(context: MapCommandContext, selection):
     """Add selection file to mapping"""
-    mapping = get_mapping(context)
+    mapping_file = context.get_current_mapping_file()
+    mapping = mapping_file.get_mapping()
     identifier = SourceIdentifierFactory().get_source_identifier_for_obj(selection)
-    # make identifier root_path relative to mapping
+    # make identifier root_path relative to current dir
     try:
-        identifier.identifier = context.get_current_mapping_folder().make_relative(
-            identifier.identifier
-        )
-    except MapperException as e:
+        # TODO: clean up identifier structure. The line below smells from yards away
+        identifier.identifier = identifier.identifier.relative_to(context.current_dir)
+
+    except ValueError as e:
         raise BadParameter(f"Selection file must be inside mapping folder:{e}")
 
     def random_string(k):
@@ -278,19 +393,20 @@ def add_selection(context: MapCommandContext, selection):
         ]
     )
 
-    context.get_current_mapping_folder().save_mapping(mapping)
-    click.echo(f"Done. Added '{identifier}' to mapping")
+    mapping_file.save_mapping(mapping)
+    logger.info(f"Done. Added '{identifier}' to mapping")
 
 
 @click.command()
 @pass_map_command_context
+@handle_anonapi_exceptions
 def edit(context: MapCommandContext):
-    """Edit the current mapping in OS default editor"""
-    mapping_folder = context.get_current_mapping_folder()
-    if mapping_folder.has_mapping():
-        click.launch(str(mapping_folder.full_path()))
+    """Edit the active mapping in OS default editor"""
+    path = context.get_current_mapping_file().file_path
+    if path.exists():
+        click.launch(str(path))
     else:
-        click.echo("No mapping file defined in current folder")
+        raise MapperException(f"No mapping file found at {path}")
 
 
 for func in [
@@ -298,7 +414,9 @@ for func in [
     init,
     delete,
     add_study_folders,
+    add_accession_numbers,
     edit,
     add_selection,
+    activate,
 ]:
     main.add_command(func)

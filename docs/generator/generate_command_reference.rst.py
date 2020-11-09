@@ -24,6 +24,7 @@ from jinja2 import Template
 from pathlib import Path
 from typing import List, Dict
 
+from anonapi.inputfile import ALL_COLUMN_TYPES
 from anonapi.parameters import (
     ALL_PARAMETERS,
     COMMON_GLOBAL_PARAMETERS,
@@ -257,7 +258,7 @@ class AnonApiContext:
 
     @property
     def all_parameters_table(self) -> str:
-        """Valid sphinx output listing all parameter_types"""
+        """Valid sphinx output listing all parameters"""
         return self.to_sphinx_table(ALL_PARAMETERS).as_string()
 
     @property
@@ -267,6 +268,19 @@ class AnonApiContext:
     @property
     def common_global_parameters_table(self) -> str:
         return self.to_sphinx_table(COMMON_GLOBAL_PARAMETERS).as_string()
+
+    @property
+    def all_column_types_table(self) -> str:
+        """The types of columns you can use in an input file.
+        type of parameter | column names that are recognized
+        """
+        rows = [
+            TableRow(x.parameter_type.field_name, ", ".join(x.header_names))
+            for x in ALL_COLUMN_TYPES
+        ]
+        return SphinxTable(
+            rows=rows, max_width=80, header=["Parameter", "Allowed column names"]
+        )
 
     @staticmethod
     def to_sphinx_table(parameters: List[Parameter]) -> SphinxTable:

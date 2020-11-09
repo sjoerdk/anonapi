@@ -68,19 +68,66 @@ Options
 Mapping
     Parameters that are different for each job. The following parameters can be set:
 
-    ============ ====================================================================
-    Parameter    Description                                                         
-    ============ ====================================================================
-    description  Job description, free text                                          
-    patient_id   Patient ID to set in anonymized data                                
-    patient_name Patient Name to set in anonymized data                              
-    source       Data to anonymize comes from this source                            
-    ============ ====================================================================
+    =========== =====================================================================
+    Parameter   Description                                                          
+    =========== =====================================================================
+    description Job description, free text                                           
+    pseudo_id   Pseudonym for Patient ID to set in anonymized data                   
+    pseudo_name Pseudonym for Patient name to set in anonymized data                 
+    source      Data to anonymize comes from this source                             
+    =========== =====================================================================
 
-    The value of the `source` parameter is a :ref:`source identifier <concepts_source_identifier>`. The different types of identifiers are
-    listed below.
+    The value of the `source` parameter is a :ref:`source identifier <concepts_source_identifier>`. The different types
+    of identifiers are listed below.
 
 For an overview of map functions, see :ref:`map`.
+
+.. _concepts_input_file:
+
+Input file
+==========
+A csv or excel file that contains one or more columns with folders, pseudonyms or accession numbers. A file like this
+can be used as an input for :ref:`map` functions such as :ref:`map_add_study_folders`.
+
+Example input file containing folders and pseudonyms:
+
+.. code-block:: text
+
+    folder        pseudonym
+    folder1       studyA
+    folder2/st1   studyB
+    folder2/st2   studyC
+
+The column headers ('folder' and 'pseudonym' above) are used to identify type of data and to find where the columns
+are in the file. The following column types are currently supported:
+
+================ ================================================================
+Parameter        Allowed column names                                            
+================ ================================================================
+accession_number accession number, acc nr                                        
+path             folder, map, path                                               
+pseudo_name      pseudoID, pseudonym, name                                       
+================ ================================================================
+
+Finding column headers ignores case and space characters. For example, the following are all valid column headers for
+accession number: `accession number`, `Accession Number`, `accession_number`, `accession-number`, `AccessionNumber`
+
+Information that is not recognized as valid is ignored. For example, the following input file is valid and
+contains the same information as the example given above:
+
+.. code-block:: text
+
+    Some descriptive text that will just be ignored when
+    parsing this as an input file.
+
+    Columns with headers that are not recognized are ignored as well.
+    Below, 'folder' and 'pseudonym' will be recognized, others ignored
+
+    folder        value   pseudonym  comment
+    folder1       A       studyA
+    folder2/st1   A       studyB     this column
+    folder2/st2   B       studyC     will be ignored
+
 
 .. _concepts_source_identifier:
 
@@ -132,8 +179,8 @@ File Selection
 ==============
 
 A file typically called ``fileselection.txt`` that contains a list of paths. A selection can be a data source for a job.
-It makes it possible to exactly define which files should be sent for anonymization and which should not. Methods like
-:ref:`add-study-folders <map_add_study_folders>` and :ref:`select_add` will only include valid DICOM files in a selection.
+It makes it possible to specify which files should be sent for anonymization and which should not. Methods like
+:ref:`add-study-folders <map_add_study_folders>` and :ref:`select_add` only include valid DICOM files in a selection.
 
 The contents of a typical file selection that contains 4 file paths::
 
@@ -158,7 +205,7 @@ A selection file can be edited by any text editor. See :ref:`select`.
 Server
 ======
 An anonymization server fetches, anonymizes and delivers your data according to the :ref:`jobs <concepts_job>` it has in its database.
-Servers can retrieve data from PACS or from network shares. The anonapi CLI can work with multiple servers. See :ref:`server_commands`.
+Servers can retrieve data from PACS or from network shares. The anonapi CLI can work with multiple servers. See :ref:`Server commands<server_commands>`.
 
 .. _concepts_unc_paths:
 

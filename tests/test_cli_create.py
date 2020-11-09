@@ -1,18 +1,22 @@
 from pathlib import PureWindowsPath
+from typing import List, Tuple
 
 import pytest
 
 from anonapi.batch import BatchFolder
 from anonapi.cli.create_commands import (
+    CreateCommandsContext,
+    from_mapping,
     main,
     JobParameterSet,
     ParameterMappingException,
     JobSetValidationError,
 )
-from anonapi.mapper import Mapping, MappingFolder
+from anonapi.mapper import JobParameterGrid, Mapping
 from anonapi.parameters import (
     DestinationPath,
     Project,
+    PseudoName,
     SourceIdentifierParameter,
     Description,
     SourceIdentifier,
@@ -23,6 +27,8 @@ from anonapi.parameters import (
     ParameterSet,
 )
 from tests import RESOURCE_PATH
+from tests.conftest import AnonAPIContextRunner
+from tests.factories import FolderIdentifierFactory, StudyInstanceUIDIdentifierFactory
 from tests.mock_responses import RequestsMockResponseExamples
 
 
@@ -35,11 +41,16 @@ def mock_requests_for_job_creation(mock_requests):
     return mock_requests
 
 
+@pytest.fixture()
+def a_create_command_context(mock_api_context) -> CreateCommandsContext:
+    return CreateCommandsContext(mock_api_context)
+
+
 def test_create_from_mapping_no_mapping(mock_main_runner):
-    """Running from-mapping in a folder without mapping should not work"""
+    """Running from-mapping without active mapping should not work"""
     result = mock_main_runner.invoke(main, "from-mapping")
     assert result.exit_code == 1
-    assert "No mapping" in result.output
+    assert "No active mapping" in result.output
 
 
 def test_create_from_mapping(mock_from_mapping_runner, mock_requests_for_job_creation):
@@ -132,13 +143,16 @@ def test_create_from_mapping_relative_path(
     assert mock_requests_for_job_creation.requests.post.call_count == 20
 
     current_dir = str(mock_from_mapping_runner.mock_context.current_dir)
-    mapping = MappingFolder(current_dir).load_mapping()
+    # TODO: test_cli_create should use CreateCommandsContext by default in most tests
+    mapping = CreateCommandsContext(
+        context=mock_from_mapping_runner.mock_context
+    ).get_mapping()
 
-    def all_paths(mapping_in):
+    def all_paths(mapping_in: Mapping):
         """List[str] of all paths in mapping"""
         return [
             str(x)
-            for y in mapping_in.rows()
+            for y in mapping_in.rows
             for x in y
             if isinstance(x, SourceIdentifierParameter)
         ]
@@ -168,12 +182,78 @@ def test_create_from_mapping_dry_run(
     assert mock_requests_for_job_creation.requests.post.call_count == 0
 
 
+def create_from_mapping_helper(
+    root_source_path: str, destination_path: str, identifiers: List[SourceIdentifier]
+):
+    """Helper function that sets up a mapping to recreate #265"""
+    return Mapping(
+        options=[RootSourcePath(root_source_path), DestinationPath(destination_path)],
+        grid=JobParameterGrid(
+            rows=[[SourceIdentifierParameter(x) for x in identifiers]]
+        ),
+    )
+
+
+def test_create_from_mapping_invalid_root_source(
+    a_create_command_context, mock_requests_for_job_creation
+):
+    """The default mapping often contains a non-unc root source value, as a stand in
+    until the user enters the actual unc path.
+    If the mapping contains no path-based jobs then there should be no error
+    Recreates #265
+    """
+    # The destination path is valid, but the root source is not.
+    # there are no folder-based rows so root source is not needed
+    mapping = create_from_mapping_helper(
+        root_source_path="/not_unc",
+        destination_path=r"\\proper\unc",
+        identifiers=[
+            StudyInstanceUIDIdentifierFactory(),
+            StudyInstanceUIDIdentifierFactory(),
+        ],
+    )
+
+    a_create_command_context.get_mapping = lambda: mapping
+    runner = AnonAPIContextRunner(mock_context=a_create_command_context)
+    result = runner.invoke(from_mapping, catch_exceptions=False)
+    assert result.exit_code == 0  # this should not cause an issue
+
+    # if there would be a path parameter in there though, it should cause
+    # an issue because create a job with an invalid root should not happen
+    mapping.grid.rows.append([SourceIdentifierParameter(FolderIdentifierFactory())])
+    assert runner.invoke(from_mapping, catch_exceptions=False).exit_code == 1
+
+
+def test_create_from_mapping_invalid_destination_path(
+    a_create_command_context, mock_requests_for_job_creation
+):
+    """Companion to test_create_from_mapping_invalid_root_source. If there are no
+    path jobs to be made, still make a problem if destination path is not valid
+    Recreates #265
+    """
+    mapping = create_from_mapping_helper(
+        root_source_path="/not_unc",
+        destination_path=r"/also_not_unc",
+        identifiers=[
+            StudyInstanceUIDIdentifierFactory(),
+            StudyInstanceUIDIdentifierFactory(),
+        ],
+    )
+
+    a_create_command_context.get_mapping = lambda: mapping
+    runner = AnonAPIContextRunner(mock_context=a_create_command_context)
+    result = runner.invoke(from_mapping, catch_exceptions=False)
+    assert result.exit_code == 1  # This run should not succeed
+
+
 def test_create_from_mapping_folder_and_pacs(
     mock_from_mapping_runner,
     a_folder_with_mapping_diverse,
     mock_requests_for_job_creation,
 ):
-    """PACS identifiers should generate slightly different jobs then Folder identifiers."""
+    """PACS identifiers should generate slightly different jobs then Folder
+    identifiers
+    """
     mock_requests = mock_requests_for_job_creation
     mock_from_mapping_runner.set_mock_current_dir(a_folder_with_mapping_diverse)
 
@@ -220,7 +300,7 @@ def test_job_parameter_set_validate(all_parameters):
     param_set.validate()
 
     # now without a root source root_path, it is not possible to know what the
-    # relative root_path parameter_types are referring to. Exception.
+    # relative root_path parameters are referring to. Exception.
     param_set.parameters.remove(param_set.get_param_by_type(RootSourcePath))
     with pytest.raises(JobSetValidationError):
         param_set.validate()
@@ -238,6 +318,31 @@ def test_job_parameter_set_validate_non_unc_paths(all_parameters):
     root_source.value = PureWindowsPath(r"Z:\folder1")
     with pytest.raises(JobSetValidationError):
         param_set.validate()
+
+
+def test_job_parameter_set_fill_missing(all_parameters):
+    """Make sure Pseudo ID and Pseudo Name have reasonable values"""
+
+    assert fill_missing_test([PseudoID("an_id")]) == ("an_id", "an_id")
+    assert fill_missing_test([PseudoName("a_name")]) == ("a_name", "a_name")
+    assert fill_missing_test([PseudoName("a_name"), PseudoID("an_id")]) == (
+        "an_id",
+        "a_name",
+    )
+    param_set = JobParameterSet([])
+    param_set.fill_missing_parameters()
+    assert param_set.get_param_by_type(PseudoID) is None
+    assert param_set.get_param_by_type(PseudoName) is None
+
+
+def fill_missing_test(parameters: List[Parameter]) -> Tuple[str]:
+    """Convenience function for testing job parameter fill missing"""
+    param_set = JobParameterSet(parameters)
+    param_set.fill_missing_parameters()
+    return (
+        param_set.get_param_by_type(PseudoID).value,
+        param_set.get_param_by_type(PseudoName).value,
+    )
 
 
 def test_job_parameter_set_defaults():

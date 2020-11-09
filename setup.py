@@ -8,7 +8,7 @@ from setuptools import setup, find_packages
 with open("README.rst") as readme_file:
     readme = readme_file.read()
 
-with open("HISTORY.rst") as history_file:
+with open("CHANGELOG.md") as history_file:
     history = history_file.read()
 
 requirements = [
@@ -20,6 +20,7 @@ requirements = [
     "tabulate",
     "requests",
     "factory_boy",
+    "openpyxl",
 ]
 
 setup_requirements = [
@@ -41,7 +42,7 @@ setup(
         "Programming Language :: Python :: 3.8",
     ],
     description="Client and tools for working with the anoymization web API",
-    python_requires=">=3.6",
+    python_requires="~=3.6",
     install_requires=requirements,
     license="MIT license",
     long_description=readme + "\n\n" + history,
@@ -54,6 +55,6 @@ setup(
     test_suite="tests",
     tests_require=test_requirements,
     url="https://github.com/sjoerdk/anonapi",
-    version="1.4.0",
+    version="1.5.3",
     zip_safe=False,
 )

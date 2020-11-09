@@ -1,5 +1,5 @@
 import locale
-from io import StringIO
+from io import StringIO, TextIOWrapper
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -7,16 +7,17 @@ import pytest
 from fileselection.fileselection import FileSelectionFile
 
 from anonapi.cli.map_commands import create_example_mapping
-from anonapi.exceptions import AnonAPIException
 from anonapi.mapper import (
     JobParameterGrid,
-    MappingLoadError,
-    MappingFolder,
     MapperException,
+    MappingFile,
+    MappingLoadError,
     Mapping,
     sniff_dialect,
 )
 from anonapi.parameters import (
+    PathParameter,
+    PseudoName,
     SourceIdentifierFactory,
     UnknownSourceIdentifierException,
     PIMSKey,
@@ -44,7 +45,7 @@ from tests.resources.test_mapper.example_sniffer_inputs import (
 
 @pytest.fixture()
 def a_grid_of_parameters():
-    """A grid of parameter_types that can be used to seed a JobParameterGrid
+    """A grid of parameters that can be used to seed a JobParameterGrid
 
     Returns
     -------
@@ -60,6 +61,12 @@ def a_grid_of_parameters():
         ]
 
     return [paramlist() for _ in range(15)]
+
+
+@pytest.fixture()
+def a_mapping(a_grid_of_parameters):
+    """A mapping containing 15 random lines"""
+    return Mapping(grid=JobParameterGrid(rows=a_grid_of_parameters))
 
 
 def test_write(tmpdir, a_grid_of_parameters):
@@ -96,7 +103,7 @@ def test_mapping_load_save():
     with open(mapping_file, "r") as f:
         mapping = Mapping.load(f)
     assert "some comment" in mapping.description
-    assert len(mapping.rows()) == 20
+    assert len(mapping.rows) == 20
     assert len(mapping.options) == 2
 
     output_file = StringIO(newline="")
@@ -107,8 +114,8 @@ def test_mapping_load_save():
     # saved and loaded again should be the same as original
     assert mapping.description == loaded.description
     assert [str(x) for x in mapping.options] == [str(x) for x in loaded.options]
-    assert [str(param) for row in mapping.rows() for param in row] == [
-        str(param) for row in loaded.rows() for param in row
+    assert [str(param) for row in mapping.rows for param in row] == [
+        str(param) for row in loaded.rows for param in row
     ]
 
 
@@ -160,6 +167,46 @@ def test_load_exceptions(file_to_open, expected_exception):
             JobParameterGrid.load(f)
 
 
+def test_load_exception_contains_mapping_path():
+    """Recreates issue #277. Stacktrace for load errors should list the mapping file
+    path. This is very useful for debugging
+    """
+
+    mapping_file = MappingFile(
+        file_path=RESOURCE_PATH / "test_mapper" / "example_corrupt_mapping.csv"
+    )
+
+    with pytest.raises(MapperException) as e:
+        mapping_file.get_mapping()
+    assert str(mapping_file.file_path) in str(e)
+
+
+def test_load_exception_missing_column_header():
+    """Recreates issue #273. Missing a column header, a simple problem, causes a
+    cryptic exception about parsing values with None and searching for commas
+    """
+
+    mapping_file = MappingFile(
+        file_path=RESOURCE_PATH / "test_mapper" / "mapping_missing_column_header.csv"
+    )
+
+    with pytest.raises(MapperException) as e:
+        mapping_file.get_mapping()
+    assert "Missing column" in str(e.value)
+
+
+def test_load_single_column_mapping():
+    """Recreates issue #264. A Single column does not have separators. This
+    caused a parse error. This should just work
+    """
+
+    mapping = MappingFile(
+        file_path=RESOURCE_PATH / "test_mapper" / "mapping_single_column.csv"
+    ).get_mapping()
+
+    assert len(mapping.rows) == 2
+
+
 def test_mapping_add_options():
     """Options in a mapping should be added to each row, unless overwritten by grid"""
 
@@ -172,7 +219,7 @@ def test_mapping_add_options():
     # mapping also defines a pims key as option
     mapping = Mapping(grid=JobParameterGrid(a_grid), options=[PIMSKey("GeneralKey")])
 
-    rows = mapping.rows()
+    rows = mapping.rows
     assert rows[0][0].value == "important!"
     assert rows[1][0].value == "GeneralKey"
 
@@ -208,50 +255,27 @@ def test_format_job_info(a_grid_of_parameters):
     assert "with 15 rows" in as_string
 
 
-def test_mapping_list_folder():
-    with_mapping = MappingFolder(
-        RESOURCE_PATH / "test_mapper" / "mapping_list_folder" / "with_mapping"
-    )
-    without_mapping = MappingFolder(
-        RESOURCE_PATH / "test_mapper" / "mapping_list_folder" / "without_mapping"
-    )
-    assert with_mapping.has_mapping()
-    assert not without_mapping.has_mapping()
-
-
-def test_mapping_list_folder_path_funcs():
-    path = RESOURCE_PATH / "test_mapper" / "mapping_list_folder" / "with_mapping"
-    assert str(MappingFolder(path).make_relative(path / "foo/bar")) == "foo/bar"
-    assert (
-        str(MappingFolder(path).make_relative("already/relative")) == "already/relative"
-    )
-
-    with pytest.raises(MapperException):
-        MappingFolder(path).make_relative("/outside/scope")
-
-    assert MappingFolder(path).make_absolute("foo/bar") == path / "foo/bar"
-
-    with pytest.raises(MapperException):
-        MappingFolder(path).make_absolute("/absolute/root_path")
-
-
 def test_mapping_folder_read_write(tmpdir, a_grid_of_parameters):
     """Test creating reading and deleting mappings in folder"""
-    mapping_folder = MappingFolder(tmpdir)
-    assert not mapping_folder.has_mapping()
 
+    # just some path
+    path = tmpdir / "a_mapping.csv"
+    assert not path.exists()
+
+    # and an in-memory mapping
     mapping = Mapping(JobParameterGrid(a_grid_of_parameters))
-    mapping_folder.save_mapping(mapping)
-    assert mapping_folder.has_mapping()
+    mapping_file = MappingFile(path)
 
-    loaded = mapping_folder.load_mapping()
-    assert [str(x) for row in loaded.rows() for x in row] == [
-        str(x) for row in mapping.rows() for x in row
+    # when saving this to disk
+    mapping_file.save_mapping(mapping)
+
+    # the file should appear
+    assert path.exists()
+
+    # and content should be as expected
+    assert [str(x) for row in mapping_file.load_mapping().rows for x in row] == [
+        str(x) for row in mapping.rows for x in row
     ]
-    assert mapping_folder.has_mapping()
-
-    mapping_folder.delete_mapping()
-    assert not mapping_folder.has_mapping()
 
 
 def test_os_error():
@@ -266,19 +290,18 @@ def test_open_file():
     confusing
     """
 
-    mapping_file = RESOURCE_PATH / "test_mapper" / "with_mapping_wide_settings.csv"
-    with open(mapping_file, "r") as f:
-        f.readlines = Mock(
-            side_effect=OSError(
-                "raw readinto() returned invalid length 4294967283 "
-                "(should have been between 0 and 8192)"
-            )
+    mock = Mock(spec=TextIOWrapper)
+    mock.__iter__ = Mock(
+        side_effect=OSError(
+            "raw readinto() returned invalid length 4294967283 "
+            "(should have been between 0 and 8192)"
         )
-        with pytest.raises(MappingLoadError) as e:
+    )
 
-            _ = Mapping.load(f)
+    with pytest.raises(MappingLoadError) as e:
+        _ = Mapping.load(mock)
 
-        assert "opened in any editor?" in str(e)
+    assert "opened in any editor?" in str(e)
 
 
 @pytest.mark.parametrize(
@@ -298,15 +321,15 @@ def test_sniff_dialect(content, delimiter):
 
 
 def test_sniff_dialect_exception():
-    with pytest.raises(AnonAPIException) as e:
+    with pytest.raises(MapperException) as e:
         sniff_dialect(StringIO(initial_value="Just not a csv file."))
     assert "Could not determine dialect" in str(e)
 
-    with pytest.raises(AnonAPIException) as e:
+    with pytest.raises(MapperException) as e:
         sniff_dialect(
             StringIO(initial_value="\n".join(["line1", "line2", "line3", "line4"]))
         )
-    assert "Could not determine delimiter" in str(e)
+    assert "Could not determine dialect" in str(e)
 
 
 @pytest.mark.parametrize(
@@ -316,9 +339,10 @@ def test_read_write_dialect(content, delimiter):
     """The csv dialect in a mapping should not change when reading and writing"""
 
     temp_file = StringIO()
-    Mapping.load(StringIO(initial_value=content)).save_to(temp_file)
+    mapping = Mapping.load(StringIO(initial_value=content))
+    mapping.save_to(temp_file)
     temp_file.seek(0)
-    assert sniff_dialect(temp_file, max_lines=10).delimiter == delimiter
+    assert sniff_dialect(temp_file).delimiter == delimiter
     temp_file.seek(0)
     Mapping.load(temp_file)  # Mapping should still be valid
 
@@ -336,11 +360,11 @@ def test_write_new_mapping(monkeypatch, locale_setting, delimiter):
         temp_file = StringIO()
         create_example_mapping().save_to(temp_file)
         temp_file.seek(0)
-        assert sniff_dialect(temp_file, max_lines=10).delimiter == delimiter
+        lines = temp_file.readlines()
+        assert sniff_dialect(lines).delimiter == delimiter
 
         # Check that the correct delimiter is used in different parts of mapping
-        last_lines = StringIO("".join(temp_file.readlines()[10:12]))
-        assert sniff_dialect(last_lines).delimiter == delimiter
+        assert sniff_dialect(lines[10:12]).delimiter == delimiter
 
 
 def test_example_mapping_save_correct_csv():
@@ -352,3 +376,23 @@ def test_example_mapping_save_correct_csv():
     temp_file.seek(0)
     line = temp_file.readline()
     assert line
+
+
+def test_cli_map_add_paths_file(a_mapping):
+    """Add an xls file containing several paths and potentially pseudonyms
+    to an existing mapping
+    """
+
+    assert len(a_mapping.grid) == 15
+
+    grid = JobParameterGrid(
+        rows=[
+            [PathParameter(r"Kees\01"), PseudoName("Study1")],
+            [PathParameter(r"Kees\02"), PseudoName("Study2")],
+            [PathParameter(r"Henk\04"), PseudoName("Study3")],
+        ]
+    )
+
+    a_mapping.add_grid(grid)
+
+    assert len(a_mapping.grid) == 18

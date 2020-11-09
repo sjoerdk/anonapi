@@ -184,18 +184,17 @@ In this example we will anonymize data from three folders on a share
 Quick example
 -------------
 
-* Create a folder for your project (will hold a record of jobs created)
+* Create a folder for your project (will hold your mapping and record of jobs created)
 * Open a :ref:`command prompt <usage_starting_a_command_prompt>` in this folder
 * Then type the following
 
 .. code-block:: console
 
-    $ anon map init            # create a mapping at the source of the data
+    $ anon map init            # create a new mapping, make it active
     $ anon map edit            # set correct paths, remove example rows
 
-    $ anon map add-study-folders patient1/study        # add study1 to mapping
-    $ anon map add-study-folders patient2/study        # add study2
-    $ anon map add-study-folders patient3/study_fixed  # add study3
+    # now add three folders to the mapping
+    $ anon map add-study-folders patient1/study patient2/study patient3/study_fixed
 
     $ anon map edit            # now set the anonymized names for the added studies
     $ anon create from-mapping # create jobs on anonymization server
@@ -204,8 +203,8 @@ Quick example
 
 
 .. tip::
-    The example above adds each study folder individually. To add many study folders at once you can use
-    ``anon map add-study-folders *`` . See :ref:`add-study-folders <map_add_study_folders>` wildcards for more info
+    If you already have a :ref:`csv or excel file<concepts_input_file>` containing paths, you can use the
+    `--file` option on the :ref:`map_add_study_folders` command to add them all in one command
 
 
 Detailed example
@@ -280,9 +279,7 @@ Now we will add each of the studies we want to anonymize. Make sure you close th
 
 .. code-block:: console
 
-    $ anon map add-study-folders patient1/study
-    $ anon map add-study-folders patient2/study
-    $ anon map add-study-folders patient3/study_fixed
+    $ anon map add-study-folders patient1/study patient2/study patient3/study_fixed
 
 All DICOM files in these folders have now been selected and added as rows in the mapping. Now edit the rows to suit your
 needs, setting the patient ID and name you want.

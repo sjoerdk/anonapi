@@ -1,7 +1,7 @@
 import pytest
 from click.exceptions import BadParameter
 
-from anonapi.cli.click_types import FileSelectionFileParam
+from anonapi.cli.click_parameter_types import FileSelectionFileParam
 from tests import RESOURCE_PATH
 
 

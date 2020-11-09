@@ -1,5 +1,6 @@
 """Settings used by anon console app"""
 from io import FileIO
+from pathlib import Path
 from typing import Dict, List, Optional
 
 import yaml
@@ -26,6 +27,7 @@ class AnonClientSettings(YAMLSerializable):
         user_token: str,
         job_default_parameters: Optional[List[Parameter]] = None,
         validate_ssl=True,
+        active_mapping_file: Optional[Path] = None,
     ):
         """
         Parameters
@@ -41,7 +43,9 @@ class AnonClientSettings(YAMLSerializable):
         validate_ssl: bool, optional
             If False, ignore ssl warnings and outdated certificates.
             Defaults to True
-
+        active_mapping_file: Optional[Path]
+            Full path to the mapping that is currently being worked on, if any.
+            Defaults to None
         """
         self.servers = servers
         try:
@@ -54,6 +58,7 @@ class AnonClientSettings(YAMLSerializable):
             job_default_parameters = []
         self.job_default_parameters = job_default_parameters
         self.validate_ssl = validate_ssl
+        self.active_mapping_file = active_mapping_file
 
     def get_active_server_key(self) -> Optional[str]:
         if self.active_server:
@@ -63,6 +68,10 @@ class AnonClientSettings(YAMLSerializable):
 
     def to_dict(self) -> dict:
         """Dictionary representation of this class. For serialization"""
+        if self.active_mapping_file is None:
+            active_mapping_file = None
+        else:
+            active_mapping_file = str(self.active_mapping_file)
         return {
             "servers": {x.name: x.url for x in self.servers},
             "active_server_name": self.get_active_server_key(),
@@ -72,17 +81,28 @@ class AnonClientSettings(YAMLSerializable):
             "job_default_parameters": [
                 x.to_string() for x in self.job_default_parameters
             ],
+            "active_mapping_file": active_mapping_file,
         }
 
     @classmethod
     def from_dict(cls, dict_in: Dict) -> "AnonClientSettings":
         """Build a AnonClientSettings instance from dict, handle
         missing values by substituting defaults
+
+        Raises
+        ------
+        ValueError
+            If a settings object cannot be created from dict_in
         """
         # Baseline is all defaults
         dict_full = DefaultAnonClientSettings().to_dict()
         # Overwrite defaults with any keys given in input
         dict_full.update(dict_in)
+
+        if dict_full["active_mapping_file"]:
+            active_mapping_file = Path(dict_full["active_mapping_file"])
+        else:
+            active_mapping_file = None
 
         settings = cls(
             servers=[
@@ -93,6 +113,7 @@ class AnonClientSettings(YAMLSerializable):
             user_token=dict_full["user_token"],
             validate_ssl=dict_full["validate_ssl"],
             job_default_parameters=cls.extract_default_parameters(dict_in),
+            active_mapping_file=active_mapping_file,
         )
 
         settings.active_server = cls.determine_active_server(
@@ -178,18 +199,29 @@ class AnonClientSettings(YAMLSerializable):
         with open(filename, "w") as f:
             self.save_to(f)
 
+    def save(self):
+        """Dummy method to be able to call save() when testing with memory-only
+        settings
+        """
+        raise Warning(
+            "Settings not saved. " "There is no file associated with these settings"
+        )
+
 
 class DefaultAnonClientSettings(AnonClientSettings):
-    """A settings object with some default values. For testing and for writing
-    settings when none are available
+    """A settings object with some default values
+
+    Differs from its base class AnonClientSettings in that it will have dummy
+    values instead of only empty values when initialised without parameters
     """
 
-    def __init__(self):
-        """Create default settings object:
+    def __init__(self, active_mapping_file: Optional[Path] = None):
+        """Settings object with minimal default values. Should be valid as default
+         settings object.
 
         >>> servers = [RemoteAnonServer("test", "https://hostname_of_api")]
         >>> user_name='username'
-        >>> user_token='12345abc'
+        >>> user_token='token'
 
         """
         super().__init__(
@@ -200,6 +232,7 @@ class DefaultAnonClientSettings(AnonClientSettings):
                 Project(value="NOT_SET"),
                 DestinationPath(value=""),
             ],
+            active_mapping_file=active_mapping_file,
         )
 
 
@@ -223,9 +256,13 @@ class AnonClientSettingsFromFile(AnonClientSettings):
             user_token=settings.user_token,
             job_default_parameters=settings.job_default_parameters,
             validate_ssl=settings.validate_ssl,
+            active_mapping_file=settings.active_mapping_file,
         )
 
         self.active_server = settings.active_server
+
+    def __str__(self):
+        return f"AnonClientSettingsFromFile at {self.path}"
 
     def save(self):
         with open(self.path, "w") as f:

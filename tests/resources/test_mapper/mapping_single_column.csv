@@ -1,0 +1,12 @@
+## Description ##,
+A mapping with only a single column in mapping. This is a challenge as the delimiter cannot be determined there,
+,
+## Options ##,
+root_source_path,\\tmp\test
+project,Wetenschap-Algemeen
+destination_path,\\server\share
+,
+## Mapping ##,
+source
+accession_number:1452540.01644985
+accession_number:1506262.01707300

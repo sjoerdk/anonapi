@@ -20,10 +20,10 @@ def a_job_batch(a_server):
 def test_batch_persisting(a_job_batch):
 
     memfile = StringIO()
-    a_job_batch.save(memfile)
+    a_job_batch.save_to(memfile)
 
     memfile.seek(0)
-    loaded = JobBatch.load(memfile.getvalue())
+    loaded = JobBatch.load_from(memfile.getvalue())
 
     assert loaded.job_ids == a_job_batch.job_ids
     assert loaded.server.name == a_job_batch.server.name

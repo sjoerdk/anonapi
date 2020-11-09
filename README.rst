@@ -5,8 +5,9 @@ AnonAPI
 .. image:: https://img.shields.io/pypi/v/anonapi.svg
     :target: https://pypi.python.org/pypi/anonapi
 
-.. image:: https://img.shields.io/travis/sjoerdk/anonapi.svg
-    :target: https://travis-ci.org/sjoerdk/anonapi
+.. image:: https://github.com/sjoerdk/anonapi/workflows/build/badge.svg
+        :target: https://github.com/sjoerdk/anonapi/actions?query=workflow%3Abuild
+        :alt: Build Status
 
 .. image:: https://readthedocs.org/projects/anonapi/badge/?version=latest
     :target: https://anonapi.readthedocs.io/en/latest/?badge=latest
