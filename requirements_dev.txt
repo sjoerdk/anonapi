@@ -8,7 +8,7 @@ openpyxl==3.0.5
 pytest==6.1.2
 pytest-runner==5.2
 pydicom==2.1.1
-tqdm==4.51.0
+tqdm==4.53.0
 sphinx_rtd_theme==0.5.0
 sphinx-autodoc-typehints==1.11.1
 tox==3.20.1
