@@ -11,7 +11,7 @@ pydicom==2.1.1
 tqdm==4.51.0
 sphinx_rtd_theme==0.5.0
 sphinx-autodoc-typehints==1.11.1
-tox==3.20.1
+tox==3.21.0
 twine==3.2.0
 watchdog==0.10.3
 wheel==0.35.1
