@@ -237,7 +237,7 @@ class CreateCommandsContext(AnonAPIContext):
         """Default parameters from settings"""
         return self.settings.job_default_parameters
 
-    def create_job_for_element(self, parameters: List[Parameter]):
+    def create_job_for_element(self, parameters: List[Parameter]) -> str:
         """Create a job for the given parameters
 
         Parameters
@@ -252,7 +252,7 @@ class CreateCommandsContext(AnonAPIContext):
 
         Returns
         -------
-        int
+        str
             job id created
         """
 
@@ -279,7 +279,7 @@ class CreateCommandsContext(AnonAPIContext):
         except (APIClientException, PersistenceException) as e:
             raise JobCreationException(f"Error creating job for source {source}: {e}")
 
-        return response.job_id
+        return str(response.job_id)
 
     def add_to_batch(self, created_job_ids):
         """Add job ids as batch in current dir. If batch does not exist, create"""
