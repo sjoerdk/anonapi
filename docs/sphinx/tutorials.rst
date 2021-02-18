@@ -89,8 +89,6 @@ make the following edits (as shown in the image below):
 * ``destination_path`` should be an be a :ref:`UNC path <concepts_unc_paths>` (like `\\\\server\\share`) where you want
   your anonymized data to be written.
 
-* Under `## Mapping ##`, delete the first four lines as they are default examples.
-
 .. image:: static/post_anon_init_common_edits.png
    :scale: 100 %
    :alt: command edits after anon map init
@@ -223,8 +221,6 @@ make the following edits (as shown in the image below):
 
 * ``destination_path`` should be an be a :ref:`UNC path <concepts_unc_paths>` (like `\\\\server\\share`) where you want
   your anonymized data to be written.
-
-* Under `## Mapping ##`, delete the first four lines as they are default examples.
 
 .. image:: static/post_anon_init_common_edits_folders.png
    :scale: 100 %

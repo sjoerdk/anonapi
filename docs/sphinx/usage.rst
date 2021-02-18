@@ -292,7 +292,6 @@ After making these changes, the mapping file should look like this:
 
     ## Mapping ##
     source,                            patient_id, patient_name, description
-    < removed all example rows here >
 
 Now we will add each of the studies we want to anonymize. Make sure you close the editor before doing this:
 
