@@ -2,7 +2,7 @@ from pathlib import Path
 
 import click
 
-from anonapi.batch import BatchFolder
+from anonapi.batch import BatchFolder, JobBatch, NoBatchDefinedException
 from anonapi.client import AnonClientTool
 from anonapi.exceptions import AnonAPIException
 from anonapi.settings import AnonClientSettings
@@ -105,7 +105,7 @@ class AnonAPIContext:
         """
         return self.current_dir
 
-    def get_batch(self):
+    def get_batch(self) -> JobBatch:
         """Get batch defined in current folder
 
         Raises
@@ -119,20 +119,15 @@ class AnonAPIContext:
 
         batch = BatchFolder(self.current_dir).load()
         if not batch:
-            raise NoBatchDefinedException("No batch defined in current folder")
+            raise NoBatchDefinedException()
         else:
             return batch
 
     def get_batch_folder(self) -> BatchFolder:
-        """True if there is a batch defined in this folder"""
         return BatchFolder(self.current_dir)
 
 
 class AnonAPIContextException(AnonAPIException):
-    pass
-
-
-class NoBatchDefinedException(AnonAPIContextException):
     pass
 
 

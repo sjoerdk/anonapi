@@ -77,20 +77,13 @@ class BatchFolder:
     def has_batch(self):
         return self.batch_file_path.exists()
 
-    def load(self):
-        """Load batch from the current folder
-
-        Returns
-        -------
-        Optional(JobBatch)
-            If there is a batch defined in this folder
-
-        """
-        if not self.has_batch():
-            return None
-        else:
+    def load(self) -> JobBatch:
+        """Load batch from the current folder"""
+        if self.has_batch():
             with open(self.batch_file_path, "r") as f:
                 return JobBatch.load_from(f)
+        else:
+            raise NoBatchDefinedException()
 
     def save(self, batch):
         """Save the given batch to this folder
@@ -119,4 +112,8 @@ class BatchFolder:
 
 
 class BatchFolderException(AnonAPIException):
+    pass
+
+
+class NoBatchDefinedException(AnonAPIException):
     pass

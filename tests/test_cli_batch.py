@@ -1,11 +1,29 @@
 from anonapi.batch import BatchFolder, JobBatch
+from anonapi.cli.batch_commands import add, cancel, info
 from anonapi.client import ClientToolException
 from anonapi.cli import entrypoint
 from tests.mock_responses import RequestsMockResponseExamples
 
 
-def test_cli_batch(mock_main_runner):
+def test_command_without_defined_batch(mock_main_runner):
     """Try working with a batch of job ids from console"""
+
+    runner = mock_main_runner
+
+    assert "No batch defined" in str(
+        runner.invoke(entrypoint.cli, "batch info", catch_exceptions=False).output
+    )
+    assert "No batch defined" in str(runner.invoke(info, catch_exceptions=False).output)
+    assert "No batch defined" in str(runner.invoke(add, catch_exceptions=False).output)
+    assert "No batch defined" in str(
+        runner.invoke(cancel, catch_exceptions=False).output
+    )
+
+
+def test_cli_batch(mock_main_runner):
+    """If a user types 'batch <anything>' without a batch being present, the
+    exceptions should be similar and informative. Recreates #315
+    """
 
     runner = mock_main_runner
     batch_dir = BatchFolder(mock_main_runner.get_context().current_dir)

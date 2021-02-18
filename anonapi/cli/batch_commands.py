@@ -6,13 +6,9 @@ from typing import List
 import click
 from click.exceptions import ClickException
 
-from anonapi.batch import JobBatch
+from anonapi.batch import BatchFolder, JobBatch
 from anonapi.cli.click_parameter_types import JobIDRangeParamType
-from anonapi.context import (
-    AnonAPIContext,
-    AnonAPIContextException,
-    NoBatchDefinedException,
-)
+from anonapi.context import AnonAPIContext
 from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
 from anonapi.responses import JobStatus, JobInfoColumns, JobInfo, format_job_info_list
 from collections import Counter
@@ -28,6 +24,7 @@ def main():
 
 @click.command()
 @pass_anonapi_context
+@handle_anonapi_exceptions
 def init(context: AnonAPIContext):
     """Save an empty batch in the current folder, for current server"""
     batch_folder = context.get_batch_folder()
@@ -41,18 +38,15 @@ def init(context: AnonAPIContext):
 
 @click.command()
 @pass_anonapi_context
+@handle_anonapi_exceptions
 def info(context: AnonAPIContext):
     """Show batch in current directory"""
-    try:
-        logger.info(context.get_batch().to_string())
-    except NoBatchDefinedException as e:
-        raise ClickException(str(e) + ". You can create one with 'anon batch init'")
-    except AnonAPIContextException as e:
-        raise ClickException(e)
+    logger.info(context.get_batch().to_string())
 
 
 @click.command()
 @pass_anonapi_context
+@handle_anonapi_exceptions
 def delete(context: AnonAPIContext):
     """Delete batch in current folder"""
     context.get_batch_folder().delete_batch()
@@ -61,11 +55,12 @@ def delete(context: AnonAPIContext):
 
 @click.command()
 @pass_anonapi_context
+@handle_anonapi_exceptions
 @click.argument("job_ids", type=JobIDRangeParamType(), nargs=-1)
 def add(context: AnonAPIContext, job_ids):
     """Add ids to current batch. Space-separated (1 2 3) or range (1-40)"""
     job_ids = [x for x in itertools.chain(*job_ids)]  # make into one list
-    batch_folder = context.get_batch_folder()
+    batch_folder: BatchFolder = context.get_batch_folder()
     batch: JobBatch = batch_folder.load()
     batch.job_ids = sorted(list(set(batch.job_ids) | set(job_ids)))
     batch_folder.save(batch)
@@ -74,6 +69,7 @@ def add(context: AnonAPIContext, job_ids):
 
 @click.command()
 @pass_anonapi_context
+@handle_anonapi_exceptions
 @click.argument("job_ids", type=JobIDRangeParamType(), nargs=-1)
 def remove(context: AnonAPIContext, job_ids):
     """Remove ids from current batch. Space-separated (1 2 3) or range (1-40)"""
@@ -133,6 +129,7 @@ def status(context: AnonAPIContext, patient_name):
 
 @click.command()
 @pass_anonapi_context
+@handle_anonapi_exceptions
 def reset(context: AnonAPIContext):
     """Reset every job in the current batch"""
     batch: JobBatch = context.get_batch()
@@ -152,6 +149,7 @@ def reset(context: AnonAPIContext):
 
 @click.command()
 @pass_anonapi_context
+@handle_anonapi_exceptions
 def cancel(context: AnonAPIContext):
     """Cancel every job in the current batch"""
     batch: JobBatch = context.get_batch()
@@ -170,8 +168,8 @@ def cancel(context: AnonAPIContext):
 
 
 @click.command()
-@handle_anonapi_exceptions
 @pass_anonapi_context
+@handle_anonapi_exceptions
 def cancel_active(context: AnonAPIContext):
     """Cancel unprocessed (active) jobs, leave done and error"""
     batch: JobBatch = context.get_batch()
@@ -195,8 +193,8 @@ def cancel_active(context: AnonAPIContext):
 
 
 @click.command()
-@handle_anonapi_exceptions
 @pass_anonapi_context
+@handle_anonapi_exceptions
 def reset_error(context: AnonAPIContext):
     """Reset all jobs with error status in the current batch"""
     batch: JobBatch = context.get_batch()
@@ -221,8 +219,8 @@ def reset_error(context: AnonAPIContext):
 
 
 @click.command()
-@handle_anonapi_exceptions
 @pass_anonapi_context
+@handle_anonapi_exceptions
 def show_error(context: AnonAPIContext):
     """Show full error message for all error jobs in batch"""
     batch: JobBatch = context.get_batch()
