@@ -69,3 +69,16 @@ source,patient_id,patient_name,description
 folder:/folder/file0,patient0,patientName0,test description
 """,
 ]
+# Recreates #327, space on empty line under options will yield unneeded exception
+BASIC_MAPPING_WITH_SPACE = r"""
+## DESCRIPTION ##,,,
+Has a space under options. This recreates #327,,,
+,,,,
+## OPTIONS ##,,,
+ ,,,
+destination_path,\\someserver\share\folder1,,
+pims_key,555,,
+## MAPPING ##,,,
+source,patient_id,patient_name,description
+folder:/folder/file0,patient0,patientName0,test description
+"""

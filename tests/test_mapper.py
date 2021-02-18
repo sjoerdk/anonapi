@@ -32,6 +32,7 @@ from tests import RESOURCE_PATH
 from tests.resources.test_mapper.example_mapping_inputs import (
     BASIC_MAPPING,
     BASIC_MAPPING_LOWER,
+    BASIC_MAPPING_WITH_SPACE,
     COLON_SEPARATED_MAPPING,
     CAN_NOT_BE_PARSED_AS_MAPPING,
 )
@@ -120,7 +121,13 @@ def test_mapping_load_save():
 
 
 @pytest.mark.parametrize(
-    "content", [BASIC_MAPPING, BASIC_MAPPING_LOWER, COLON_SEPARATED_MAPPING]
+    "content",
+    [
+        BASIC_MAPPING,
+        BASIC_MAPPING_LOWER,
+        COLON_SEPARATED_MAPPING,
+        BASIC_MAPPING_WITH_SPACE,
+    ],
 )
 def test_mapping_parse(content):
     """Content that can be parsed to a mapping"""
