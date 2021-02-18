@@ -150,6 +150,7 @@ class Mapping:
         options = [
             ParameterFactory.parse_from_string(line)
             for line in sections[cls.OPTIONS_HEADER]
+            if parameter_line_is_empty(line)
         ]
 
         grid_content = os.linesep.join(sections[cls.GRID_HEADER])
@@ -276,6 +277,11 @@ def sniff_dialect(lines: Iterable[str]) -> Dialect:
         except csv.Error:
             continue  # just try all lines
     raise MapperException("Could not determine dialect for csv file")
+
+
+def parameter_line_is_empty(line_in: str) -> bool:
+    """True if the input line contains only separators or spaces. For cleaning"""
+    return bool(line_in.replace(" ", "").replace(",", "").replace(";", ""))
 
 
 def sniff_dialect_safe(

@@ -401,12 +401,12 @@ class ParameterFactory:
     """
 
     @classmethod
-    def parse_from_string(cls, string):
-        """
+    def parse_from_string(cls, string_in: str) -> Parameter:
+        """Create a Parameter from string. Splits on comma and colon
 
         Parameters
         ----------
-        string: str
+        string_in: str
             A valid input representation of Parameter
 
         Returns
@@ -421,13 +421,13 @@ class ParameterFactory:
 
         """
         try:
-            key, value = string.split(",", maxsplit=1)
+            key, value = string_in.split(",", maxsplit=1)
         except ValueError:
             try:
-                key, value = string.split(";", maxsplit=1)
+                key, value = string_in.split(";", maxsplit=1)
             except ValueError:
                 raise ParameterParsingError(
-                    f"Could not split '{string}' into key and value. There should"
+                    f"Could not split '{string_in}' into key and value. There should"
                     f" be a comma somewhere."
                 )
         return cls.parse_from_key_value(key=key, value=value)
