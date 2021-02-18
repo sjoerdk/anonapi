@@ -6,6 +6,7 @@ from typing import Dict
 import requests
 import json
 
+from requests.exceptions import RequestException
 from requests.models import Response
 
 from anonapi.exceptions import AnonAPIException
@@ -88,7 +89,7 @@ class WebAPIClient:
                 verify=self.validate_https,
                 headers={"Authorization": f"Token {self.token}"},
             )
-        except requests.exceptions.RequestException as e:
+        except RequestException as e:
             raise ServerNotResponding(e)
 
         return self.parse_response(response)

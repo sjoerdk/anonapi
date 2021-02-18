@@ -11,6 +11,7 @@ from _pytest.fixtures import fixture
 from click.testing import CliRunner
 from fileselection.fileselection import FileSelectionFolder
 
+from anonapi.batch import JobBatch
 from anonapi.context import AnonAPIContext
 from anonapi.client import WebAPIClient, AnonClientTool
 from anonapi.logging import AnonAPILogController
@@ -150,6 +151,16 @@ def mock_api_context(tmpdir) -> AnonAPIContext:
         current_dir=Path(tmpdir),
     )
     return context
+
+
+@fixture
+def mock_main_runner_with_batch(mock_main_runner):
+    context = mock_main_runner.get_context()
+    batch = JobBatch(
+        job_ids=["1000", "1002", "5000", "100000"], server=context.get_active_server(),
+    )
+    context.get_batch = lambda: batch  # set current batch to mock batch
+    return mock_main_runner
 
 
 @fixture
