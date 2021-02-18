@@ -4,25 +4,26 @@ Used in test_mapping.
 """
 
 BASIC_MAPPING = r"""
-
-## Description ##
-some comment by some person
-## Options ##
-destination_path,\\someserver\share\folder1
-pims_key,555
-## Mapping ##
+## DESCRIPTION ##,,,
+some comment by some person,,,
+,,,,
+## OPTIONS ##,,,
+destination_path,\\someserver\share\folder1,,
+pims_key,555,,
+## MAPPING ##,,,
 source,patient_id,patient_name,description
 folder:/folder/file0,patient0,patientName0,test description
 """
 
 # Lower case titles should not matter
 BASIC_MAPPING_LOWER = r"""
-## description ##
-some comment by some person
-## options ##
-destination_path,\\someserver\share\folder1
-pims_key,555
-## Mapping ##
+## description ##,,,
+some comment by some person,,,
+,,,,
+## options ##,,,
+destination_path,\\someserver\share\folder1,,
+pims_key,555,,
+## Mapping ##,,,
 source,patient_id,patient_name,description
 folder:/folder/file0,patient0,patientName0,test description
 """
