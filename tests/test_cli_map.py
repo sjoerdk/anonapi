@@ -203,8 +203,8 @@ def test_cli_map_add_folder(mock_map_context_without, folder_with_some_dicom_fil
 
     # make one
     runner.invoke(init)
-    # by default there are 4 example rows in mapping
-    assert len(context.get_current_mapping().grid) == 4
+    # by default there are no rows mapping
+    assert len(context.get_current_mapping().grid) == 0
 
     # No selection file has been put in the folder at this point
     assert not selection_folder.has_file_selection()
@@ -220,7 +220,7 @@ def test_cli_map_add_folder(mock_map_context_without, folder_with_some_dicom_fil
 
     # also, this selection should have been added to the mapping:
     mapping = context.get_current_mapping()  # reload from disk
-    assert len(mapping.grid) == 5
+    assert len(mapping.grid) == 1
     added = ParameterSet(mapping.grid.rows[-1])
     identifier = added.get_param_by_type(SourceIdentifierParameter)
     # and the identifier should be a FileSelectionIdentifier which is
@@ -237,8 +237,8 @@ def test_cli_map_add_folder_no_check(
     selection_folder = folder_with_some_dicom_files
 
     runner.invoke(init)
-    # by default there are 4 example rows in mapping
-    assert len(context.get_current_mapping().grid) == 4
+    # by default there are no rows
+    assert len(context.get_current_mapping().grid) == 0
 
     # dicom files should not have been selected yet currently
     assert not selection_folder.has_file_selection()

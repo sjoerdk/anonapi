@@ -23,6 +23,7 @@ from anonapi.context import AnonAPIContext
 from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
 from anonapi.mapper import (
     DEFAULT_MAPPING_NAME,
+    JobParameterGrid,
     MappingFile,
     ExampleJobParameterGrid,
     MapperException,
@@ -152,7 +153,7 @@ def get_initial_options(settings: AnonClientSettings) -> List[Parameter]:
 def init(context: MapCommandContext):
     """Save a default mapping in a default location in the current folder"""
     mapping_file = MappingFile(Path(context.current_dir) / DEFAULT_MAPPING_NAME)
-    mapping_file.save_mapping(create_example_mapping(context))
+    mapping_file.save_mapping(create_empty_mapping(context))
     logger.info(f"Initialised example mapping in {mapping_file.file_path}")
     _activate(context.settings, mapping_path=mapping_file.file_path)
 
@@ -177,14 +178,18 @@ def _activate(settings: AnonClientSettings, mapping_path: Path):
     logger.info(f"Activated mapping at {mapping_path}")
 
 
-def create_example_mapping(context: MapCommandContext = None) -> Mapping:
-    """A default mapping with some example parameters
+def create_mapping(
+    context: MapCommandContext = None, grid: JobParameterGrid = None
+) -> Mapping:
+    """Create a mapping with given parameter grid
 
     Parameters
     ----------
     context: MapCommandContext, optional
         set default options according to this context. Defaults to built-in
         defaults
+    grid: JobParameterGrid, optional
+        Include this parameter grid. Defaults to empty grid
     """
     if not context:
         context = MapCommandContext(
@@ -194,13 +199,37 @@ def create_example_mapping(context: MapCommandContext = None) -> Mapping:
         context.settings
     )
     mapping = Mapping(
-        grid=ExampleJobParameterGrid(),
+        grid=grid,
         options=options,
         description=f"Mapping created {datetime.date.today().strftime('%B %d %Y')} "
         f"by {getpass.getuser()}\n",
         dialect=get_local_dialect(),
     )
     return mapping
+
+
+def create_example_mapping(context: MapCommandContext = None) -> Mapping:
+    """A default mapping with some example parameters
+
+    Parameters
+    ----------
+    context: MapCommandContext, optional
+        set default options according to this context. Defaults to built-in
+        defaults
+    """
+    return create_mapping(context, ExampleJobParameterGrid())
+
+
+def create_empty_mapping(context: MapCommandContext = None) -> Mapping:
+    """A minimal, empty mapping
+
+    Parameters
+    ----------
+    context: MapCommandContext, optional
+        set default options according to this context. Defaults to built-in
+        defaults
+    """
+    return create_mapping(context, JobParameterGrid(rows=[]))
 
 
 @click.command()
