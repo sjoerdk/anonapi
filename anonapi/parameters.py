@@ -427,8 +427,9 @@ class ParameterFactory:
                 key, value = string_in.split(";", maxsplit=1)
             except ValueError:
                 raise ParameterParsingError(
-                    f"Could not split '{string_in}' into key and value. There should"
-                    f" be a comma somewhere."
+                    f"I don't know what kind of parameter '{string_in}' should be. I"
+                    f"Know about the following parameters: "
+                    f"{[x.field_name for x in ALL_PARAMETERS]}"
                 )
         return cls.parse_from_key_value(key=key, value=value)
 
@@ -442,7 +443,7 @@ class ParameterFactory:
         ----------
         key: str
             Parameter.key value indicating the type of parameter,
-            like 'accesion_number'
+            like 'accession_number'
         value: str
             The value of the parameter, like '12345.234343'
         parameter_types: Optional[Type[Parameter]], optional
