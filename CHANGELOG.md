@@ -1,5 +1,36 @@
 # Changelog
 
+## [v1.5.5](https://github.com/sjoerdk/anonapi/tree/v1.5.5) (2021-02-18)
+
+[Full Changelog](https://github.com/sjoerdk/anonapi/compare/v1.5.4...v1.5.5)
+
+**Implemented enhancements:**
+
+- Remove example lines from default mapping [\#322](https://github.com/sjoerdk/anonapi/issues/322)
+- anon map add-study-folders should not complain about project or output dir [\#321](https://github.com/sjoerdk/anonapi/issues/321)
+- Running batch add without init yields confusing error message [\#315](https://github.com/sjoerdk/anonapi/issues/315)
+
+**Fixed bugs:**
+
+- Line with single space in mapping will raise confusing error [\#327](https://github.com/sjoerdk/anonapi/issues/327)
+- anon batch remove does not work [\#320](https://github.com/sjoerdk/anonapi/issues/320)
+- job info Source information not displayed [\#255](https://github.com/sjoerdk/anonapi/issues/255)
+
+**Merged pull requests:**
+
+- Update tox to 3.21.3 [\#323](https://github.com/sjoerdk/anonapi/pull/323) ([pyup-bot](https://github.com/pyup-bot))
+- Update pytest to 6.2.2 [\#319](https://github.com/sjoerdk/anonapi/pull/319) ([pyup-bot](https://github.com/pyup-bot))
+- Update coverage to 5.4 [\#318](https://github.com/sjoerdk/anonapi/pull/318) ([pyup-bot](https://github.com/pyup-bot))
+- Update pip to 21.0 [\#317](https://github.com/sjoerdk/anonapi/pull/317) ([pyup-bot](https://github.com/pyup-bot))
+- Update openpyxl to 3.0.6 [\#314](https://github.com/sjoerdk/anonapi/pull/314) ([pyup-bot](https://github.com/pyup-bot))
+- Update tqdm to 4.56.0 [\#312](https://github.com/sjoerdk/anonapi/pull/312) ([pyup-bot](https://github.com/pyup-bot))
+- Update sphinx\_rtd\_theme to 0.5.1 [\#309](https://github.com/sjoerdk/anonapi/pull/309) ([pyup-bot](https://github.com/pyup-bot))
+- Update factory-boy to 3.2.0 [\#307](https://github.com/sjoerdk/anonapi/pull/307) ([pyup-bot](https://github.com/pyup-bot))
+- Update twine to 3.3.0 [\#305](https://github.com/sjoerdk/anonapi/pull/305) ([pyup-bot](https://github.com/pyup-bot))
+- Update watchdog to 1.0.2 [\#303](https://github.com/sjoerdk/anonapi/pull/303) ([pyup-bot](https://github.com/pyup-bot))
+- Update wheel to 0.36.2 [\#299](https://github.com/sjoerdk/anonapi/pull/299) ([pyup-bot](https://github.com/pyup-bot))
+- Update pydicom to 2.1.2 [\#296](https://github.com/sjoerdk/anonapi/pull/296) ([pyup-bot](https://github.com/pyup-bot))
+
 ## [v1.5.4](https://github.com/sjoerdk/anonapi/tree/v1.5.4) (2020-11-09)
 
 [Full Changelog](https://github.com/sjoerdk/anonapi/compare/v1.5.3...v1.5.4)
