@@ -73,7 +73,7 @@ def test_create_from_mapping(mock_from_mapping_runner, mock_requests_for_job_cre
     batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir)
     assert batch_folder.has_batch()
     assert batch_folder.load().job_ids == [
-        1234
+        "1234"
     ]  # only 1 id as mock requests returns the same job id each call
 
 
@@ -113,7 +113,7 @@ def test_create_from_mapping_server_error_halfway(
     assert mock_requests.requests.post.call_count == 3
     batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir)
     assert batch_folder.has_batch()
-    assert batch_folder.load().job_ids == [1234]
+    assert batch_folder.load().job_ids == ["1234"]
 
 
 def test_show_set_default_parameters(mock_main_runner):
@@ -267,7 +267,7 @@ def test_create_from_mapping_folder_and_pacs(
     batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir)
     assert batch_folder.has_batch()
     assert batch_folder.load().job_ids == [
-        1234
+        "1234"
     ]  # only 1 id as mock requests returns the same job id each call
 
 
