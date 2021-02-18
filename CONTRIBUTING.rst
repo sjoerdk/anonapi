@@ -145,9 +145,10 @@ General points about working with this generator:
 
 To re-generate, run:
 
-    $ github_changelog_generator -u sjoerdk -p anonapi --token <your token>
+    $ github_changelog_generator -u sjoerdk -p anonapi --token <your token> --since-tag <v1.5.3> --future-release <v1.5.5>
 
-To get a github token, see here: https://github.com/github-changelog-generator/github-changelog-generator#github-token
+
+Replace token and version numbers to match the current release. To get a github token, see here: https://github.com/github-changelog-generator/github-changelog-generator#github-token
 
 Updating docs
 ~~~~~~~~~~~~~
