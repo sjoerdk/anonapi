@@ -1,6 +1,16 @@
 """Makes it possible to map a structured file to batch of IDIS jobs.
 The file should contain source files to anonymized id, name etc.
 Pre-processing step for creating IDIS jobs
+
+Notes
+-----
+The main class `Mapping` contains a human readable description, some general
+options, and a JobParameterGrid which contains one row per job, one parameter
+per column.
+Originally, The bare JobParameterGrid was named `Mapping`. Later on this turned out
+to be insufficient as more information needed to be saved. Some confusing naming might
+still exist in some places in the code, referring to JobParameterGrid objects as
+mappings. This should be renamed whenever encountered
 """
 import csv
 import locale
@@ -39,9 +49,9 @@ logger = logging.getLogger(__name__)
 
 
 class Mapping:
-    """Everything needed for creating anonymization jobs
+    """All information needed for creating anonymization jobs
 
-    Wrapper around JobParameterGrid that adds description and mapping-wide settings
+    Contains a JobParameterGrid plus description and mapping-wide settings
     such as output dir
     """
 
@@ -294,13 +304,7 @@ def sniff_dialect_safe(
 class JobParameterGrid:
     """A persistable 2D grid of job rows. Each row belongs to one job"""
 
-    def __init__(self, rows):
-        """
-
-        Parameters
-        ----------
-        rows: List[List[Parameter]]
-        """
+    def __init__(self, rows: List[List[Parameter]]):
 
         self.rows = rows
 

@@ -84,14 +84,14 @@ def test_write(tmpdir, a_grid_of_parameters):
 
 
 def test_job_parameter_grid_load():
-    mapping_file = RESOURCE_PATH / "test_mapper" / "example_mapping.csv"
+    mapping_file = RESOURCE_PATH / "test_mapper" / "example_job_grid.csv"
     with open(mapping_file, "r", newline="") as f:
         grid = JobParameterGrid.load(f)
     assert len(grid.rows) == 20
 
 
 def test_job_parameter_grid_load_colon():
-    mapping_file = RESOURCE_PATH / "test_mapper" / "example_mapping_colon.csv"
+    mapping_file = RESOURCE_PATH / "test_mapper" / "example_job_grid_colon.csv"
     with open(mapping_file, "r", newline="") as f:
         grid = JobParameterGrid.load(f)
     assert len(grid.rows) == 4
@@ -146,7 +146,7 @@ def test_mapping_parse_colon_separated():
 
 
 def test_load_pims_only():
-    mapping_file = RESOURCE_PATH / "test_mapper" / "example_pims_only_mapping.csv"
+    mapping_file = RESOURCE_PATH / "test_mapper" / "example_pims_only_job_grid.csv"
     with open(mapping_file, "r") as f:
         JobParameterGrid.load(f)
 
@@ -154,10 +154,10 @@ def test_load_pims_only():
 @pytest.mark.parametrize(
     "file_to_open, expected_exception",
     [
-        ("example_corrupt_mapping.csv", MappingLoadError),
-        ("example_unknown_source_key.csv", MappingLoadError),
-        ("example_mapping_no_header.csv", MappingLoadError),
-        ("example_mapping_random_content.csv", MappingLoadError),
+        ("example_corrupt_job_grid.csv", MappingLoadError),
+        ("example_job_grid_unknown_source_key.csv", MappingLoadError),
+        ("example_job_grid_no_header.csv", MappingLoadError),
+        ("example_job_grid_random_content.csv", MappingLoadError),
     ],
 )
 def test_load_exceptions(file_to_open, expected_exception):
@@ -173,7 +173,7 @@ def test_load_exception_contains_mapping_path():
     """
 
     mapping_file = MappingFile(
-        file_path=RESOURCE_PATH / "test_mapper" / "example_corrupt_mapping.csv"
+        file_path=RESOURCE_PATH / "test_mapper" / "example_corrupt_job_grid.csv"
     )
 
     with pytest.raises(MapperException) as e:
@@ -367,7 +367,7 @@ def test_write_new_mapping(monkeypatch, locale_setting, delimiter):
         assert sniff_dialect(lines[10:12]).delimiter == delimiter
 
 
-def test_example_mapping_save_correct_csv():
+def test_example_job_grid_save_correct_csv():
     """The initial mapping should be easily parsed as a csv. This means adding
     empty delimiters at the end of comments and section headers
     """
