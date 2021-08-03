@@ -125,7 +125,8 @@ The end of the error message is important. There was an internal error in the ho
 data for this job. This sometimes happens for incorrectly imported data or additional findings that have been
 incorrectly pushed to the images server.
 
-Solution: Record the accession number for the data in this job and ask beeld en zorg to check for errors in that data.
+Solution: First retry after a few hours, a day, possibly days. These errors sometimes solve themselves. If this does not work,
+Record the accession number for the data in this job and ask beeld en zorg to check for errors in that data.
 
 Could not move file
 -------------------
