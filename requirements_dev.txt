@@ -4,7 +4,7 @@ pip==21.0
 factory-boy==3.2.0
 flake8==3.8.4
 Click==7.1.2
-openpyxl==3.0.6
+openpyxl==3.0.9
 pytest==6.2.2
 pytest-runner==5.2
 pydicom==2.1.2
