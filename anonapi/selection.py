@@ -7,6 +7,7 @@ from fnmatch import fnmatch
 from pathlib import Path
 
 import pydicom
+from pydicom.misc import is_dicom
 
 from tqdm import tqdm
 
@@ -116,10 +117,7 @@ def create_dicom_selection(path, check_dicom=True) -> FileSelectionFile:
     logger.info(f"Finding all files in {path}")
     files = [x for x in tqdm(folder.iterate()) if x is not None]
     if check_dicom:
-        logger.info(f"Found {len(files)} files. Finding out which ones are DICOM")
-        dicom_files = [
-            x for x in tqdm(files) if open_as_dicom(x, read_pixel_data=False)
-        ]
+        dicom_files = find_dicom_files(files)
     else:
         logger.info(f"Found {len(files)} files. Adding all that look like DICOM")
         dicom_files = [x for x in files if looks_like_dicom_file(x)]
@@ -134,6 +132,24 @@ def create_dicom_selection(path, check_dicom=True) -> FileSelectionFile:
     )
     selection_folder.save_file_selection(selection)
     return selection
+
+
+def find_dicom_files(files):
+    """Go through files and determine which ones are valid DICOM files
+
+    Parameters
+    ----------
+    files: Sequence[str]
+        Full file paths to check
+
+    Returns
+    -------
+    List[str]
+        Full file paths that point to a valid DICOM file
+    """
+    logger.info(f"Found {len(files)} files. Finding out which ones are DICOM")
+    dicom_files = [x for x in tqdm(files) if is_dicom(x)]
+    return dicom_files
 
 
 def looks_like_dicom_file(path) -> bool:

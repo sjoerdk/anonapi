@@ -1,10 +1,13 @@
 """Tests for anonapi.cli.select_commands"""
+from functools import partialmethod
 from pathlib import Path
+from tqdm import tqdm
 
 import pytest
 from fileselection.fileselection import FileSelectionFolder, FileSelectionFile
 from anonapi.cli.select_commands import main, SelectCommandContext, CLIMessages
-from anonapi.selection import looks_like_dicom_file
+from anonapi.selection import find_dicom_files, looks_like_dicom_file
+from tests import RESOURCE_PATH
 
 
 @pytest.fixture()
@@ -146,3 +149,15 @@ def test_looks_like_dicom_true(path):
 def test_looks_like_dicom_false(path):
     """These should all be seen as non DICOM files"""
     assert not looks_like_dicom_file(path)
+
+
+@pytest.fixture
+def disable_tqdm(monkeypatch):
+    tqdm.__init__ = partialmethod(tqdm.__init__, disable=True)
+    monkeypatch.setattr("anonapi.selection.tqdm", tqdm)
+
+
+def test_is_dicom(disable_tqdm, capsys, caplog):
+    dicom_file = RESOURCE_PATH / "test_selection" / "test_is_dicom" / "dicom"
+    not_dicom_file = RESOURCE_PATH / "test_selection" / "test_is_dicom" / "not_dicom"
+    assert find_dicom_files([dicom_file, not_dicom_file]) == [dicom_file]
