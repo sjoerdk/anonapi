@@ -23,7 +23,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath("../.."))
 
-import anonapi
+import anonapi  # noqa
 
 # -- General configuration ---------------------------------------------
 
@@ -34,10 +34,10 @@ import anonapi
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.napoleon',
-    'sphinx_autodoc_typehints',  # Must be loaded after napoleon
+    "sphinx.ext.autodoc",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.napoleon",
+    "sphinx_autodoc_typehints",  # Must be loaded after napoleon
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -53,9 +53,9 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = u"AnonAPI"
-copyright = u"2019, Sjoerd Kerkstra"
-author = u"Sjoerd Kerkstra"
+project = "AnonAPI"
+copyright = "2019, Sjoerd Kerkstra"
+author = "Sjoerd Kerkstra"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -101,7 +101,7 @@ def setup(app):
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a
 # theme further.  For a list of options available for each theme, see the
@@ -142,7 +142,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass
 # [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "anonapi.tex", u"AnonAPI Documentation", u"Sjoerd Kerkstra", "manual")
+    (master_doc, "anonapi.tex", "AnonAPI Documentation", "Sjoerd Kerkstra", "manual")
 ]
 
 
@@ -150,7 +150,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "anonapi", u"AnonAPI Documentation", [author], 1)]
+man_pages = [(master_doc, "anonapi", "AnonAPI Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output ----------------------------------------
@@ -162,7 +162,7 @@ texinfo_documents = [
     (
         master_doc,
         "anonapi",
-        u"AnonAPI Documentation",
+        "AnonAPI Documentation",
         author,
         "anonapi",
         "One line description of project.",

@@ -212,7 +212,7 @@ def test_cli_job_list_errors(mock_main_runner, mock_requests):
         status_code=400,
     )
     result = runner.invoke(entrypoint.cli, "job list")
-    result.exit_code == 0
+    assert result.exit_code == 0
 
 
 def test_command_line_tool_activate_server(mock_main_runner, mock_requests):
