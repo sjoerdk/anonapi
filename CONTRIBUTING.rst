@@ -145,7 +145,7 @@ General points about working with this generator:
 
 To re-generate, run:
 
-    $ github_changelog_generator -u sjoerdk -p anonapi --token <your token> --since-tag <v1.5.3> --future-release <v1.5.5>
+    $ docker run -it --rm -v "$(pwd)":/home/sjoerd/code/python/packages/anonapi "githubchangeloggenerator/github-changelog-generator --user sjoerdk --project anonapi –-token <github token, see below> –-since-tag <latest tag in readme> –-future-release <tag that you will give to current commit>
 
 
 Replace token and version numbers to match the current release. To get a github token, see here: https://github.com/github-changelog-generator/github-changelog-generator#github-token
