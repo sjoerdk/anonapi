@@ -6,7 +6,7 @@ import click
 from click.exceptions import ClickException
 
 from anonapi.decorators import pass_anonapi_context
-from anonapi.selection import FileFolder, open_as_dicom
+from anonapi.selection import FileFolder, find_dicom_files
 from fileselection.fileselection import FileSelectionFolder
 from pathlib import Path
 from tqdm import tqdm
@@ -136,8 +136,7 @@ def add(context: SelectCommandContext, pattern, recurse, check_dicom, exclude_pa
     )
 
     if check_dicom:
-        logger.info("Checking that each file is Dicom")
-        paths = [x for x in tqdm(paths) if open_as_dicom(x)]
+        paths = find_dicom_files(paths)
 
     selection_folder = context.get_current_selection_folder()
     if selection_folder.has_file_selection():

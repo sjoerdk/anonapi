@@ -1,6 +1,6 @@
 import pytest
 
-from anonapi.selection import FileFolder, open_as_dicom
+from anonapi.selection import FileFolder, find_dicom_files
 from tests import RESOURCE_PATH
 
 
@@ -13,7 +13,7 @@ def test_selection_tool(a_file_folder):
 
     files = list(a_file_folder.iterate())
     assert len(files) == 5
-    assert len([x for x in files if open_as_dicom(x)]) == 3
+    assert len(find_dicom_files(files)) == 3
 
 
 def test_selection_tool_parameters(a_file_folder):

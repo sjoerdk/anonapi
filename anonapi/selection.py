@@ -6,13 +6,11 @@ import re
 from fnmatch import fnmatch
 from pathlib import Path
 
-import pydicom
 from pydicom.misc import is_dicom
 
 from tqdm import tqdm
 
 from fileselection.fileselection import FileSelectionFile, FileSelectionFolder
-from pydicom.errors import InvalidDicomError
 
 logger = logging.getLogger(__name__)
 
@@ -68,32 +66,6 @@ class FileFolder:
                 yield x
             else:
                 continue
-
-
-def open_as_dicom(path, read_pixel_data: bool = True):
-    """Tries to open root_path as dicom
-
-    Parameters
-    ----------
-    path: Pathlike
-        Path a to a file
-    read_pixel_data: Bool, optional
-        Whether to read pixel data when opening this file.
-        Defaults to True, meaning all pixel data will be read and returned
-
-    Returns
-    -------
-    pydicom.dataset
-        If root_path can be opened as dicom
-    None
-        If root_path cannot be opened
-    """
-    try:
-        return pydicom.filereader.dcmread(
-            str(path), stop_before_pixels=not read_pixel_data
-        )
-    except InvalidDicomError:
-        return None
 
 
 def create_dicom_selection(path, check_dicom=True) -> FileSelectionFile:
