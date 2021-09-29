@@ -1,4 +1,12 @@
 # Changelog
+## [v1.7.0](https://github.com/sjoerdk/anonapi/tree/v1.7.0) (2021-09-29)
+
+[Full Changelog](https://github.com/sjoerdk/anonapi/compare/v1.6.0...v1.7.0)
+
+**Implemented enhancements:**
+
+- Optimize dicom file checking [\#401](https://github.com/sjoerdk/anonapi/issues/401)
+- Add extension option to map add-study-folder [\#325](https://github.com/sjoerdk/anonapi/issues/325)
 
 ## [v1.5.5](https://github.com/sjoerdk/anonapi/tree/v1.5.5) (2021-02-18)
 
