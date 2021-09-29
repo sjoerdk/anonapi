@@ -215,7 +215,7 @@ Options:
 	add all study folders in this xlsx or csv file to mapping. Looks for column 'folder' in file. If a column 'pseudoID' is present,adds these instead of auto-generating
 
 --check-dicom/ --no-check-dicom
-	--check-dicom: Open each file to check whether it is valid DICOM. --no-check-dicom: Add all files that look like DICOM (exclude files with known file extensions like .txt or .xml). off by default
+	--check-dicom: Open each file to check whether it is valid DICOM. --no-check-dicom: Add all files that look like DICOM (exclude files with known file extensions like .txt or .xml). on by default
 
 Example:
 
