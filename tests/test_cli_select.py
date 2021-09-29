@@ -75,15 +75,21 @@ def test_select_add_append(mock_main_runner, folder_with_some_dicom_files):
 
     # start with emtpy selection and add a file
     assert not selection_folder.has_file_selection()
-    mock_main_runner.invoke(main, args=["add", "*.txt"], catch_exceptions=False)
+    mock_main_runner.invoke(
+        main, args=["add", "--no-check-dicom", "*.txt"], catch_exceptions=False
+    )
     assert len(selection_folder.load_file_selection().selected_paths) == 1
 
     # now add the same file again
-    mock_main_runner.invoke(main, args=["add", "*.txt"], catch_exceptions=False)
+    mock_main_runner.invoke(
+        main, args=["add", "--no-check-dicom", "*.txt"], catch_exceptions=False
+    )
     # this should not have added any new file because it was already there
     assert len(selection_folder.load_file_selection().selected_paths) == 1
     # now add more
-    mock_main_runner.invoke(main, args=["add", "1"], catch_exceptions=False)
+    mock_main_runner.invoke(
+        main, args=["add", "--no-check-dicom", "1"], catch_exceptions=False
+    )
     assert len(selection_folder.load_file_selection().selected_paths) == 3
 
 
@@ -102,7 +108,9 @@ def test_select_add_exclude(mock_main_runner, folder_with_some_dicom_files):
 
     mock_main_runner.invoke(
         main,
-        args="add * --exclude-pattern 2.0* --exclude-pattern *1".split(" "),
+        args="add * --no-check-dicom --exclude-pattern 2.0* --exclude-pattern *1".split(
+            " "
+        ),
         catch_exceptions=False,
     )
     assert len(selection_folder.load_file_selection().selected_paths) == 2

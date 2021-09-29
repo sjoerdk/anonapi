@@ -340,7 +340,7 @@ There are several modifiers available:
 	Search for files to add in subfolders as well. On by default
 
 --check-dicom/ --no-check-dicom
-	Only add files that are valid DICOM file. For many files, this might take some time. Off by default.
+	Only add files that are valid DICOM file. For many files, this might take some time. On by default.
 
 --exclude-pattern, -e
 	Exclude any file matching the given pattern. The pattern can use ``*`` to match any part of a name. --exclude-pattern can be used multiple times, to exclude multiple patterns

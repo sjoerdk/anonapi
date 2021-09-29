@@ -259,10 +259,10 @@ def delete(context: MapCommandContext):
 )
 @click.option(
     "--check-dicom/--no-check-dicom",
-    default=False,
+    default=True,
     help="--check-dicom: Open each file to check whether it is valid DICOM. "
     "--no-check-dicom: Add all files that look like DICOM (exclude files with"
-    " known file extensions like .txt or .xml). off by default",
+    " known file extensions like .txt or .xml). on by default",
 )
 @handle_anonapi_exceptions
 def add_study_folders(context: MapCommandContext, paths, input_file, check_dicom):

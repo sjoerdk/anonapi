@@ -245,7 +245,9 @@ def test_cli_map_add_folder_no_check(
 
     # but after adding
     result = runner.invoke(
-        add_study_folders, args=[str(selection_folder.path)], catch_exceptions=False
+        add_study_folders,
+        args=["--no-check-dicom", str(selection_folder.path)],
+        catch_exceptions=False,
     )
 
     # There should be a selection there
@@ -286,7 +288,9 @@ def test_cli_map_add_study_folders(
         "os.getcwd", lambda: str(folder_with_mapping_and_some_dicom_files.path)
     )
 
-    result = runner_with_mapping.invoke(add_study_folders, "*", catch_exceptions=False,)
+    result = runner_with_mapping.invoke(
+        add_study_folders, args=["--no-check-dicom", "*"], catch_exceptions=False,
+    )
 
     assert create_fileselection_click_recorder.call_count == 2
     assert "that look like DICOM" in result.output

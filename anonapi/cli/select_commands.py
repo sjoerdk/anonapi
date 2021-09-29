@@ -106,9 +106,9 @@ def delete(context: SelectCommandContext):
 )
 @click.option(
     "--check-dicom/--no-check-dicom",
-    default=False,
+    default=True,
     help="Only add files that are valid DICOM file. For many files, this might "
-    "take some time. Off by default.",
+    "take some time. On by default.",
 )
 @click.option(
     "--exclude-pattern",
