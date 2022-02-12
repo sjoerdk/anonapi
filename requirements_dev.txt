@@ -5,7 +5,7 @@ factory-boy==3.2.0
 flake8==3.9.2
 Click==8.0.1
 openpyxl==3.0.9
-pytest==6.2.5
+pytest==7.0.1
 pytest-runner==5.3.1
 pydicom==2.2.1
 tqdm==4.62.3
