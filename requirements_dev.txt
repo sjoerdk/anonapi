@@ -5,7 +5,7 @@ factory-boy==3.2.1
 flake8==3.9.2
 Click==8.0.4
 openpyxl==3.0.9
-pytest==7.0.1
+pytest==7.1.1
 pydicom==2.2.2
 tqdm==4.62.3
 sphinx_rtd_theme==1.0.0
