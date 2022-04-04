@@ -7,7 +7,7 @@ Click==8.0.4
 openpyxl==3.0.9
 pytest==7.0.1
 pydicom==2.2.2
-tqdm==4.62.3
+tqdm==4.64.0
 sphinx_rtd_theme==1.0.0
 sphinx-autodoc-typehints==1.17.0
 tox==3.24.5
