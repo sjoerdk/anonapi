@@ -1,7 +1,6 @@
 """Functions to filter and select files from folders.
 Useful for example for selecting only DICOM files in a folder.
 """
-import logging
 import re
 from fnmatch import fnmatch
 from pathlib import Path
@@ -12,7 +11,9 @@ from tqdm import tqdm
 
 from fileselection.fileselection import FileSelectionFile, FileSelectionFolder
 
-logger = logging.getLogger(__name__)
+from anonapi.logging import get_module_logger
+
+logger = get_module_logger(__name__)
 
 
 class FileFolder:

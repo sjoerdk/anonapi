@@ -1,14 +1,13 @@
 """Click group and commands for the 'server' subcommand"""
-import logging
-
 import click
 
 from anonapi.cli.click_parameter_types import AnonServerKeyParamType
 from anonapi.context import AnonAPIContext, command_group_function
 from anonapi.decorators import pass_anonapi_context
+from anonapi.logging import get_module_logger
 from anonapi.objects import RemoteAnonServer
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 @click.group(name="server")

@@ -17,11 +17,11 @@ from anonapi.cli import (
 )
 from anonapi.context import AnonAPIContext
 from anonapi.client import AnonClientTool
-from anonapi.logging import AnonAPILogController, Verbosities
+from anonapi.logging import AnonAPILogController, Verbosities, get_module_logger
 from anonapi.persistence import DEFAULT_SETTINGS_PATH
 from anonapi.settings import DefaultAnonClientSettings, AnonClientSettingsFromFile
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 def get_settings_path() -> Path:

@@ -6,7 +6,6 @@ It is often easier to add such a file to a mapping programatically then to
 copy-paste between open files
 """
 import csv
-import logging
 from pathlib import Path
 from typing import Iterator, List, Type, Union, Optional
 
@@ -14,6 +13,7 @@ from openpyxl.reader.excel import load_workbook
 from openpyxl.utils.exceptions import InvalidFileException
 
 from anonapi.exceptions import AnonAPIException
+from anonapi.logging import get_module_logger
 from anonapi.mapper import JobParameterGrid, sniff_dialect_safe
 from anonapi.parameters import (
     AccessionNumber,
@@ -25,7 +25,7 @@ from anonapi.parameters import (
 )
 
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 class ParameterColumn:
@@ -104,7 +104,7 @@ class ParameterColumn:
                 parameter_types=[self.parameter_type],
             )
         except ParameterParsingError as e:
-            raise InputFileParseException(e)
+            raise InputFileParseException() from e
 
     def has_empty_value(self, row: List[str]) -> bool:
         """True if the given row has no value in this column"""
@@ -188,7 +188,7 @@ class ExcelFile(TabularFile):
         try:
             wb2 = load_workbook(self.path)
         except (InvalidFileException, FileNotFoundError) as e:
-            raise InputFileException(f"Error reading '{self.path}':{e}")
+            raise InputFileException(f"Error reading '{self.path}'") from e
 
         sheet = wb2[wb2.sheetnames[0]]  # read first sheet, ignore others
 
@@ -245,7 +245,7 @@ class CSVFile(TabularFile):
                     row for row in csv.reader(lines, dialect=sniff_dialect_safe(lines))
                 ]
         except FileNotFoundError as e:
-            raise InputFileException(e)
+            raise InputFileException() from e
 
         return iter(rows)
 
@@ -403,8 +403,8 @@ def extract_parameter_grid(
         except RowParseException as e:
             # Add row number (+2 as excel rows start at 1 and both idxs are 0-based)
             raise InputFileParseException(
-                f"Exception in row {column_headers_idx+idx+2}: {e}"
-            )
+                f"Exception in row {column_headers_idx+idx+2}"
+            ) from e
 
     return JobParameterGrid(grid)
 

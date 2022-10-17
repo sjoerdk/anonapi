@@ -1,5 +1,4 @@
 """Click group and commands for the 'map' subcommand"""
-import logging
 import os
 from pathlib import Path
 from typing import List, Optional
@@ -18,6 +17,7 @@ from anonapi.cli.click_parameter_types import (
     PathParameterFile,
     WildcardFolder,
 )
+from anonapi.logging import get_module_logger
 from anonapi.selection import create_dicom_selection
 from anonapi.context import AnonAPIContext
 from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
@@ -48,7 +48,7 @@ from anonapi.parameters import (
 )
 from anonapi.settings import AnonClientSettings, DefaultAnonClientSettings
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 class MapCommandContext:
@@ -242,7 +242,7 @@ def delete(context: MapCommandContext):
         os.remove(path)
         logger.info(f"Removed mapping at {path}")
     except FileNotFoundError as e:
-        raise MapperException(f"Error deleting mapping: {e}")
+        raise MapperException(f"Error deleting mapping: {e}") from e
 
 
 @click.command()
@@ -401,7 +401,7 @@ def add_selection(context: MapCommandContext, selection):
         identifier.identifier = identifier.identifier.relative_to(context.current_dir)
 
     except ValueError as e:
-        raise BadParameter(f"Selection file must be inside mapping folder:{e}")
+        raise BadParameter("Selection file must be inside mapping folder") from e
 
     def random_string(k):
         return "".join(random.choices(string.ascii_uppercase + string.digits, k=k))

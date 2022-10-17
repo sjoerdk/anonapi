@@ -1,17 +1,17 @@
 """Click group and commands for the 'select' subcommand"""
-import logging
 import os
 
 import click
 from click.exceptions import ClickException
 
 from anonapi.decorators import pass_anonapi_context
+from anonapi.logging import get_module_logger
 from anonapi.selection import FileFolder, find_dicom_files
 from fileselection.fileselection import FileSelectionFolder
 from pathlib import Path
 from tqdm import tqdm
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 class CLIMessages:
@@ -79,8 +79,8 @@ def status(context: SelectCommandContext):
     try:
         selection = context.get_current_selection()
         logger.info(describe_selection(selection))
-    except FileNotFoundError:
-        raise ClickException(CLIMessages.NO_SELECTION_DEFINED)
+    except FileNotFoundError as e:
+        raise ClickException(CLIMessages.NO_SELECTION_DEFINED) from e
 
 
 @click.command()

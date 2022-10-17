@@ -1,6 +1,5 @@
 """Click group and commands for the 'job' subcommand"""
 import itertools
-import logging
 from typing import List
 
 import click
@@ -8,8 +7,9 @@ import click
 from anonapi.cli.click_parameter_types import JobIDRangeParamType
 from anonapi.context import AnonAPIContext, command_group_function
 from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
+from anonapi.logging import get_module_logger
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 def flatten(list_of_lists: List[List]) -> List:

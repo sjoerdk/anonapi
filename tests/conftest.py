@@ -157,7 +157,8 @@ def mock_api_context(tmpdir) -> AnonAPIContext:
 def mock_main_runner_with_batch(mock_main_runner):
     context = mock_main_runner.get_context()
     batch = JobBatch(
-        job_ids=["1000", "1002", "5000", "100000"], server=context.get_active_server(),
+        job_ids=["1000", "1002", "5000", "100000"],
+        server=context.get_active_server(),
     )
     context.get_batch = lambda: batch  # set current batch to mock batch
     return mock_main_runner
@@ -239,7 +240,13 @@ class MockContextCliRunner(CliRunner):
         **extra
     ):
         return super().invoke(
-            cli, args, input, env, catch_exceptions, color, obj=self.mock_context,
+            cli,
+            args,
+            input,
+            env,
+            catch_exceptions,
+            color,
+            obj=self.mock_context,
         )
 
 

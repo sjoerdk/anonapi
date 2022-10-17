@@ -1,6 +1,5 @@
 """Click group and commands for the 'batch' subcommand"""
 import itertools
-import logging
 from typing import List
 
 import click
@@ -10,10 +9,11 @@ from anonapi.batch import BatchFolder, JobBatch
 from anonapi.cli.click_parameter_types import JobIDRangeParamType
 from anonapi.context import AnonAPIContext
 from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
+from anonapi.logging import get_module_logger
 from anonapi.responses import JobStatus, JobInfoColumns, JobInfo, format_job_info_list
 from collections import Counter
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 @click.group(name="batch")
@@ -103,7 +103,9 @@ def status(context: AnonAPIContext, patient_name):
     ids_queried = batch.job_ids
 
     infos = context.client_tool.get_job_info_list(
-        server=batch.server, job_ids=ids_queried, get_extended_info=get_extended_info,
+        server=batch.server,
+        job_ids=ids_queried,
+        get_extended_info=get_extended_info,
     )
 
     logger.info(f"Job info for {len(infos)} jobs on {batch.server}:")

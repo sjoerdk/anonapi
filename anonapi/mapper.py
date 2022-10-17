@@ -14,7 +14,6 @@ mappings. This should be renamed whenever encountered
 """
 import csv
 import locale
-import logging
 import os
 
 from csv import Dialect
@@ -23,6 +22,7 @@ from typing import Dict, Iterable, List, Optional, TextIO, Union
 from tabulate import tabulate
 
 from anonapi.exceptions import AnonAPIException
+from anonapi.logging import get_module_logger
 from anonapi.parameters import (
     FolderIdentifier,
     FileSelectionIdentifier,
@@ -45,7 +45,7 @@ from os import path
 
 DEFAULT_MAPPING_NAME = "anon_mapping.csv"  # Filename for mapping if not specified
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 class Mapping:
@@ -136,9 +136,8 @@ class Mapping:
         except OSError as e:
             if "raw readinto() returned invalid length" in str(e):
                 raise MappingLoadError(
-                    f"Cannot load mapping. Is the mapping file opened in any"
-                    f" editor?. Original error: {e}"
-                )
+                    "Cannot load mapping. Is the mapping file opened in any" " editor?"
+                ) from e
             else:
                 # Unsure which error this is. Can't handle this here.
                 raise
@@ -350,7 +349,9 @@ class JobParameterGrid:
         params = self.parameter_types()
 
         writer = csv.DictWriter(
-            f, dialect=dialect, fieldnames=[x.field_name for x in params],
+            f,
+            dialect=dialect,
+            fieldnames=[x.field_name for x in params],
         )
         writer.writeheader()
         for row in self.rows:
@@ -384,7 +385,7 @@ class JobParameterGrid:
             for row in reader:
                 parameters.append(JobParameterGrid.parse_job_parameter_row(row))
         except ParameterParsingError as e:
-            raise MappingLoadError(f"Problem parsing '{row}': {e}")
+            raise MappingLoadError("Problem parsing '{row}'") from e
 
         return cls(parameters)
 
@@ -504,7 +505,7 @@ class MappingFile:
             try:
                 return Mapping.load(f)
             except FileNotFoundError as e:
-                raise MappingLoadError(f"Could not load mapping: {e}")
+                raise MappingLoadError(f"Could not load mapping") from e
 
     def get_mapping(self) -> Mapping:
         """Load default mapping from this folder
@@ -525,8 +526,8 @@ class MappingFile:
                 return Mapping.load(f)
         except (FileNotFoundError, MapperException) as e:
             raise MapperException(
-                f"Could not load mapping at " f"'{self.file_path}': {e}"
-            )
+                f"Could not load mapping at '{self.file_path}'"
+            ) from e
 
 
 class ExampleJobParameterGrid(JobParameterGrid):
@@ -603,8 +604,8 @@ class MappingParameterSet(ParameterSet):
         except ParameterException as e:
             raise MapperException(
                 f"Invalid set of parameters for mapping: no source found. Where"
-                f" should the data come from? Original error: {e}"
-            )
+                f" should the data come from? Original error"
+            ) from e
 
     @staticmethod
     def get_default_parameters() -> ParameterSet:

@@ -7,6 +7,13 @@ from io import IOBase, UnsupportedOperation
 import click
 
 
+ROOT_LOGGER_NAME = "anonapi"
+
+
+def get_module_logger(name):
+    return logging.getLogger(f"{ROOT_LOGGER_NAME}.{name}")
+
+
 class ClickEchoIO(IOBase):
     """A stream that logger.info()'s each line that is written to it. Can be
     used ad stream for logging

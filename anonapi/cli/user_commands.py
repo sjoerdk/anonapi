@@ -1,5 +1,4 @@
 """User sub commands"""
-import logging
 import random
 import string
 
@@ -7,9 +6,9 @@ import click
 
 from anonapi.context import AnonAPIContext
 from anonapi.decorators import pass_anonapi_context
+from anonapi.logging import get_module_logger
 
-
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 @click.group(name="user")

@@ -1,5 +1,4 @@
 """Click group and commands for the 'create' subcommand"""
-import logging
 from typing import Dict, List, Optional
 from pathlib import Path, PureWindowsPath
 
@@ -11,6 +10,7 @@ from anonapi.context import AnonAPIContext
 from anonapi.client import APIClientException
 from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
 from anonapi.exceptions import AnonAPIException
+from anonapi.logging import get_module_logger
 from anonapi.mapper import MapperException, Mapping, MappingFile
 from anonapi.parameters import (
     Parameter,
@@ -30,7 +30,7 @@ from anonapi.persistence import PersistenceException
 from anonapi.testresources import JobInfoFactory
 
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 class JobParameterSet(ParameterSet):
@@ -100,7 +100,7 @@ class JobParameterSet(ParameterSet):
         try:
             absolute_parameters = self.make_unc_paths(self.parameters)
         except NoAbsoluteRootPathException as e:
-            raise ParameterMappingException(e)
+            raise ParameterMappingException(e) from e
 
         for parameter in absolute_parameters:
             if self.is_non_keyword(parameter):
@@ -122,8 +122,10 @@ class JobParameterSet(ParameterSet):
                     dict_out[self.PARAMETER_KEYWORDS[type(parameter)]] = str(
                         parameter.value
                     )
-                except KeyError:
-                    raise ParameterMappingException(f"Unknown parameter '{parameter}'")
+                except KeyError as e:
+                    raise ParameterMappingException(
+                        f"Unknown parameter '{parameter}'"
+                    ) from e
 
         return dict_out
 
@@ -169,9 +171,8 @@ class JobParameterSet(ParameterSet):
             self.make_unc_paths(params)
         except ParameterMappingException as e:
             raise JobSetValidationError(
-                f"Error: {e}. Source and destination need to be absolute windows"
-                f" paths."
-            )
+                "Source and destination need to be absolute windows"
+            ) from e
 
     def make_unc_paths(self, parameters: List[Parameter]):
         """A copy of this JobParameterSet where all paths are absolute UNC
@@ -277,7 +278,7 @@ class CreateCommandsContext(AnonAPIContext):
                 raise JobCreationException(f"Unknown source '{source}'")
 
         except (APIClientException, PersistenceException) as e:
-            raise JobCreationException(f"Error creating job for source {source}: {e}")
+            raise JobCreationException(f"Error creating job for source {source}") from e
 
         return str(response.job_id)
 
@@ -435,7 +436,7 @@ def extract_job_sets(
         try:
             job_set.validate()
         except JobSetValidationError as e:
-            raise ClickException(f"Error validating parameters: {e}")
+            raise ClickException("Error validating parameters") from e
     return job_sets
 
 

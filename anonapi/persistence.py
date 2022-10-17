@@ -22,7 +22,7 @@ class YAMLSerializable:
     @classmethod
     def from_dict(cls, dict_in: Dict) -> object:
         """Create object from dict. Basis for json serialization. Overwrite this in
-        child classes to yield an instance of the the child class
+        child classes to yield an instance of the child class
 
         Raises
         ------
