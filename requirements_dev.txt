@@ -2,7 +2,7 @@ bumpversion==0.6.0
 coverage==6.3.2
 pip==22.0.3
 factory-boy==3.2.1
-flake8==4.0.1
+flake8==5.0.4
 Click==8.0.4
 openpyxl==3.0.9
 pytest==7.0.1
