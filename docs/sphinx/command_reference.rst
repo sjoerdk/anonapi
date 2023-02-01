@@ -321,7 +321,7 @@ Overview of select functions:
 ======= =========================================================================
 Command Description                                                              
 ======= =========================================================================
-add     Add all files matching pattern to selection in the current directory.Excl
+add     Add all files matching pattern to selection in the current directory.    
 delete  Remove selection file in current directory                               
 edit    Open selection file in default editor                                    
 status  Show selection in current directory                                      

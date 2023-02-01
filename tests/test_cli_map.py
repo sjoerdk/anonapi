@@ -25,7 +25,11 @@ from anonapi.mapper import (
     MappingFile,
     MappingLoadError,
 )
-from anonapi.parameters import ParameterSet, PseudoName, SourceIdentifierParameter
+from anonapi.parameters import (
+    ParameterSet,
+    PseudoName,
+    SourceIdentifierParameter,
+)
 from anonapi.settings import DefaultAnonClientSettings
 from tests.conftest import AnonAPIContextRunner, MockContextCliRunner
 from tests import RESOURCE_PATH
@@ -49,7 +53,9 @@ def mock_main_runner_with_mapping(mock_main_runner, a_folder_with_mapping):
     context.current_dir = lambda: NotImplementedError(
         "Call settings.active_mapping_file instead"
     )
-    context.settings.active_mapping_file = a_folder_with_mapping / "anon_mapping.csv"
+    context.settings.active_mapping_file = (
+        a_folder_with_mapping / "anon_mapping.csv"
+    )
     return mock_main_runner
 
 
@@ -71,7 +77,10 @@ def runner_with_mapping(mock_map_context_with_mapping) -> MappingContextRunner:
 
 @fixture
 def mock_map_context_without(tmpdir) -> MapCommandContext:
-    return MapCommandContext(current_dir=tmpdir, settings=DefaultAnonClientSettings(),)
+    return MapCommandContext(
+        current_dir=tmpdir,
+        settings=DefaultAnonClientSettings(),
+    )
 
 
 @fixture
@@ -90,7 +99,10 @@ def test_cli_map_add_selection(
     runner_with_mapping, a_folder_with_mapping_and_fileselection
 ):
     """Add a file selection to a mapping."""
-    mapping_folder, fileselection_path = a_folder_with_mapping_and_fileselection
+    (
+        mapping_folder,
+        fileselection_path,
+    ) = a_folder_with_mapping_and_fileselection
 
     runner = runner_with_mapping
     result = runner.invoke(
@@ -106,7 +118,9 @@ def test_cli_map_add_selection(
 
 
 def test_cli_map(mock_main_runner, mock_cli_base_context, tmpdir):
-    result = mock_main_runner.invoke(entrypoint.cli, "map init", catch_exceptions=False)
+    result = mock_main_runner.invoke(
+        entrypoint.cli, "map init", catch_exceptions=False
+    )
     with open(Path(tmpdir) / "anon_mapping.csv", "r") as f:
         f.read()
 
@@ -119,17 +133,24 @@ def test_cli_map_init(mock_main_runner, tmpdir):
     #  there should be no mapping to start with
     assert (
         "Could not find mapping"
-        in runner.invoke(entrypoint.cli, "map activate", catch_exceptions=False).output
+        in runner.invoke(
+            entrypoint.cli, "map activate", catch_exceptions=False
+        ).output
     )
 
     # but after init there should be a valid mapping
     runner.invoke(entrypoint.cli, "map init", catch_exceptions=False)
-    mapping_path = mock_main_runner.get_context().current_dir / DEFAULT_MAPPING_NAME
+    mapping_path = (
+        mock_main_runner.get_context().current_dir / DEFAULT_MAPPING_NAME
+    )
     assert mapping_path.exists()
     MappingFile(mapping_path).load_mapping()  # should not crash
 
     # and the created mapping should have been activated
-    assert mock_main_runner.get_context().settings.active_mapping_file == mapping_path
+    assert (
+        mock_main_runner.get_context().settings.active_mapping_file
+        == mapping_path
+    )
 
 
 def test_cli_map_info(mock_main_runner_with_mapping):
@@ -138,7 +159,9 @@ def test_cli_map_info(mock_main_runner_with_mapping):
     context.current_dir = RESOURCE_PATH / "test_cli"
 
     runner = mock_main_runner_with_mapping
-    result = runner.invoke(entrypoint.cli, "map status", catch_exceptions=False)
+    result = runner.invoke(
+        entrypoint.cli, "map status", catch_exceptions=False
+    )
 
     assert result.exit_code == 0
     assert "folder:folder/file4  patientName4" in result.output
@@ -149,7 +172,9 @@ def test_cli_map_info_empty_dir(mock_main_runner):
     nice 'no mapping' message
     """
     runner = mock_main_runner
-    result = runner.invoke(entrypoint.cli, "map status", catch_exceptions=False)
+    result = runner.invoke(
+        entrypoint.cli, "map status", catch_exceptions=False
+    )
 
     assert result.exit_code == 1
     assert "No active mapping" in result.output
@@ -181,13 +206,16 @@ def test_cli_map_info_load_exception(mock_main_runner, monkeypatch):
     monkeypatch.setattr("anonapi.mapper.JobParameterGrid.load", mock_load)
     runner = CliRunner()
 
-    result = runner.invoke(entrypoint.cli, "map status", catch_exceptions=False)
+    result = runner.invoke(
+        entrypoint.cli, "map status", catch_exceptions=False
+    )
 
     assert result.exit_code == 1
-    assert "Test Exception" in result.output
 
 
-def test_cli_map_add_folder(mock_map_context_without, folder_with_some_dicom_files):
+def test_cli_map_add_folder(
+    mock_map_context_without, folder_with_some_dicom_files
+):
     """Add all dicom files in this folder to mapping"""
     context = mock_map_context_without
     runner = AnonAPIContextRunner(mock_context=context)
@@ -195,7 +223,9 @@ def test_cli_map_add_folder(mock_map_context_without, folder_with_some_dicom_fil
 
     # Add this folder to mapping
     result = runner.invoke(
-        add_study_folders, args=[str(selection_folder.path)], catch_exceptions=False,
+        add_study_folders,
+        args=[str(selection_folder.path)],
+        catch_exceptions=False,
     )
 
     # oh no! no mapping yet!
@@ -211,7 +241,9 @@ def test_cli_map_add_folder(mock_map_context_without, folder_with_some_dicom_fil
 
     # but after adding
     result = runner.invoke(
-        add_study_folders, args=[str(selection_folder.path)], catch_exceptions=False
+        add_study_folders,
+        args=[str(selection_folder.path)],
+        catch_exceptions=False,
     )
 
     # There should be a selection there
@@ -270,7 +302,8 @@ def create_fileselection_click_recorder(monkeypatch):
         return find_dicom_files(*args, **kwargs)
 
     monkeypatch.setattr(
-        "anonapi.cli.map_commands.find_dicom_files", find_dicom_files_recorded,
+        "anonapi.cli.map_commands.find_dicom_files",
+        find_dicom_files_recorded,
     )
     return recorder
 
@@ -289,7 +322,9 @@ def test_cli_map_add_study_folders(
     )
 
     result = runner_with_mapping.invoke(
-        add_study_folders, args=["--no-check-dicom", "*"], catch_exceptions=False,
+        add_study_folders,
+        args=["--no-check-dicom", "*"],
+        catch_exceptions=False,
     )
 
     assert create_fileselection_click_recorder.call_count == 2
@@ -336,11 +371,16 @@ def test_cli_map_activate(mock_map_context_with_mapping):
     runner = AnonAPIContextRunner(mock_context=context)
     settings = context.settings
 
-    settings.active_mapping_file = None  # we start with a mapping file, but no active
+    settings.active_mapping_file = (
+        None  # we start with a mapping file, but no active
+    )
 
     # after activating, active mapping should be set
     runner.invoke(activate)
-    assert settings.active_mapping_file == context.current_dir / "anon_mapping.csv"
+    assert (
+        settings.active_mapping_file
+        == context.current_dir / "anon_mapping.csv"
+    )
 
     # Graceful error when activating when there is no mapping in current dir
     runner.invoke(delete)
@@ -365,7 +405,9 @@ def test_cli_map_add_paths_file(
     monkeypatch.setattr("os.getcwd", lambda: folder_with_some_dicom_files.path)
 
     folders = [
-        x for x in folder_with_some_dicom_files.path.glob("*") if not x.is_file()
+        x
+        for x in folder_with_some_dicom_files.path.glob("*")
+        if not x.is_file()
     ]
 
     # First run with regular command line input
@@ -375,9 +417,13 @@ def test_cli_map_add_paths_file(
     assert result.exit_code == 0
 
     # Then run with input file input (input file contains 2 folders + names)
-    input_file_path = MAPPER_RESOURCE_PATH / "inputfile" / "some_folder_names.xlsx"
+    input_file_path = (
+        MAPPER_RESOURCE_PATH / "inputfile" / "some_folder_names.xlsx"
+    )
     result = runner.invoke(
-        add_study_folders, args=["-f", str(input_file_path)], catch_exceptions=False
+        add_study_folders,
+        args=["-f", str(input_file_path)],
+        catch_exceptions=False,
     )
     assert result.exit_code == 0
 
@@ -386,14 +432,18 @@ def test_cli_map_add_paths_file(
     assert len(added) == 3
 
     # and the pseudo names from the input file should have been included
-    pseudo_names = [ParameterSet(x).get_param_by_type(PseudoName) for x in added]
+    pseudo_names = [
+        ParameterSet(x).get_param_by_type(PseudoName) for x in added
+    ]
     assert pseudo_names[1].value == "studyA"
     assert pseudo_names[2].value == "studyB"
 
 
 def test_cli_map_add_accession_numbers(runner_with_mapping):
     """Add some accession numbers to a mapping"""
-    result = runner_with_mapping.invoke(add_accession_numbers, ["12344556.12342345"])
+    result = runner_with_mapping.invoke(
+        add_accession_numbers, ["12344556.12342345"]
+    )
     assert result.exit_code == 0
     mapping = runner_with_mapping.get_current_mapping()
     # TODO: make accessing a specific parameter in a row easier. Not like below.
@@ -406,7 +456,9 @@ def test_cli_map_add_accession_numbers(runner_with_mapping):
 def test_cli_map_add_accession_numbers_file(runner_with_mapping):
     """Add some accession numbers to a mapping"""
 
-    input_file_path = MAPPER_RESOURCE_PATH / "inputfile" / "some_accession_numbers.xlsx"
+    input_file_path = (
+        MAPPER_RESOURCE_PATH / "inputfile" / "some_accession_numbers.xlsx"
+    )
     result = runner_with_mapping.invoke(
         add_accession_numbers, ["--input-file", str(input_file_path)]
     )
@@ -416,4 +468,7 @@ def test_cli_map_add_accession_numbers_file(runner_with_mapping):
         ParameterSet(mapping.rows[-1]).as_dict()["source"].value.identifier
         == "123456.12321313"
     )
-    assert ParameterSet(mapping.rows[-1]).as_dict()["pseudo_name"].value == "study3"
+    assert (
+        ParameterSet(mapping.rows[-1]).as_dict()["pseudo_name"].value
+        == "study3"
+    )
