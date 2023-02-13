@@ -1,4 +1,5 @@
 # Changelog
+
 ## [v1.7.0](https://github.com/sjoerdk/anonapi/tree/v1.7.0) (2021-09-29)
 
 [Full Changelog](https://github.com/sjoerdk/anonapi/compare/v1.6.0...v1.7.0)

@@ -17,7 +17,7 @@ from collections import namedtuple
 from pathlib import Path, PureWindowsPath
 from typing import List
 
-from anonapi.exceptions import AnonAPIException
+from anonapi.exceptions import AnonAPIError
 
 
 class UNCPath(PureWindowsPath):
@@ -75,7 +75,7 @@ class UNCMapping:
 
         Raises
         ------
-        UNCMappingException
+        UNCMappingError
             If path cannot be mapped any UNC path
 
         """
@@ -88,7 +88,7 @@ class UNCMapping:
             except ValueError:
                 continue
 
-        raise UNCMappingException(
+        raise UNCMappingError(
             f"{path_in} could not be mapped to UNC path."
             f" I know only {[x.local for x in self.maps]}"
         )
@@ -108,7 +108,7 @@ class UNCMapping:
 
         Raises
         ------
-        UNCMappingException
+        UNCMappingError
             If path cannot be mapped any local path
 
         """
@@ -121,11 +121,11 @@ class UNCMapping:
                 return map_in.local / path_in.relative_to(map_in.unc)
             except ValueError:
                 continue
-        raise UNCMappingException(
+        raise UNCMappingError(
             f"{path_in} could not be mapped to local path."
             f" I know only {[x.unc for x in self.maps]}"
         )
 
 
-class UNCMappingException(AnonAPIException):
+class UNCMappingError(AnonAPIError):
     pass

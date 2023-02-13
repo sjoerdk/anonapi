@@ -7,11 +7,11 @@ import click
 from click.exceptions import Abort, ClickException
 from anonapi.batch import BatchFolder, JobBatch
 from anonapi.context import AnonAPIContext
-from anonapi.client import APIClientException
+from anonapi.client import APIClientError
 from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
-from anonapi.exceptions import AnonAPIException
+from anonapi.exceptions import AnonAPIError
 from anonapi.logging import get_module_logger
-from anonapi.mapper import MapperException, Mapping, MappingFile
+from anonapi.mapper import MapperError, Mapping, MappingFile
 from anonapi.parameters import (
     Parameter,
     DestinationPath,
@@ -26,7 +26,7 @@ from anonapi.parameters import (
     is_unc_path,
     get_legacy_idis_value,
 )
-from anonapi.persistence import PersistenceException
+from anonapi.persistence import PersistenceError
 from anonapi.testresources import JobInfoFactory
 
 
@@ -54,7 +54,9 @@ class JobParameterSet(ParameterSet):
     NON_KEYWORD_PARAMETERS = [RootSourcePath]
 
     def __init__(
-        self, parameters: List[Parameter], default_parameters: List[Parameter] = None
+        self,
+        parameters: List[Parameter],
+        default_parameters: List[Parameter] = None,
     ):
         """
 
@@ -73,7 +75,9 @@ class JobParameterSet(ParameterSet):
     @classmethod
     def is_non_keyword(cls, parameter):
         """Is this parameter of a type that is never sent as a parameter directly?"""
-        return any(isinstance(parameter, x) for x in cls.NON_KEYWORD_PARAMETERS)
+        return any(
+            isinstance(parameter, x) for x in cls.NON_KEYWORD_PARAMETERS
+        )
 
     def get_source(self) -> Optional[SourceIdentifierParameter]:
         """Get the parameter indicating the source of the data"""
@@ -84,7 +88,7 @@ class JobParameterSet(ParameterSet):
 
         Raises
         ------
-        ParameterMappingException
+        ParameterMappingError
             If not all parameters can be mapped
 
         Returns
@@ -100,7 +104,7 @@ class JobParameterSet(ParameterSet):
         try:
             absolute_parameters = self.make_unc_paths(self.parameters)
         except NoAbsoluteRootPathException as e:
-            raise ParameterMappingException(e) from e
+            raise ParameterMappingError(e) from e
 
         for parameter in absolute_parameters:
             if self.is_non_keyword(parameter):
@@ -114,7 +118,7 @@ class JobParameterSet(ParameterSet):
                 elif self.is_path_type(parameter):
                     dict_out["source_path"] = str(parameter.value)
                 else:
-                    raise ParameterMappingException(
+                    raise ParameterMappingError(
                         f"Unknown source parameter '{parameter}'"
                     )
             else:
@@ -123,7 +127,7 @@ class JobParameterSet(ParameterSet):
                         parameter.value
                     )
                 except KeyError as e:
-                    raise ParameterMappingException(
+                    raise ParameterMappingError(
                         f"Unknown parameter '{parameter}'"
                     ) from e
 
@@ -140,9 +144,13 @@ class JobParameterSet(ParameterSet):
         pseudo_id = self.get_param_by_type(PseudoID)
         pseudo_name = self.get_param_by_type(PseudoName)
         if pseudo_id is None and pseudo_name is not None:
-            self.parameters.append(PseudoID(pseudo_name.value))  # take name for both
+            self.parameters.append(
+                PseudoID(pseudo_name.value)
+            )  # take name for both
         elif pseudo_name is None and pseudo_id is not None:
-            self.parameters.append(PseudoName(pseudo_id.value))  # take id for both
+            self.parameters.append(
+                PseudoName(pseudo_id.value)
+            )  # take id for both
 
     def has_path_source(self) -> bool:
         """Set of parameters defines a source that is a path"""
@@ -160,7 +168,9 @@ class JobParameterSet(ParameterSet):
 
         for required in [SourceIdentifierParameter, DestinationPath, Project]:
             if not self.get_param_by_type(required):
-                raise JobSetValidationError(f"Missing required parameter {required}")
+                raise JobSetValidationError(
+                    f"Missing required parameter {required}"
+                )
 
         if not self.has_path_source():
             # If this set has no path source, root source does not matter
@@ -169,7 +179,7 @@ class JobParameterSet(ParameterSet):
             params = self.parameters
         try:
             self.make_unc_paths(params)
-        except ParameterMappingException as e:
+        except ParameterMappingError as e:
             raise JobSetValidationError(
                 "Source and destination need to be absolute windows"
             ) from e
@@ -180,7 +190,7 @@ class JobParameterSet(ParameterSet):
 
         Raises
         ------
-        ParameterMappingException
+        ParameterMappingError
             If there are relative paths that cannot be resolved or are not unc
         """
         # make sure that all relative paths can be resolved
@@ -193,7 +203,7 @@ class JobParameterSet(ParameterSet):
                 if not param.path.is_absolute():
                     param = param.as_absolute(self.get_absolute_root_path())
                 if not is_unc_path(param.path):
-                    raise ParameterMappingException(
+                    raise ParameterMappingError(
                         f"{param} is not a unc path. It will not be clear where this "
                         f"path is outside the current computer"
                     )
@@ -212,7 +222,9 @@ class JobParameterSet(ParameterSet):
         """
         root_path = self.get_param_by_type(RootSourcePath)
         if not root_path:
-            raise NoAbsoluteRootPathException("No absolute root root_path defined")
+            raise NoAbsoluteRootPathException(
+                "No absolute root root_path defined"
+            )
         elif not root_path.path.is_absolute():
             raise NoAbsoluteRootPathException(
                 f"Root root_path {root_path} is not absolute"
@@ -277,8 +289,10 @@ class CreateCommandsContext(AnonAPIContext):
             else:
                 raise JobCreationException(f"Unknown source '{source}'")
 
-        except (APIClientException, PersistenceException) as e:
-            raise JobCreationException(f"Error creating job for source {source}") from e
+        except (APIClientError, PersistenceError) as e:
+            raise JobCreationException(
+                f"Error creating job for source {source}"
+            ) from e
 
         return str(response.job_id)
 
@@ -306,7 +320,7 @@ class CreateCommandsContext(AnonAPIContext):
 
     def get_current_mapping_file(self) -> MappingFile:
         if not self.active_mapping_file_path():
-            raise MapperException("No active mapping")
+            raise MapperError("No active mapping")
         return MappingFile(self.settings.active_mapping_file)
 
     def get_mapping(self) -> Mapping:
@@ -336,7 +350,9 @@ def mock_create(*args, **kwargs):
 @pass_create_commands_context
 @handle_anonapi_exceptions
 @click.option(
-    "--dry-run/--no-dry-run", default=False, help="Do not post to server, just print"
+    "--dry-run/--no-dry-run",
+    default=False,
+    help="Do not post to server, just print",
 )
 def from_mapping(context: CreateCommandsContext, dry_run):
     """Create jobs from mapping in current folder"""
@@ -347,7 +363,9 @@ def from_mapping(context: CreateCommandsContext, dry_run):
         context.client_tool.create_path_job = mock_create
         context.client_tool.create_pacs_job = mock_create
 
-    job_sets = extract_job_sets(context.default_parameters(), context.get_mapping())
+    job_sets = extract_job_sets(
+        context.default_parameters(), context.get_mapping()
+    )
 
     # inspect project name and destination to present the next question to the user
     project_names = set()
@@ -444,7 +462,9 @@ def extract_job_sets(
 @pass_create_commands_context
 def set_defaults(context: CreateCommandsContext):
     """Set project name used when creating jobs"""
-    job_default_parameters: List[Parameter] = context.settings.job_default_parameters
+    job_default_parameters: List[
+        Parameter
+    ] = context.settings.job_default_parameters
     logger.info(
         "Please set default rows current value shown in [brackets]. Pressing enter"
         " without input will keep current value"
@@ -483,17 +503,17 @@ for func in [from_mapping, set_defaults, show_defaults]:
     main.add_command(func)
 
 
-class JobCreationException(APIClientException):
+class JobCreationException(APIClientError):
     pass
 
 
-class ParameterMappingException(AnonAPIException):
+class ParameterMappingError(AnonAPIError):
     pass
 
 
-class NoAbsoluteRootPathException(ParameterMappingException):
+class NoAbsoluteRootPathException(ParameterMappingError):
     pass
 
 
-class JobSetValidationError(AnonAPIException):
+class JobSetValidationError(AnonAPIError):
     pass

@@ -10,7 +10,7 @@ from typing import Dict
 
 from tabulate import tabulate
 
-from anonapi.exceptions import AnonAPIException
+from anonapi.exceptions import AnonAPIError
 
 
 class JobStatus:
@@ -118,8 +118,12 @@ class JobInfo:
             files_processed=json_dict["files_processed"],
             destination_path=json_dict.get("destination_path"),
             source_type=json_dict.get("source_type"),
-            source_anonymizedpatientid=json_dict.get("source_anonymizedpatientid"),
-            source_anonymizedpatientname=json_dict.get("source_anonymizedpatientname"),
+            source_anonymizedpatientid=json_dict.get(
+                "source_anonymizedpatientid"
+            ),
+            source_anonymizedpatientname=json_dict.get(
+                "source_anonymizedpatientname"
+            ),
             source_name=json_dict.get("source_name"),
             source_path=json_dict.get("source_path"),
             source_pims_keyfile_id=json_dict.get("source_pims_keyfile_id"),
@@ -162,14 +166,25 @@ class JobInfoColumns:
     job_id = TableColumn(header="id", parameter_name="job_id")
     date = TableColumn(header="date", parameter_name="date")
     status = TableColumn(header="status", parameter_name="status")
-    files_downloaded = TableColumn(header="down", parameter_name="files_downloaded")
-    files_processed = TableColumn(header="proc", parameter_name="files_processed")
+    files_downloaded = TableColumn(
+        header="down", parameter_name="files_downloaded"
+    )
+    files_processed = TableColumn(
+        header="proc", parameter_name="files_processed"
+    )
     user = TableColumn(header="user", parameter_name="user_name")
     pseudo_name = TableColumn(
         header="anon_name", parameter_name="source_anonymizedpatientid"
     )
 
-    DEFAULT_COLUMNS = [job_id, date, status, files_downloaded, files_processed, user]
+    DEFAULT_COLUMNS = [
+        job_id,
+        date,
+        status,
+        files_downloaded,
+        files_processed,
+        user,
+    ]
     EXTENDED_COLUMNS = DEFAULT_COLUMNS + [pseudo_name]
 
 
@@ -208,7 +223,7 @@ def parse_job_infos_response(response):
 
     Raises
     ------
-    APIParseResponseException:
+    APIParseResponseError:
         When response cannot be parsed
 
     Returns
@@ -219,9 +234,9 @@ def parse_job_infos_response(response):
     try:
         return [JobInfo.from_json(x) for x in response.values()]
     except (KeyError, AttributeError) as e:
-        raise APIParseResponseException(
+        raise APIParseResponseError(
             f"Error parsing server response as job info: {e}"
-        )
+        ) from e
 
 
 class JobsInfoList(UserList):
@@ -236,7 +251,7 @@ class JobsInfoList(UserList):
         self.data = job_infos
 
     def as_table_string(self, columns=JobInfoColumns.DEFAULT_COLUMNS):
-        """As a input with newlines, forming a neat command_table
+        """As an input with newlines, forming a neat command_table
 
         Parameters
         ----------
@@ -253,5 +268,5 @@ class JobsInfoList(UserList):
         return format_job_info_list(self.data, columns=columns)
 
 
-class APIParseResponseException(AnonAPIException):
+class APIParseResponseError(AnonAPIError):
     pass

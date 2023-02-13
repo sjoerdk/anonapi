@@ -74,4 +74,6 @@ def test_tabular_parameter_file_errors():
         )
     # test non_existing file
     with pytest.raises(BadParameter):
-        AccessionNumberFile().convert(value="/doesnotexist.xlsx", param=None, ctx=None)
+        AccessionNumberFile().convert(
+            value="/doesnotexist.xlsx", param=None, ctx=None
+        )

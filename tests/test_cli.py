@@ -10,9 +10,9 @@ from click.testing import CliRunner
 from anonapi.batch import JobBatch
 from anonapi.cli import entrypoint
 from anonapi.cli.entrypoint import get_context
-from anonapi.client import APIClientException
-from anonapi.context import AnonAPIContextException
-from anonapi.responses import APIParseResponseException
+from anonapi.client import APIClientError
+from anonapi.context import AnonAPIContextError
+from anonapi.responses import APIParseResponseError
 from tests.factories import RequestsMock
 from tests.mock_responses import RequestsMockResponseExamples
 
@@ -25,7 +25,9 @@ def anonapi_mock_cli_with_batch(anonapi_mock_cli):
         job_ids=["1000", "1002", "5000", "100000"],
         server=anonapi_mock_cli.get_active_server(),
     )
-    anonapi_mock_cli.get_batch = lambda: batch  # set current batch to mock batch
+    anonapi_mock_cli.get_batch = (
+        lambda: batch
+    )  # set current batch to mock batch
     return anonapi_mock_cli
 
 
@@ -94,14 +96,16 @@ def test_command_line_tool_add_remove_server(mock_main_runner):
     assert result.exit_code == 2
     assert "Invalid value" in str(result.output)
 
-    with pytest.raises(AnonAPIContextException):
+    with pytest.raises(AnonAPIContextError):
         context.get_server_by_name("unknown_server")
 
 
 def test_command_line_tool_list_servers(mock_main_runner):
 
     runner = mock_main_runner
-    result = runner.invoke(entrypoint.cli, "server list", catch_exceptions=False)
+    result = runner.invoke(
+        entrypoint.cli, "server list", catch_exceptions=False
+    )
     assert result.exit_code == 0
     assert all(
         [
@@ -119,7 +123,9 @@ def test_command_line_tool_server_status(mock_main_runner, mock_requests):
     # basic check. Call a server that responds with an expected anonapi json response
     # API_CALL_NOT_DEFINED is a response that is used to check the liveness of
     # a server currently.
-    mock_requests.set_response_text(RequestsMockResponseExamples.API_CALL_NOT_DEFINED)
+    mock_requests.set_response_text(
+        RequestsMockResponseExamples.API_CALL_NOT_DEFINED
+    )
     result = runner.invoke(entrypoint.cli, ["server", "status"])
 
     assert "OK" in result.output
@@ -137,7 +143,9 @@ def test_cli_server_status_weird_response(mock_main_runner, mock_requests):
     assert mock_requests.requests.get.call_count == 1
 
 
-def test_cli_server_status_non_responsive_server(mock_main_runner, mock_requests):
+def test_cli_server_status_non_responsive_server(
+    mock_main_runner, mock_requests
+):
     """Anon server status command with a server that does not respond"""
 
     mock_requests.reset()
@@ -159,7 +167,9 @@ def test_server_error_responses(mock_main_runner, mock_requests):
     mock_requests.set_response_exception(
         requests.exceptions.ConnectionError("Maximum retries exceeded")
     )
-    response = runner.invoke(entrypoint.cli, "server status", catch_exceptions=False)
+    response = runner.invoke(
+        entrypoint.cli, "server status", catch_exceptions=False
+    )
     assert response.exit_code == 0
 
 
@@ -173,7 +183,9 @@ def test_command_line_tool_job_info(mock_main_runner, mock_requests):
     assert "Set active server to" in result.output
 
     mock_requests.set_response_text(RequestsMockResponseExamples.JOB_INFO)
-    result = runner.invoke(entrypoint.cli, "job info 3", catch_exceptions=False)
+    result = runner.invoke(
+        entrypoint.cli, "job info 3", catch_exceptions=False
+    )
     assert "job 3 on testserver" in result.output
     assert "'user_name', 'z123sandbox'" in result.output
 
@@ -200,7 +212,8 @@ def test_cli_job_list(mock_main_runner, mock_requests):
     )
     result = runner.invoke(entrypoint.cli, "job list 1000 1002 50000")
     assert all(
-        text in result.output for text in ["DONE", "UPLOAD", "1000", "1002", "5000"]
+        text in result.output
+        for text in ["DONE", "UPLOAD", "1000", "1002", "5000"]
     )
 
 
@@ -247,7 +260,9 @@ def test_command_line_tool_job_functions(mock_main_runner, mock_requests):
     mock_requests.reset()
     runner.invoke(entrypoint.cli, "job reset 1234")
     assert mock_requests.requests.post.called is True
-    assert "'files_downloaded': 0" in str(mock_requests.requests.post.call_args)
+    assert "'files_downloaded': 0" in str(
+        mock_requests.requests.post.call_args
+    )
 
     mock_requests.reset()
     runner.invoke(entrypoint.cli, "job cancel 1234")
@@ -260,7 +275,9 @@ def test_command_line_tool_job_functions(mock_main_runner, mock_requests):
     mock_requests.reset()
     result = runner.invoke(entrypoint.cli, "job reset 1234")
     assert mock_requests.requests.post.called is False
-    assert "No active server. Which one do you want to use?" in str(result.exception)
+    assert "No active server. Which one do you want to use?" in str(
+        result.exception
+    )
 
 
 def test_command_line_tool_job_list(mock_main_runner, mock_requests):
@@ -280,7 +297,9 @@ def test_job_id_parameter_type(mock_main_runner, mock_requests):
 
     runner = mock_main_runner
     get_job_info_mock = Mock()
-    mock_main_runner.get_context().client_tool.get_job_info_list = get_job_info_mock
+    mock_main_runner.get_context().client_tool.get_job_info_list = (
+        get_job_info_mock
+    )
 
     # test regular expansion
     result = runner.invoke(entrypoint.cli, "job list 1 2 5-10")
@@ -318,7 +337,13 @@ def test_job_id_parameter_type(mock_main_runner, mock_requests):
     # test range and weird input argument (not sure whether this is a good idea to allow)
     get_job_info_mock.reset()
     runner.invoke(entrypoint.cli, "job list 1-4 hallo")
-    assert get_job_info_mock.call_args[1]["job_ids"] == ["1", "2", "3", "4", "hallo"]
+    assert get_job_info_mock.call_args[1]["job_ids"] == [
+        "1",
+        "2",
+        "3",
+        "4",
+        "hallo",
+    ]
 
 
 @pytest.mark.parametrize(
@@ -329,7 +354,11 @@ def test_job_id_parameter_type(mock_main_runner, mock_requests):
             RequestsMockResponseExamples.JOBS_LIST_GET_JOBS,
             "most recent 50 jobs on testserver:",
         ),
-        ("status", "", "Available servers"),  # general status should not hit server
+        (
+            "status",
+            "",
+            "Available servers",
+        ),  # general status should not hit server
     ],
 )
 def test_command_line_tool_server_functions(
@@ -350,7 +379,7 @@ def test_get_server_when_none_is_active(mock_main_runner):
     context = mock_main_runner.get_context()
     context.settings.active_server = None
     # Calling for server here should fail because there is no active server
-    with pytest.raises(AnonAPIContextException):
+    with pytest.raises(AnonAPIContextError):
         context.get_active_server()
 
 
@@ -363,7 +392,9 @@ def test_command_line_tool_user_commands(mock_main_runner):
     runner.invoke(entrypoint.cli, "settings user set-username test_changed")
     assert context.settings.user_name == "test_changed"
 
-    result = runner.invoke(entrypoint.cli, "settings user info", catch_exceptions=False)
+    result = runner.invoke(
+        entrypoint.cli, "settings user info", catch_exceptions=False
+    )
     assert "user" in result.output
 
     token_before = context.settings.user_token
@@ -376,18 +407,38 @@ def test_command_line_tool_user_commands(mock_main_runner):
 @pytest.mark.parametrize(
     "command, mock_requests_response, expected_output",
     [
-        ("server jobs", requests.exceptions.ConnectionError, "Error getting jobs"),
+        (
+            "server jobs",
+            requests.exceptions.ConnectionError,
+            "Error getting jobs",
+        ),
         ("job info 123", requests.exceptions.ConnectionError, "Error"),
-        ("server status", requests.exceptions.ConnectionError, "cannot be reached",),
+        (
+            "server status",
+            requests.exceptions.ConnectionError,
+            "cannot be reached",
+        ),
         (
             "job cancel 123",
             requests.exceptions.RequestException,
             "Error cancelling job",
         ),
-        ("job reset 123", requests.exceptions.ConnectionError, "Error resetting job"),
-        ("batch status", APIClientException, "Error getting jobs"),
-        ("batch status", APIParseResponseException, "Error parsing server response"),
-        ("server jobs", APIParseResponseException, "Error parsing server response"),
+        (
+            "job reset 123",
+            requests.exceptions.ConnectionError,
+            "Error resetting job",
+        ),
+        ("batch status", APIClientError, "Error getting jobs"),
+        (
+            "batch status",
+            APIParseResponseError,
+            "Error parsing server response",
+        ),
+        (
+            "server jobs",
+            APIParseResponseError,
+            "Error parsing server response",
+        ),
     ],
 )
 def test_client_tool_exception_response(

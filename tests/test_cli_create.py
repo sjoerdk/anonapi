@@ -9,7 +9,7 @@ from anonapi.cli.create_commands import (
     from_mapping,
     main,
     JobParameterSet,
-    ParameterMappingException,
+    ParameterMappingError,
     JobSetValidationError,
 )
 from anonapi.mapper import JobParameterGrid, Mapping
@@ -28,7 +28,10 @@ from anonapi.parameters import (
 )
 from tests import RESOURCE_PATH
 from tests.conftest import AnonAPIContextRunner
-from tests.factories import FolderIdentifierFactory, StudyInstanceUIDIdentifierFactory
+from tests.factories import (
+    FolderIdentifierFactory,
+    StudyInstanceUIDIdentifierFactory,
+)
 from tests.mock_responses import RequestsMockResponseExamples
 
 
@@ -37,7 +40,9 @@ def mock_requests_for_job_creation(mock_requests):
     """Mock requests library so that every call to it will return a standard
     anonapi Job created response
     """
-    mock_requests.set_response(RequestsMockResponseExamples.JOB_CREATED_RESPONSE)
+    mock_requests.set_response(
+        RequestsMockResponseExamples.JOB_CREATED_RESPONSE
+    )
     return mock_requests
 
 
@@ -53,7 +58,9 @@ def test_create_from_mapping_no_mapping(mock_main_runner):
     assert "No active mapping" in result.output
 
 
-def test_create_from_mapping(mock_from_mapping_runner, mock_requests_for_job_creation):
+def test_create_from_mapping(
+    mock_from_mapping_runner, mock_requests_for_job_creation
+):
     """Try from-mapping, creating jobs based on a mapping"""
 
     # Run and answer are you sure 'N'
@@ -70,14 +77,18 @@ def test_create_from_mapping(mock_from_mapping_runner, mock_requests_for_job_cre
     )
     assert result.exit_code == 0
     assert mock_requests_for_job_creation.requests.post.call_count == 20
-    batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir)
+    batch_folder = BatchFolder(
+        mock_from_mapping_runner.mock_context.current_dir
+    )
     assert batch_folder.has_batch()
     assert batch_folder.load().job_ids == [
         "1234"
     ]  # only 1 id as mock requests returns the same job id each call
 
 
-def test_create_from_mapping_server_error(mock_from_mapping_runner, mock_requests):
+def test_create_from_mapping_server_error(
+    mock_from_mapping_runner, mock_requests
+):
     """Try from-mapping, when job creation will yield an error from server"""
 
     mock_requests.set_responses(
@@ -88,7 +99,9 @@ def test_create_from_mapping_server_error(mock_from_mapping_runner, mock_request
     )
     assert result.exit_code == 0
     assert mock_requests.requests.post.call_count == 1
-    batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir)
+    batch_folder = BatchFolder(
+        mock_from_mapping_runner.mock_context.current_dir
+    )
     assert (
         not batch_folder.has_batch()
     )  # No batch should be there as all creation failed!
@@ -111,7 +124,9 @@ def test_create_from_mapping_server_error_halfway(
     )
     assert result.exit_code == 0
     assert mock_requests.requests.post.call_count == 3
-    batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir)
+    batch_folder = BatchFolder(
+        mock_from_mapping_runner.mock_context.current_dir
+    )
     assert batch_folder.has_batch()
     assert batch_folder.load().job_ids == ["1234"]
 
@@ -123,9 +138,13 @@ def test_show_set_default_parameters(mock_main_runner):
         DestinationPath("test_destination"),
     ]
 
-    result = mock_main_runner.invoke(main, "show-defaults", catch_exceptions=False)
+    result = mock_main_runner.invoke(
+        main, "show-defaults", catch_exceptions=False
+    )
     assert result.exit_code == 0
-    assert all(x in result.output for x in ["test_project", "test_destination"])
+    assert all(
+        x in result.output for x in ["test_project", "test_destination"]
+    )
 
 
 def test_create_from_mapping_relative_path(
@@ -164,7 +183,9 @@ def test_create_from_mapping_relative_path(
     )
     # But in the created jobs the current dir should have been added
     assert str(expected_root) in str(
-        mock_requests_for_job_creation.requests.post.call_args[1]["data"]["source_path"]
+        mock_requests_for_job_creation.requests.post.call_args[1]["data"][
+            "source_path"
+        ]
     )
 
 
@@ -183,11 +204,16 @@ def test_create_from_mapping_dry_run(
 
 
 def create_from_mapping_helper(
-    root_source_path: str, destination_path: str, identifiers: List[SourceIdentifier]
+    root_source_path: str,
+    destination_path: str,
+    identifiers: List[SourceIdentifier],
 ):
     """Helper function that sets up a mapping to recreate #265"""
     return Mapping(
-        options=[RootSourcePath(root_source_path), DestinationPath(destination_path)],
+        options=[
+            RootSourcePath(root_source_path),
+            DestinationPath(destination_path),
+        ],
         grid=JobParameterGrid(
             rows=[[SourceIdentifierParameter(x) for x in identifiers]]
         ),
@@ -220,7 +246,9 @@ def test_create_from_mapping_invalid_root_source(
 
     # if there would be a path parameter in there though, it should cause
     # an issue because create a job with an invalid root should not happen
-    mapping.grid.rows.append([SourceIdentifierParameter(FolderIdentifierFactory())])
+    mapping.grid.rows.append(
+        [SourceIdentifierParameter(FolderIdentifierFactory())]
+    )
     assert runner.invoke(from_mapping, catch_exceptions=False).exit_code == 1
 
 
@@ -255,7 +283,9 @@ def test_create_from_mapping_folder_and_pacs(
     identifiers
     """
     mock_requests = mock_requests_for_job_creation
-    mock_from_mapping_runner.set_mock_current_dir(a_folder_with_mapping_diverse)
+    mock_from_mapping_runner.set_mock_current_dir(
+        a_folder_with_mapping_diverse
+    )
 
     result = mock_from_mapping_runner.invoke(
         main, "from-mapping", input="Y", catch_exceptions=False
@@ -264,7 +294,9 @@ def test_create_from_mapping_folder_and_pacs(
     assert "Error:" not in result.output
     assert mock_requests.requests.post.call_count == 4
 
-    batch_folder = BatchFolder(mock_from_mapping_runner.mock_context.current_dir)
+    batch_folder = BatchFolder(
+        mock_from_mapping_runner.mock_context.current_dir
+    )
     assert batch_folder.has_batch()
     assert batch_folder.load().job_ids == [
         "1234"
@@ -280,15 +312,16 @@ def test_job_parameter_set(all_parameters):
     class UnknownIdentifier(SourceIdentifier):
         pass
 
-    with pytest.raises(ParameterMappingException):
+    with pytest.raises(ParameterMappingError):
         JobParameterSet(
-            all_parameters + [SourceIdentifierParameter(str(UnknownIdentifier(None)))]
+            all_parameters
+            + [SourceIdentifierParameter(str(UnknownIdentifier(None)))]
         ).as_kwargs()
 
     class UnknownParameter(Parameter):
         pass
 
-    with pytest.raises(ParameterMappingException):
+    with pytest.raises(ParameterMappingError):
         JobParameterSet(all_parameters + [UnknownParameter()]).as_kwargs()
 
 
@@ -368,7 +401,9 @@ def test_create_from_mapping_syntax_error():
 
     # Set a mapping with an accession_number identifier that does not have expected
     # format
-    mapping_path = RESOURCE_PATH / "test_cli_create" / "trailing_space_in_mapping.csv"
+    mapping_path = (
+        RESOURCE_PATH / "test_cli_create" / "trailing_space_in_mapping.csv"
+    )
 
     # opening this should not raise an error
     with open(mapping_path, "r") as f:

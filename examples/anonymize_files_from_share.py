@@ -31,7 +31,9 @@ def anonymize_files_from_share():
         description=f"A test root_path job",
     )
     # new_job_info response contains extended info on the new job that has just been created
-    print(f"Succesfully created a job in {client}, job_id={network_job_info['job_id']}")
+    print(
+        f"Succesfully created a job in {client}, job_id={network_job_info['job_id']}"
+    )
 
 
 if __name__ == "__main__":

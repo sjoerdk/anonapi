@@ -12,7 +12,7 @@ from copy import copy
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Type
 
-from anonapi.exceptions import AnonAPIException
+from anonapi.exceptions import AnonAPIError
 from fileselection.fileselection import FileSelectionFile
 from pathlib import Path, PureWindowsPath
 
@@ -46,7 +46,7 @@ class SourceIdentifier:
 
         Raises
         ------
-        ParameterException
+        ParameterError
             If this identifier does not have the correct format
 
         """
@@ -71,7 +71,9 @@ class SourceIdentifier:
             When source identifier is not recognized
 
         """
-        return SourceIdentifierFactory().get_source_identifier_for_key(identifier)
+        return SourceIdentifierFactory().get_source_identifier_for_key(
+            identifier
+        )
 
 
 class PathIdentifier(SourceIdentifier):
@@ -172,7 +174,7 @@ class SourceIdentifierFactory:
                 f" ':' sign somewhere. "
                 f"Original error: {e}"
             )
-            raise UnknownSourceIdentifierException(msg)
+            raise UnknownSourceIdentifierException(msg) from e
 
         for id_type in self.types:
             if id_type.key == type_key:
@@ -181,7 +183,7 @@ class SourceIdentifierFactory:
         raise UnknownSourceIdentifierException(
             f"Unknown identifier '{key}'. Known identifiers: "
             f"{[x.key for x in self.types]}"
-        )
+        ) from None
 
     def get_source_identifier_for_obj(self, object_in):
         """Generate an identifier for a given object
@@ -212,7 +214,8 @@ class SourceIdentifierFactory:
                 continue
         if not object_identifier_class:
             raise UnknownObjectException(
-                f"Unknown object: {object_in}. I can't create an" f"identifier for this"
+                f"Unknown object: {object_in}. I can't create an"
+                f"identifier for this"
             )
 
         return object_identifier_class.from_object(object_in)
@@ -310,7 +313,7 @@ class PathParameter(Parameter):
             try:
                 self.path.relative_to(root_path)
             except ValueError as e:
-                raise ParameterException(f"Cannot make this absolute '{e}'")
+                raise ParameterError(f"Cannot make this absolute '{e}'") from e
         else:
             return type(self)(root_path / self.path)
 
@@ -341,7 +344,9 @@ class SourceIdentifierParameter(PathParameter):
 
         """
         super().__init__()
-        self.value = SourceIdentifierFactory().get_source_identifier_for_key(str(value))
+        self.value = SourceIdentifierFactory().get_source_identifier_for_key(
+            str(value)
+        )
 
     @classmethod
     def init_from_source_identifier(cls, obj: SourceIdentifier):
@@ -352,7 +357,9 @@ class SourceIdentifierParameter(PathParameter):
          and is very hard to follow. Also. Why is SourceIdentifier a PathParameter
          even though it has non-path children such as StudyInstanceUIDIdentifier?
         """
-        base = cls(value="base:empty")  # dummy value just to make __init__ pass..
+        base = cls(
+            value="base:empty"
+        )  # dummy value just to make __init__ pass..
         base.value = obj
         return base
 
@@ -381,7 +388,9 @@ class SourceIdentifierParameter(PathParameter):
                 try:
                     self.path.relative_to(root_path)
                 except ValueError as e:
-                    raise ParameterException(f"Cannot make this absolute '{e}'")
+                    raise ParameterError(
+                        f"Cannot make this absolute '{e}'"
+                    ) from None
             else:
                 identifier_copy = copy(self.value)
                 identifier_copy.path = root_path / identifier_copy.path
@@ -430,7 +439,7 @@ class ParameterFactory:
                     f"I don't know what kind of parameter '{string_in}' should be. I"
                     f"Know about the following parameters: "
                     f"{[x.field_name for x in ALL_PARAMETERS]}"
-                )
+                ) from None
         return cls.parse_from_key_value(key=key, value=value)
 
     @staticmethod
@@ -468,7 +477,9 @@ class ParameterFactory:
                 try:
                     return param_type(value)
                 except UnknownSourceIdentifierException as e:
-                    raise ParameterParsingError(f"Error parsing source identifier:{e}")
+                    raise ParameterParsingError(
+                        f"Error parsing source identifier:{e}"
+                    ) from e
         raise ParameterParsingError(
             f"Could not parse key={key}, value={value} to any known parameter. "
             f"Tried {[x.field_name for x in ALL_PARAMETERS]}"
@@ -478,13 +489,17 @@ class ParameterFactory:
     def generate_pseudo_name() -> PseudoName:
         """Random pseudonym parameter. 8 characters, like '8GW7FEDQ'"""
         return PseudoName(
-            "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
+            "".join(
+                random.choices(string.ascii_uppercase + string.digits, k=8)
+            )
         )
 
     @staticmethod
     def generate_description() -> Description:
         """Description with curent date. Like 'generated_02_23_2020'"""
-        return Description(f"generated_" f"{datetime.today().strftime('%B_%d_%Y')}")
+        return Description(
+            f"generated_" f"{datetime.today().strftime('%B_%d_%Y')}"
+        )
 
 
 class ParameterSet:
@@ -514,11 +529,15 @@ class ParameterSet:
         param_dict.update({type(x): x for x in other})
         self.parameters = list(param_dict.values())
 
-    def get_param_by_type(self, type_in: Type[Parameter]) -> Optional[Parameter]:
+    def get_param_by_type(
+        self, type_in: Type[Parameter]
+    ) -> Optional[Parameter]:
         """Return the first Parameter instance that is (or derives from) type
         or None
         """
-        return next((x for x in self.parameters if isinstance(x, type_in)), None)
+        return next(
+            (x for x in self.parameters if isinstance(x, type_in)), None
+        )
 
     def get_params_by_type(self, type_in) -> List[Parameter]:
         """Return all parameters that are type or subtype, or empty list"""
@@ -533,13 +552,17 @@ class ParameterSet:
 
         Raises
         ------
-        ParameterException
+        ParameterError
             If there is no source identifier in this set
         """
         try:
-            return next(x for x in self.parameters if self.is_source_identifier(x))
+            return next(
+                x for x in self.parameters if self.is_source_identifier(x)
+            )
         except StopIteration:
-            raise ParameterException(f"No source parameter found in {self.parameters}")
+            raise ParameterError(
+                f"No source parameter found in {self.parameters}"
+            ) from None
 
     def split_parameter(
         self, type_in: Type[Parameter]
@@ -552,7 +575,7 @@ class ParameterSet:
 
         Raises
         ------
-        ParameterException
+        ParameterError
             If no isntance of type_in can be found
         """
         param = self.get_param_by_type(type_in=type_in)
@@ -574,7 +597,7 @@ class ParameterSet:
 
         Raises
         ------
-        ParameterException
+        ParameterError
             If no source parameter can be found
         """
         return self.split_parameter(type_in=SourceIdentifierParameter)
@@ -637,23 +660,28 @@ def get_legacy_idis_value(identifier: SourceIdentifier) -> str:
         return str(identifier)  # will prepend the identifier type
 
 
-COMMON_JOB_PARAMETERS = [SourceIdentifierParameter, PseudoID, PseudoName, Description]
+COMMON_JOB_PARAMETERS = [
+    SourceIdentifierParameter,
+    PseudoID,
+    PseudoName,
+    Description,
+]
 COMMON_GLOBAL_PARAMETERS = [PIMSKey, DestinationPath, RootSourcePath, Project]
 
 ALL_PARAMETERS = COMMON_JOB_PARAMETERS + COMMON_GLOBAL_PARAMETERS
 
 
-class ParameterException(AnonAPIException):
+class ParameterError(AnonAPIError):
     pass
 
 
-class ParameterParsingError(ParameterException):
+class ParameterParsingError(ParameterError):
     pass
 
 
-class UnknownSourceIdentifierException(ParameterException):
+class UnknownSourceIdentifierException(ParameterError):
     pass
 
 
-class UnknownObjectException(ParameterException):
+class UnknownObjectException(ParameterError):
     pass

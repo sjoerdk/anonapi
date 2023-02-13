@@ -31,7 +31,9 @@ def anonymize_files_sop_class_filter():
         destination_path=destination_path,
         description=f"A test idc job",
     )
-    print(f"Succesfully created a job in {client}, job_id={idc_job_info['job_id']}")
+    print(
+        f"Succesfully created a job in {client}, job_id={idc_job_info['job_id']}"
+    )
 
 
 if __name__ == "__main__":

@@ -47,7 +47,9 @@ def get_token(context: AnonAPIContext):
     )
     context.settings.user_token = token
     context.settings.save()
-    logger.info(f"Got and saved api token for username {context.settings.user_name}")
+    logger.info(
+        f"Got and saved api token for username {context.settings.user_name}"
+    )
 
 
 for func in [info, set_username, get_token]:

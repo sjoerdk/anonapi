@@ -62,7 +62,9 @@ class AnonAPIFormatter(logging.Formatter):
             if record.levelno == logging.INFO:
                 return self.format_record(record, "{name} - {msg}")
             else:
-                return self.format_record(record, "{name} - {levelname}: {msg}")
+                return self.format_record(
+                    record, "{name} - {levelname}: {msg}"
+                )
         else:
             raise ValueError(
                 f"Unknown verbosity level {self.verbosity}. "

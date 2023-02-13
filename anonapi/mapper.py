@@ -21,13 +21,13 @@ from typing import Dict, Iterable, List, Optional, TextIO, Union
 
 from tabulate import tabulate
 
-from anonapi.exceptions import AnonAPIException
+from anonapi.exceptions import AnonAPIError
 from anonapi.logging import get_module_logger
 from anonapi.parameters import (
     FolderIdentifier,
     FileSelectionIdentifier,
     Parameter,
-    ParameterException,
+    ParameterError,
     ParameterSet,
     StudyInstanceUIDIdentifier,
     AccessionNumberIdentifier,
@@ -43,7 +43,9 @@ from io import StringIO
 from pathlib import Path
 from os import path
 
-DEFAULT_MAPPING_NAME = "anon_mapping.csv"  # Filename for mapping if not specified
+DEFAULT_MAPPING_NAME = (
+    "anon_mapping.csv"  # Filename for mapping if not specified
+)
 
 logger = get_module_logger(__name__)
 
@@ -108,7 +110,10 @@ class Mapping:
         f.write(self.OPTIONS_HEADER + self.dialect.lineterminator)
         f.write(
             self.dialect.lineterminator.join(
-                [x.to_string(delimiter=self.dialect.delimiter) for x in self.options]
+                [
+                    x.to_string(delimiter=self.dialect.delimiter)
+                    for x in self.options
+                ]
             )
         )
         f.write(self.dialect.lineterminator)
@@ -132,11 +137,14 @@ class Mapping:
         """
 
         try:
-            lines = [x for x in lines]  # make sure open file handles are read through
+            lines = [
+                x for x in lines
+            ]  # make sure open file handles are read through
         except OSError as e:
             if "raw readinto() returned invalid length" in str(e):
                 raise MappingLoadError(
-                    "Cannot load mapping. Is the mapping file opened in any" " editor?"
+                    "Cannot load mapping. Is the mapping file opened in any"
+                    " editor?"
                 ) from e
             else:
                 # Unsure which error this is. Can't handle this here.
@@ -189,7 +197,12 @@ class Mapping:
         header_to_find = headers_to_find.pop(0)
         current_header = None
         for line in lines:
-            line = line.replace("\r", "").replace("\n", "").rstrip(",").rstrip(";")
+            line = (
+                line.replace("\r", "")
+                .replace("\n", "")
+                .rstrip(",")
+                .rstrip(";")
+            )
             if not line:  # skip empty lines
                 continue
             if header_to_find.lower() in line.lower():
@@ -265,7 +278,7 @@ def sniff_dialect(lines: Iterable[str]) -> Dialect:
 
     Raises
     ------
-    MapperException:
+    MapperError:
         When dialect cannot be determined
 
     """
@@ -275,7 +288,7 @@ def sniff_dialect(lines: Iterable[str]) -> Dialect:
             return csv.Sniffer().sniff(line, delimiters=";,")
         except csv.Error:
             continue  # just try all lines
-    raise MapperException("Could not determine dialect for csv file")
+    raise MapperError("Could not determine dialect for csv file")
 
 
 def parameter_line_is_empty(line_in: str) -> bool:
@@ -298,7 +311,7 @@ def sniff_dialect_safe(
     """
     try:
         return sniff_dialect(lines)
-    except MapperException as e:  # this could be a single-column mapping
+    except MapperError as e:  # this could be a single-column mapping
         logger.debug(
             f"could not determine dialect, guessing "
             f"'{default}'. Original error: '{e}'"
@@ -383,7 +396,9 @@ class JobParameterGrid:
         parameters = []
         try:
             for row in reader:
-                parameters.append(JobParameterGrid.parse_job_parameter_row(row))
+                parameters.append(
+                    JobParameterGrid.parse_job_parameter_row(row)
+                )
         except ParameterParsingError as e:
             raise MappingLoadError("Problem parsing '{row}'") from e
 
@@ -418,7 +433,8 @@ class JobParameterGrid:
             )
 
         return [
-            ParameterFactory.parse_from_key_value(key, val) for key, val in row.items()
+            ParameterFactory.parse_from_key_value(key, val)
+            for key, val in row.items()
         ]
 
     def parameter_types(self):
@@ -517,15 +533,15 @@ class MappingFile:
 
         Raises
         ------
-        MapperException
+        MapperError
             When no mapping could be loaded from current directory
 
         """
         try:
             with open(self.file_path, "r", newline="") as f:
                 return Mapping.load(f)
-        except (FileNotFoundError, MapperException) as e:
-            raise MapperException(
+        except (FileNotFoundError, MapperError) as e:
+            raise MapperError(
                 f"Could not load mapping at '{self.file_path}'"
             ) from e
 
@@ -539,7 +555,9 @@ class ExampleJobParameterGrid(JobParameterGrid):
         rows = [
             [
                 SourceIdentifierParameter(
-                    FolderIdentifier(identifier=path.sep.join(["example", "folder1"]))
+                    FolderIdentifier(
+                        identifier=path.sep.join(["example", "folder1"])
+                    )
                 ),
                 PseudoName("Patient1"),
                 Description("All files from folder1"),
@@ -592,7 +610,7 @@ class MappingParameterSet(ParameterSet):
 
         Raises
         ------
-        MapperException
+        MapperError
             If mapping does not contain a source parameter. Without a source this
             is not valid to put in a mapping.
 
@@ -601,8 +619,8 @@ class MappingParameterSet(ParameterSet):
         self.update(parameters)
         try:
             self.get_source_parameter()
-        except ParameterException as e:
-            raise MapperException(
+        except ParameterError as e:
+            raise MapperError(
                 f"Invalid set of parameters for mapping: no source found. Where"
                 f" should the data come from? Original error"
             ) from e
@@ -630,11 +648,11 @@ def get_local_dialect() -> Dialect:
         return csv.excel
 
 
-class MapperException(AnonAPIException):
+class MapperError(AnonAPIError):
     pass
 
 
-class MappingLoadError(MapperException):
+class MappingLoadError(MapperError):
     pass
 
 

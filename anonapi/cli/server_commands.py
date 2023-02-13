@@ -37,7 +37,9 @@ def server_list(context: AnonAPIContext):
 
 @click.command()
 @pass_anonapi_context
-@click.argument("short_name", metavar="SHORT_NAME", type=AnonServerKeyParamType())
+@click.argument(
+    "short_name", metavar="SHORT_NAME", type=AnonServerKeyParamType()
+)
 def remove(context: AnonAPIContext, short_name):
     """Remove a server from list in settings"""
     server = context.get_server_by_name(short_name)
@@ -54,7 +56,9 @@ def remove(context: AnonAPIContext, short_name):
 @pass_anonapi_context
 def status(context: AnonAPIContext):
     """Check whether active server is online and responding"""
-    response = context.client_tool.get_server_status(context.get_active_server())
+    response = context.client_tool.get_server_status(
+        context.get_active_server()
+    )
     logger.info(response)
 
 
@@ -68,7 +72,9 @@ def jobs(context: AnonAPIContext):
 
 @click.command()
 @pass_anonapi_context
-@click.argument("short_name", metavar="SHORT_NAME", type=AnonServerKeyParamType())
+@click.argument(
+    "short_name", metavar="SHORT_NAME", type=AnonServerKeyParamType()
+)
 def activate(context: AnonAPIContext, short_name):
     """Commands will use given server by default"""
     server = context.get_server_by_name(short_name)

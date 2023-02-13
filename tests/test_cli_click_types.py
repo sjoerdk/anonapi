@@ -18,7 +18,9 @@ def test_file_selection_file(test_resources):
 
     with pytest.raises(BadParameter):
         param.convert(
-            value=str(test_resources / "corruptfileselection.txt"), param=None, ctx=None
+            value=str(test_resources / "corruptfileselection.txt"),
+            param=None,
+            ctx=None,
         )
 
     selection = param.convert(

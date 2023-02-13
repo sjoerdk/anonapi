@@ -9,7 +9,7 @@ from fileselection.fileselection import FileSelectionFile
 from anonapi.cli.map_commands import create_example_mapping
 from anonapi.mapper import (
     JobParameterGrid,
-    MapperException,
+    MapperError,
     MappingFile,
     MappingLoadError,
     Mapping,
@@ -191,7 +191,7 @@ def test_load_exception_contains_mapping_path():
         / "example_corrupt_job_grid.csv"
     )
 
-    with pytest.raises(MapperException) as e:
+    with pytest.raises(MapperError) as e:
         mapping_file.get_mapping()
     assert str(mapping_file.file_path) in str(e)
 
@@ -207,7 +207,7 @@ def test_load_exception_missing_column_header():
         / "mapping_missing_column_header.csv"
     )
 
-    with pytest.raises(MapperException):
+    with pytest.raises(MapperError):
         mapping_file.get_mapping()
 
 
@@ -345,11 +345,11 @@ def test_sniff_dialect(content, delimiter):
 
 
 def test_sniff_dialect_exception():
-    with pytest.raises(MapperException) as e:
+    with pytest.raises(MapperError) as e:
         sniff_dialect(StringIO(initial_value="Just not a csv file."))
     assert "Could not determine dialect" in str(e)
 
-    with pytest.raises(MapperException) as e:
+    with pytest.raises(MapperError) as e:
         sniff_dialect(
             StringIO(
                 initial_value="\n".join(["line1", "line2", "line3", "line4"])

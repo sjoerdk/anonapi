@@ -10,7 +10,12 @@ from anonapi.cli.click_parameter_types import JobIDRangeParamType
 from anonapi.context import AnonAPIContext
 from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
 from anonapi.logging import get_module_logger
-from anonapi.responses import JobStatus, JobInfoColumns, JobInfo, format_job_info_list
+from anonapi.responses import (
+    JobStatus,
+    JobInfoColumns,
+    JobInfo,
+    format_job_info_list,
+)
 from collections import Counter
 
 logger = get_module_logger(__name__)
@@ -29,7 +34,9 @@ def init(context: AnonAPIContext):
     """Save an empty batch in the current folder, for current server"""
     batch_folder = context.get_batch_folder()
     if batch_folder.has_batch():
-        raise ClickException("Cannot init, A batch is already defined in this folder")
+        raise ClickException(
+            "Cannot init, A batch is already defined in this folder"
+        )
     else:
         server = context.get_active_server()
         batch_folder.save(JobBatch(job_ids=[], server=server))
@@ -114,7 +121,10 @@ def status(context: AnonAPIContext, patient_name):
         columns_to_show += [JobInfoColumns.pseudo_name]
     logger.info(infos.as_table_string(columns=columns_to_show))
 
-    summary = ["Status       count   percentage", "-------------------------------"]
+    summary = [
+        "Status       count   percentage",
+        "-------------------------------",
+    ]
     status_count = Counter([x.status for x in infos])
     status_count["NOT_FOUND"] = len(ids_queried) - len(infos)
     for key, value in status_count.items():
@@ -141,7 +151,9 @@ def reset(context: AnonAPIContext):
     ):
         for job_id in batch.job_ids:
             logger.info(
-                context.client_tool.reset_job(server=batch.server, job_id=job_id)
+                context.client_tool.reset_job(
+                    server=batch.server, job_id=job_id
+                )
             )
 
         logger.info("Done")
@@ -161,7 +173,9 @@ def cancel(context: AnonAPIContext):
     ):
         for job_id in batch.job_ids:
             logger.info(
-                context.client_tool.cancel_job(server=batch.server, job_id=job_id)
+                context.client_tool.cancel_job(
+                    server=batch.server, job_id=job_id
+                )
             )
 
         logger.info("Done")
@@ -187,7 +201,9 @@ def cancel_active(context: AnonAPIContext):
     ):
         for job_id in job_ids:
             logger.info(
-                context.client_tool.cancel_job(server=batch.server, job_id=job_id)
+                context.client_tool.cancel_job(
+                    server=batch.server, job_id=job_id
+                )
             )
         logger.info("Done")
     else:
@@ -212,7 +228,9 @@ def reset_error(context: AnonAPIContext):
     ):
         for job_id in job_ids:
             logger.info(
-                context.client_tool.reset_job(server=batch.server, job_id=job_id)
+                context.client_tool.reset_job(
+                    server=batch.server, job_id=job_id
+                )
             )
 
         logger.info("Done")
@@ -231,7 +249,9 @@ def show_error(context: AnonAPIContext):
         server=batch.server, job_ids=batch.job_ids
     )
 
-    error_infos: List[JobInfo] = [x for x in infos if x.status == JobStatus.ERROR]
+    error_infos: List[JobInfo] = [
+        x for x in infos if x.status == JobStatus.ERROR
+    ]
 
     if error_infos:
         output = ""

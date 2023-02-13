@@ -1,6 +1,6 @@
 from anonapi.batch import BatchFolder, JobBatch
 from anonapi.cli.batch_commands import add, cancel, info
-from anonapi.client import ClientToolException
+from anonapi.client import ClientToolError
 from anonapi.cli import entrypoint
 from tests.mock_responses import RequestsMockResponseExamples
 
@@ -11,10 +11,16 @@ def test_command_without_defined_batch(mock_main_runner):
     runner = mock_main_runner
 
     assert "No batch defined" in str(
-        runner.invoke(entrypoint.cli, "batch info", catch_exceptions=False).output
+        runner.invoke(
+            entrypoint.cli, "batch info", catch_exceptions=False
+        ).output
     )
-    assert "No batch defined" in str(runner.invoke(info, catch_exceptions=False).output)
-    assert "No batch defined" in str(runner.invoke(add, catch_exceptions=False).output)
+    assert "No batch defined" in str(
+        runner.invoke(info, catch_exceptions=False).output
+    )
+    assert "No batch defined" in str(
+        runner.invoke(add, catch_exceptions=False).output
+    )
     assert "No batch defined" in str(
         runner.invoke(cancel, catch_exceptions=False).output
     )
@@ -78,7 +84,8 @@ def test_cli_batch_status(mock_main_runner, mock_requests):
     )
     result = runner.invoke(entrypoint.cli, "batch status")
     assert all(
-        text in result.output for text in ["DONE", "UPLOAD", "1000", "1002", "5000"]
+        text in result.output
+        for text in ["DONE", "UPLOAD", "1000", "1002", "5000"]
     )
 
 
@@ -97,11 +104,14 @@ def test_cli_batch_status_extended(mock_main_runner, mock_requests):
         entrypoint.cli, "batch status --patient-name", catch_exceptions=False
     )
     assert all(
-        text in result.output for text in ["1982", "DONE", "1001", "1002", "1003"]
+        text in result.output
+        for text in ["1982", "DONE", "1001", "1002", "1003"]
     )
 
     # without the flag this should not be shown
-    result = runner.invoke(entrypoint.cli, "batch status", catch_exceptions=False)
+    result = runner.invoke(
+        entrypoint.cli, "batch status", catch_exceptions=False
+    )
     assert "1982" not in result.output
 
 
@@ -160,7 +170,9 @@ def test_cli_batch_show_errors(mock_main_runner_with_batch, mock_requests):
         text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST_WITH_ERROR
     )
 
-    result = runner.invoke(entrypoint.cli, "batch show-error", catch_exceptions=False)
+    result = runner.invoke(
+        entrypoint.cli, "batch show-error", catch_exceptions=False
+    )
     assert result.exit_code == 0
     assert "Terrible error" in result.output
 
@@ -175,7 +187,10 @@ def test_cli_batch_reset_error(mock_main_runner_with_batch, mock_requests):
 
     # try a reset, answer 'Yes' to question
     result = runner.invoke(
-        entrypoint.cli, "batch reset-error", input="Yes", catch_exceptions=False
+        entrypoint.cli,
+        "batch reset-error",
+        input="Yes",
+        catch_exceptions=False,
     )
     assert result.exit_code == 0
     assert "This will reset 2 jobs on testserver" in result.output
@@ -192,8 +207,10 @@ def test_cli_batch_reset_error(mock_main_runner_with_batch, mock_requests):
 
     # A reset where the server returns error
     mock_requests.reset()
-    mock_requests.set_response_exception(ClientToolException("Terrible exception"))
-    result = runner.invoke(entrypoint.cli, "batch reset-error", catch_exceptions=False)
+    mock_requests.set_response_exception(ClientToolError("Terrible exception"))
+    result = runner.invoke(
+        entrypoint.cli, "batch reset-error", catch_exceptions=False
+    )
     assert "Error:" in result.output
 
 

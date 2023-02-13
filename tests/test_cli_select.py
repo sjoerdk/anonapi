@@ -64,7 +64,9 @@ def test_select_add(mock_main_runner, folder_with_some_dicom_files):
     mock_main_runner.set_mock_current_dir(selection_folder.path)
 
     assert not selection_folder.has_file_selection()
-    result = mock_main_runner.invoke(main, args=["add", "*"], catch_exceptions=False)
+    result = mock_main_runner.invoke(
+        main, args=["add", "*"], catch_exceptions=False
+    )
     assert result.exit_code == 0
 
 
@@ -116,7 +118,9 @@ def test_select_add_exclude(mock_main_runner, folder_with_some_dicom_files):
     assert len(selection_folder.load_file_selection().selected_paths) == 2
 
 
-def test_select_edit(mock_main_runner, initialised_selection_folder, mock_launch):
+def test_select_edit(
+    mock_main_runner, initialised_selection_folder, mock_launch
+):
 
     result = mock_main_runner.invoke(main, "edit")
     assert result.exit_code == 0
@@ -152,7 +156,8 @@ def test_looks_like_dicom_true(path):
 
 
 @pytest.mark.parametrize(
-    "path", ["/path/thing/info.xml", "dicom.txt", "foo.doc", Path(r"C:\athing.txt")]
+    "path",
+    ["/path/thing/info.xml", "dicom.txt", "foo.doc", Path(r"C:\athing.txt")],
 )
 def test_looks_like_dicom_false(path):
     """These should all be seen as non DICOM files"""
@@ -167,5 +172,7 @@ def disable_tqdm(monkeypatch):
 
 def test_is_dicom(disable_tqdm, capsys, caplog):
     dicom_file = RESOURCE_PATH / "test_selection" / "test_is_dicom" / "dicom"
-    not_dicom_file = RESOURCE_PATH / "test_selection" / "test_is_dicom" / "not_dicom"
+    not_dicom_file = (
+        RESOURCE_PATH / "test_selection" / "test_is_dicom" / "not_dicom"
+    )
     assert find_dicom_files([dicom_file, not_dicom_file]) == [dicom_file]

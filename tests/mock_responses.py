@@ -131,7 +131,9 @@ class RequestsMockResponseExamples:
         200,
     )
 
-    JOB_DOES_NOT_EXIST = r'{"errors": {"job_id": "Job with id 447783 does not exist"}}'
+    JOB_DOES_NOT_EXIST = (
+        r'{"errors": {"job_id": "Job with id 447783 does not exist"}}'
+    )
 
     ERROR_USER_NOT_CONNECTED_TO_PROJECT = RequestMockResponse(
         r'{"errors": {"AnonymizeInputException": "given user_'

@@ -9,12 +9,12 @@ import json
 from requests.exceptions import RequestException
 from requests.models import Response
 
-from anonapi.exceptions import AnonAPIException
+from anonapi.exceptions import AnonAPIError
 from anonapi.objects import RemoteAnonServer
 from anonapi.responses import (
     JobsInfoList,
     parse_job_infos_response,
-    APIParseResponseException,
+    APIParseResponseError,
     format_job_info_list,
     JobInfo,
 )
@@ -42,7 +42,9 @@ class WebAPIClient:
         self.username = username
         self.token = token
         self.validate_https = bool(validate_https)
-        self.requestslib = requests  # mostly for clean testing. Allows to switch
+        self.requestslib = (
+            requests  # mostly for clean testing. Allows to switch
+        )
         # out the actual http-calling code
 
     def __str__(self):
@@ -73,10 +75,10 @@ class WebAPIClient:
             when API call is successful, but the API returns some reason for error
             (for example 'job_id not found', or 'missing parameter')
 
-        ServerNotResponding(APIClientException):
+        ServerNotResponding(APIClientError):
             When server is not responding at all
 
-        APIClientException:
+        APIClientError:
             When server is responding, but the response cannot be parsed
         """
 
@@ -90,7 +92,7 @@ class WebAPIClient:
                 headers={"Authorization": f"Token {self.token}"},
             )
         except RequestException as e:
-            raise ServerNotResponding(e)
+            raise ServerNotResponding from e
 
         return self.parse_response(response)
 
@@ -119,10 +121,10 @@ class WebAPIClient:
             when API call is successful, but the API returns some reason for error (for example 'job_id not found',
             or 'missing parameter')
 
-        ServerNotResponding(APIClientException):
+        ServerNotResponding(APIClientError):
             When server is not responding at all
 
-        APIClientException:
+        APIClientError:
             When server is responding, but the response cannot be parsed
         """
 
@@ -135,7 +137,7 @@ class WebAPIClient:
                 headers={"Authorization": f"Token {self.token}"},
             )
         except requests.exceptions.RequestException as e:
-            raise ServerNotResponding(e)
+            raise ServerNotResponding from e
 
         self.parse_response(response)
         return json.loads(response.text)
@@ -171,7 +173,7 @@ class WebAPIClient:
 
         Raises
         ------
-        APIClientException
+        APIClientError
             when documentation is not returned by server in the expected way
 
         """
@@ -186,7 +188,7 @@ class WebAPIClient:
 
         Raises
         ------
-        APIClientException
+        APIClientError
             If parsing fails
 
         Returns
@@ -196,9 +198,9 @@ class WebAPIClient:
         """
         try:
             return json.loads(text)
-        except json.decoder.JSONDecodeError:
+        except json.decoder.JSONDecodeError as e:
             msg = f"response from {self} was not JSON. Is this a web API url?"
-            raise APIClientException(msg)
+            raise APIClientError(msg) from e
 
     def parse_response(self, response: Response) -> Dict:
         """Extract a anonAPI dictionary from raw HTTP response
@@ -215,7 +217,7 @@ class WebAPIClient:
         APIClientAPIException:
             When API call succeeds, but the API itself returns an error. For example
             'missing parameter'.
-        APIClientException:
+        APIClientError:
             When any unexpected response is returned
 
         """
@@ -233,7 +235,7 @@ class WebAPIClient:
             if "documentation" in json_parsed.keys():
                 return json_parsed
             else:
-                raise APIClientException(
+                raise APIClientError(
                     f"No documentation found when calling {self} is this a web API?"
                 )
 
@@ -251,14 +253,14 @@ class WebAPIClient:
             )
 
         elif response.status_code == 405:
-            raise APIClientException(
+            raise APIClientError(
                 f"'{self}' returned 405 - Method not allowed. Probably you are "
                 f"using GET where POST is needed, or vice versa. See "
                 f"APIClient.get_documentation() for usage"
             )
 
         else:
-            raise APIClientException(
+            raise APIClientError(
                 f"Unexpected response from {self}: code '{response.status_code}'"
                 f", reason '{response.reason}'"
             )
@@ -323,7 +325,7 @@ class AnonClientTool:
                 f"Server '{server}' cannot be reached. Is the URL correct?. "
                 f"Original Error:\n {str(e)}"
             )
-        except APIClientException as e:
+        except APIClientError as e:
             return f"ERROR: '{server}' is not responding properly. Error:\n {str(e)}"
 
     def get_job_info(self, server: RemoteAnonServer, job_id: int) -> JobInfo:
@@ -338,7 +340,7 @@ class AnonClientTool:
 
         Raises
         ------
-        ClientToolException:
+        ClientToolError:
             if something goes wrong getting jobs info from server
 
         Returns
@@ -376,7 +378,7 @@ class AnonClientTool:
 
         Raises
         ------
-        ClientToolException:
+        ClientToolError:
             if something goes wrong getting jobs info from server
 
         """
@@ -389,15 +391,17 @@ class AnonClientTool:
             return JobsInfoList(
                 [
                     JobInfo.from_json(x)
-                    for x in client.get(api_function_name, job_ids=job_ids).values()
+                    for x in client.get(
+                        api_function_name, job_ids=job_ids
+                    ).values()
                 ]
             )
-        except APIClientException as e:
-            raise ClientToolException(f"Error getting jobs from {server}:\n{str(e)}")
-        except APIParseResponseException as e:
-            raise ClientToolException(
-                f"Error parsing server response: from {server}:\n{str(e)}"
-            )
+        except APIClientError as e:
+            raise ClientToolError(f"Error getting jobs from {server}") from e
+        except APIParseResponseError as e:
+            raise ClientToolError(
+                f"Error parsing server response: from {server}"
+            ) from e
 
     def get_jobs(self, server: RemoteAnonServer):
         """Get list of info on most recent jobs in server
@@ -424,10 +428,12 @@ class AnonClientTool:
             info_string += "\n" + format_job_info_list(response)
             return info_string
 
-        except APIClientException as e:
+        except APIClientError as e:
             response = f"Error getting jobs from {server}:\n{str(e)}"
-        except APIParseResponseException as e:
-            response = f"Error parsing server response: from {server}:\n{str(e)}"
+        except APIParseResponseError as e:
+            response = (
+                f"Error parsing server response: from {server}:\n{str(e)}"
+            )
 
         return response
 
@@ -443,7 +449,7 @@ class AnonClientTool:
         try:
             _ = client.post("cancel_job", job_id=job_id)
             info = f"Cancelled job {job_id} on {server.name}"
-        except APIClientException as e:
+        except APIClientError as e:
             info = f"Error cancelling job on{server}:\n{str(e)}"
         return info
 
@@ -467,11 +473,13 @@ class AnonClientTool:
                 error=" ",
             )
             info = f"Reset job {job_id} on {server}"
-        except APIClientException as e:
+        except APIClientError as e:
             info = f"Error resetting job on{server.name}:\n{str(e)}"
         return info
 
-    def set_opt_out_ignore(self, server: RemoteAnonServer, job_id: str, reason: str):
+    def set_opt_out_ignore(
+        self, server: RemoteAnonServer, job_id: str, reason: str
+    ):
         """Set opt-out ignore with a reason for given job
 
         Returns
@@ -488,8 +496,10 @@ class AnonClientTool:
                 source_ignore_opt_out=True,
                 source_ignore_opt_out_reason=f"Reason: {reason}",
             )
-            info = f"Set opt-out ignore ({reason}) for job {job_id} on {server}"
-        except APIClientException as e:
+            info = (
+                f"Set opt-out ignore ({reason}) for job {job_id} on {server}"
+            )
+        except APIClientError as e:
             info = f"Error setting opt-out ignore on{server.name}:\n{str(e)}"
         return info
 
@@ -524,7 +534,7 @@ class AnonClientTool:
 
         Raises
         ------
-        APIClientException
+        APIClientError
             When anything goes wrong creating job
 
         Returns
@@ -583,7 +593,7 @@ class AnonClientTool:
 
         Raises
         ------
-        APIClientException
+        APIClientError
             When anything goes wrong creating job
 
         Returns
@@ -612,25 +622,25 @@ class AnonClientTool:
         return JobInfo.from_json(response_dict)
 
 
-class ClientInterfaceException(AnonAPIException):
+class ClientInterfaceError(AnonAPIError):
     """A general problem with client interface"""
 
     pass
 
 
-class APIClientException(AnonAPIException):
+class APIClientError(AnonAPIError):
     """A general problem with the APIClient"""
 
     pass
 
 
-class ServerNotResponding(APIClientException):
+class ServerNotResponding(APIClientError):
     """API server is not responding at all"""
 
     pass
 
 
-class APIClient404Exception(AnonAPIException):
+class APIClient404Error(AnonAPIError):
     """Object not found. Made this into a separate function to be able to ignore
     it in special cases
     """
@@ -638,11 +648,11 @@ class APIClient404Exception(AnonAPIException):
     pass
 
 
-class APIClientAuthorizationFailedException(APIClientException):
+class APIClientAuthorizationFailedException(APIClientError):
     pass
 
 
-class APIClientAPIException(APIClientException):
+class APIClientAPIException(APIClientError):
     """The API was called successfully, but there was a problem within the API
     itself
     """
@@ -664,5 +674,5 @@ class APIClientAPIException(APIClientException):
         self.api_errors = api_errors
 
 
-class ClientToolException(AnonAPIException):
+class ClientToolError(AnonAPIError):
     pass

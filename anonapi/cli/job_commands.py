@@ -33,7 +33,9 @@ def info(context: AnonAPIContext, job_ids):
     job_ids = flatten(job_ids)
     server = context.get_active_server()
     for job_id in job_ids:
-        job_info = context.client_tool.get_job_info(server=server, job_id=job_id)
+        job_info = context.client_tool.get_job_info(
+            server=server, job_id=job_id
+        )
         logger.info(f"job {job_id} on {server.name}:")
         logger.info(job_info.as_string())
 

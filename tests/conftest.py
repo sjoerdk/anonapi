@@ -64,7 +64,9 @@ def mocked_requests_client():
         client with mocked requests lib, and te mocked requests lib itself
 
     """
-    client = WebAPIClient(hostname="test.host", username="testuser", token="token")
+    client = WebAPIClient(
+        hostname="test.host", username="testuser", token="token"
+    )
 
     requests_mock = RequestsMock()
     client.requestslib = requests_mock
@@ -89,8 +91,12 @@ def a_folder_with_mapping(tmpdir):
 
 
 @fixture
-def a_folder_with_mapping_and_fileselection(a_folder_with_mapping, a_file_selection):
-    target_path = Path(a_folder_with_mapping) / "a_folder" / "a_file_selection.txt"
+def a_folder_with_mapping_and_fileselection(
+    a_folder_with_mapping, a_file_selection
+):
+    target_path = (
+        Path(a_folder_with_mapping) / "a_folder" / "a_file_selection.txt"
+    )
     target_path.parent.mkdir(exist_ok=True)
     shutil.copyfile(a_file_selection, target_path)
     return a_folder_with_mapping, target_path
@@ -144,7 +150,9 @@ def mock_api_context(tmpdir) -> AnonAPIContext:
     current_dir
     """
     settings = TestDefaultAnonClientSettings()
-    settings.servers.append(RemoteAnonServer("testserver2", "https://hostname_of_api2"))
+    settings.servers.append(
+        RemoteAnonServer("testserver2", "https://hostname_of_api2")
+    )
     context = AnonAPIContext(
         client_tool=AnonClientTool(username="test", token="token"),
         settings=settings,
@@ -169,7 +177,9 @@ def mock_cli_base_context(monkeypatch, mock_api_context):
     """entrypoint.cli creates a context from local settings. Stop this and return a
     mock context instead
     """
-    monkeypatch.setattr("anonapi.cli.entrypoint.get_context", lambda: mock_api_context)
+    monkeypatch.setattr(
+        "anonapi.cli.entrypoint.get_context", lambda: mock_api_context
+    )
 
 
 @fixture
@@ -237,7 +247,7 @@ class MockContextCliRunner(CliRunner):
         env=None,
         catch_exceptions=True,
         color=False,
-        **extra
+        **extra,
     ):
         return super().invoke(
             cli,

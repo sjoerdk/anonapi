@@ -25,7 +25,11 @@ class FileFolder:
         self.path = Path(path)
 
     def iterate(
-        self, pattern="*", recurse=True, exclude_patterns=None, ignore_dotfiles=True
+        self,
+        pattern="*",
+        recurse=True,
+        exclude_patterns=None,
+        ignore_dotfiles=True,
     ):
         """Iterator that yields subpaths. Makes it easy to use progress bar
 
@@ -60,7 +64,10 @@ class FileFolder:
         for x in all_paths_iter:
             # sleep(0.2)
             exclude = any(
-                [fnmatch(x.relative_to(self.path), y) for y in exclude_patterns]
+                [
+                    fnmatch(x.relative_to(self.path), y)
+                    for y in exclude_patterns
+                ]
             )
             ignore = x.name.startswith(".") and ignore_dotfiles
             if x.is_file() and not exclude and not ignore:
@@ -92,7 +99,9 @@ def create_dicom_selection(path, check_dicom=True) -> FileSelectionFile:
     if check_dicom:
         dicom_files = find_dicom_files(files)
     else:
-        logger.info(f"Found {len(files)} files. Adding all that look like DICOM")
+        logger.info(
+            f"Found {len(files)} files. Adding all that look like DICOM"
+        )
         dicom_files = [x for x in files if looks_like_dicom_file(x)]
 
     logger.info(f"Found {len(dicom_files)} DICOM files")

@@ -85,7 +85,7 @@ def assert_output(output: str, expected: str):
         multi-line click console output from calling logtest()
     expected:
     """
-    for output, expected in zip(
-        output.split("\n"), [x.lstrip() for x in expected.split("\n") if x]
-    ):
+    output_lines = output.split("\n")
+    expected_lines = [x.lstrip() for x in expected.split("\n") if x]
+    for output, expected in zip(output_lines, expected_lines):
         assert output == expected

@@ -12,7 +12,7 @@ from typing import Iterator, List, Type, Union, Optional
 from openpyxl.reader.excel import load_workbook
 from openpyxl.utils.exceptions import InvalidFileException
 
-from anonapi.exceptions import AnonAPIException
+from anonapi.exceptions import AnonAPIError
 from anonapi.logging import get_module_logger
 from anonapi.mapper import JobParameterGrid, sniff_dialect_safe
 from anonapi.parameters import (
@@ -35,7 +35,9 @@ class ParameterColumn:
     Does fuzzy finding of column header and parsing of values
     """
 
-    header_names: List[str] = []  # the column_types that could be above this column
+    header_names: List[
+        str
+    ] = []  # the column_types that could be above this column
 
     # the type of parameter that this column contains
     parameter_type: Type[Parameter] = Parameter
@@ -76,7 +78,9 @@ class ParameterColumn:
         """The given input seems to be this column's header"""
         if input is None:
             return False
-        if cls.clean_string(input) in [cls.clean_string(x) for x in cls.header_names]:
+        if cls.clean_string(input) in [
+            cls.clean_string(x) for x in cls.header_names
+        ]:
             return True
         else:
             return False
@@ -149,7 +153,7 @@ class TabularFile:
 
         Raises
         ------
-        InputFileException
+        InputFileError
             If anything goes wrong loading or parsing the file
 
         """
@@ -180,7 +184,7 @@ class ExcelFile(TabularFile):
 
         Raises
         ------
-        InputFileException
+        InputFileError
             If anything goes wrong loading or parsing the file
 
         """
@@ -188,14 +192,16 @@ class ExcelFile(TabularFile):
         try:
             wb2 = load_workbook(self.path)
         except (InvalidFileException, FileNotFoundError) as e:
-            raise InputFileException(f"Error reading '{self.path}'") from e
+            raise InputFileError(f"Error reading '{self.path}'") from e
 
         sheet = wb2[wb2.sheetnames[0]]  # read first sheet, ignore others
 
         return self.cast_rows_to_string(sheet.values)
 
     @staticmethod
-    def cast_rows_to_string(iterator: Iterator[List]) -> Iterator[List[Optional[str]]]:
+    def cast_rows_to_string(
+        iterator: Iterator[List],
+    ) -> Iterator[List[Optional[str]]]:
         """For standardizing data from grid-like files. Make everything string,
         except None values. Keep those None.
         """
@@ -233,7 +239,7 @@ class CSVFile(TabularFile):
 
         Raises
         ------
-        InputFileException
+        InputFileError
             If anything goes wrong loading or parsing the file
 
         """
@@ -242,10 +248,13 @@ class CSVFile(TabularFile):
             with open(self.path, "r") as f:
                 lines = f.readlines()
                 rows = [
-                    row for row in csv.reader(lines, dialect=sniff_dialect_safe(lines))
+                    row
+                    for row in csv.reader(
+                        lines, dialect=sniff_dialect_safe(lines)
+                    )
                 ]
         except FileNotFoundError as e:
-            raise InputFileException() from e
+            raise InputFileError() from e
 
         return iter(rows)
 
@@ -265,7 +274,7 @@ def as_tabular_file(path: Union[str, Path]) -> TabularFile:
 
     Raises
     ------
-    InputFileException
+    InputFileError
         If no suitable TabularFile class can be found for this path
     """
     path = Path(path)  # cast string to Path
@@ -277,7 +286,7 @@ def as_tabular_file(path: Union[str, Path]) -> TabularFile:
         logger.debug(f"I think {path} is a csv file")
         return CSVFile(path)
     else:
-        raise InputFileException(
+        raise InputFileError(
             f"Unknown extension '{suffix}' I don't know how to read this file."
         )
 
@@ -310,7 +319,8 @@ def parse_columns(
 
 
 def find_column_headers(
-    row_iterator: Iterator[List[str]], column_types: List[Type[ParameterColumn]]
+    row_iterator: Iterator[List[str]],
+    column_types: List[Type[ParameterColumn]],
 ) -> List[ParameterColumn]:
     """Go through each row in iterator until you find a row containing column headers
 
@@ -329,7 +339,7 @@ def find_column_headers(
 
     Raises
     ------
-    InputFileException
+    InputFileError
         When no column headers can be found
 
     """
@@ -346,7 +356,7 @@ def find_column_headers(
             for column in columns:
                 column.header_row_idx = idx
             return columns
-    raise InputFileException(
+    raise InputFileError(
         f"Could not find any column headers. Looked for any"
         f" of [{','.join([x.header_name() for x in column_types])}]"
     )
@@ -371,19 +381,24 @@ def extract_parameter_grid(
 
     Raises
     ------
-    InputFileException
+    InputFileError
         If parsing or reading fails for any reason
 
     """
     if optional_column_types is None:
-        optional_column_types = [FolderColumn, AccessionNumberColumn, PseudonymColumn]
+        optional_column_types = [
+            FolderColumn,
+            AccessionNumberColumn,
+            PseudonymColumn,
+        ]
     if required_column_types is None:
         required_column_types = []
 
     row_iterator = file.rows()
 
     columns = find_column_headers(
-        row_iterator, column_types=optional_column_types + required_column_types
+        row_iterator,
+        column_types=optional_column_types + required_column_types,
     )
     for required in required_column_types:
         if not any(isinstance(x, required) for x in columns):
@@ -400,7 +415,7 @@ def extract_parameter_grid(
             grid.append(parse_row(row, columns=columns))
         except EmptyRow:
             continue  # skip empty row, try next
-        except RowParseException as e:
+        except RowParseError as e:
             # Add row number (+2 as excel rows start at 1 and both idxs are 0-based)
             raise InputFileParseException(
                 f"Exception in row {column_headers_idx+idx+2}"
@@ -409,7 +424,9 @@ def extract_parameter_grid(
     return JobParameterGrid(grid)
 
 
-def parse_row(row: List[str], columns: List[ParameterColumn]) -> List[Parameter]:
+def parse_row(
+    row: List[str], columns: List[ParameterColumn]
+) -> List[Parameter]:
     """Is this row fit for parsing? Are there missing parameters? empty values?
 
     Parameters
@@ -444,24 +461,24 @@ def parse_row(row: List[str], columns: List[ParameterColumn]) -> List[Parameter]
     if not filled:
         raise EmptyRow()
     if filled and empty:
-        raise RowParseException(
+        raise RowParseError(
             f"Problem in row {row}. Columns[{[str(x) for x in filled]}] have a value,"
             f" but columns [{[str(x) for x in empty]}] are empty. What do you want?"
         )
     return [column.parameter_from_row(row) for column in columns]
 
 
-class InputFileException(AnonAPIException):
+class InputFileError(AnonAPIError):
     pass
 
 
-class InputFileParseException(InputFileException):
+class InputFileParseException(InputFileError):
     pass
 
 
-class EmptyRow(AnonAPIException):
+class EmptyRow(AnonAPIError):
     pass
 
 
-class RowParseException(AnonAPIException):
+class RowParseError(AnonAPIError):
     pass

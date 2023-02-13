@@ -64,12 +64,12 @@ The :mod:`anonapi.testresources` module can be used to generate mock responses w
 
 Exceptions
 ==========
-All exceptions raised in anonapi derive from :mod:`anonapi.exceptions.AnonAPIException`. Catching that will allow you to
+All exceptions raised in anonapi derive from :mod:`anonapi.exceptions.AnonAPIError`. Catching that will allow you to
 handle them:
 
 .. code-block:: python
 
-    from anonapi.exceptions import AnonAPIException
+    from anonapi.exceptions import AnonAPIError
     from anonapi.client import AnonClientTool
 
     tool = AnonClientTool('user','token')
@@ -77,7 +77,7 @@ handle them:
     try:
         tool.get_server_status(server)
 
-    except AnonAPIException as e:
+    except AnonAPIError as e:
         print(f"Something went wrong but its anonapi's fault. Look: {e}")
 
 

@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from anonapi.paths import UNCPath, UNCMapping, UNCMap, UNCMappingException
+from anonapi.paths import UNCPath, UNCMapping, UNCMap, UNCMappingError
 
 
 @pytest.mark.parametrize(
@@ -68,8 +68,8 @@ def test_unc_mapping():
     assert mapping.to_unc(unknown_share) == unknown_share
 
     # but if conversion *is* needed, unknown paths will raise
-    with pytest.raises(UNCMappingException):
+    with pytest.raises(UNCMappingError):
         mapping.to_local(unknown_share)
 
-    with pytest.raises(UNCMappingException):
+    with pytest.raises(UNCMappingError):
         mapping.to_unc(unknown_path)

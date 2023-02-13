@@ -6,7 +6,7 @@ from pathlib import Path
 
 import yaml
 
-from anonapi.exceptions import AnonAPIException
+from anonapi.exceptions import AnonAPIError
 from anonapi.objects import RemoteAnonServer
 from anonapi.persistence import YAMLSerializable
 
@@ -83,7 +83,7 @@ class BatchFolder:
             with open(self.batch_file_path, "r") as f:
                 return JobBatch.load_from(f)
         else:
-            raise NoBatchDefinedException()
+            raise NoBatchDefinedError()
 
     def save(self, batch):
         """Save the given batch to this folder
@@ -103,7 +103,7 @@ class BatchFolder:
 
         Raises
         ------
-        BatchFolderException:
+        BatchFolderError:
             if remove does not work for some reason
 
         """
@@ -111,9 +111,9 @@ class BatchFolder:
         os.remove(self.batch_file_path)
 
 
-class BatchFolderException(AnonAPIException):
+class BatchFolderError(AnonAPIError):
     pass
 
 
-class NoBatchDefinedException(AnonAPIException):
+class NoBatchDefinedError(AnonAPIError):
     pass

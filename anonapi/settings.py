@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 
 import yaml
 
-from anonapi.exceptions import AnonAPIException
+from anonapi.exceptions import AnonAPIError
 from anonapi.objects import RemoteAnonServer
 from anonapi.parameters import (
     DestinationPath,
@@ -117,7 +117,8 @@ class AnonClientSettings(YAMLSerializable):
         )
 
         settings.active_server = cls.determine_active_server(
-            settings=settings, active_server_name=dict_full["active_server_name"]
+            settings=settings,
+            active_server_name=dict_full["active_server_name"],
         )
         return settings
 
@@ -140,7 +141,9 @@ class AnonClientSettings(YAMLSerializable):
         for key in keys:
             try:
                 # parse as post-1.4 style
-                return [ParameterFactory.parse_from_string(x) for x in dict_in[key]]
+                return [
+                    ParameterFactory.parse_from_string(x) for x in dict_in[key]
+                ]
             except ParameterParsingError:
                 # this did not work. Try old, pre-1.4 style
                 return cls.extract_legacy_job_default_parameters(dict_in[key])
@@ -161,10 +164,14 @@ class AnonClientSettings(YAMLSerializable):
 
         parameters = []
         if "project_name" in job_default_parameters:
-            parameters.append(Project(value=job_default_parameters["project_name"]))
+            parameters.append(
+                Project(value=job_default_parameters["project_name"])
+            )
         if "destination_path" in job_default_parameters:
             parameters.append(
-                DestinationPath(value=job_default_parameters["destination_path"])
+                DestinationPath(
+                    value=job_default_parameters["destination_path"]
+                )
             )
 
         return parameters
@@ -187,7 +194,7 @@ class AnonClientSettings(YAMLSerializable):
                     f"'{list(servers.keys())}'. I don't know what the active "
                     f"server is supposed to be"
                 )
-                raise AnonClientSettingsException(msg)
+                raise AnonClientSettingsError(msg) from None
 
     def as_human_readable(self) -> str:
         return yaml.dump(self.to_dict(), default_flow_style=False)
@@ -204,7 +211,8 @@ class AnonClientSettings(YAMLSerializable):
         settings
         """
         raise Warning(
-            "Settings not saved. " "There is no file associated with these settings"
+            "Settings not saved. "
+            "There is no file associated with these settings"
         )
 
 
@@ -225,7 +233,9 @@ class DefaultAnonClientSettings(AnonClientSettings):
 
         """
         super().__init__(
-            servers=[RemoteAnonServer("testserver", "https://hostname_of_api")],
+            servers=[
+                RemoteAnonServer("testserver", "https://hostname_of_api")
+            ],
             user_name="username",
             user_token="token",
             job_default_parameters=[
@@ -273,9 +283,9 @@ class AnonClientSettingsFromFile(AnonClientSettings):
         raise NotImplementedError("This class can only be loaded from a file")
 
 
-class AnonClientSettingsException(AnonAPIException):
+class AnonClientSettingsError(AnonAPIError):
     pass
 
 
-class AnonClientSettingsFromFileException(AnonClientSettingsException):
+class AnonClientSettingsFromFileException(AnonClientSettingsError):
     pass

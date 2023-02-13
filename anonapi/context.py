@@ -2,9 +2,9 @@ from pathlib import Path
 
 import click
 
-from anonapi.batch import BatchFolder, JobBatch, NoBatchDefinedException
+from anonapi.batch import BatchFolder, JobBatch, NoBatchDefinedError
 from anonapi.client import AnonClientTool
-from anonapi.exceptions import AnonAPIException
+from anonapi.exceptions import AnonAPIError
 from anonapi.settings import AnonClientSettings
 
 
@@ -61,7 +61,7 @@ class AnonAPIContext:
 
         Raises
         ------
-        AnonAPIContextException:
+        AnonAPIContextError:
             If server with that name cannot be found in list of servers
 
         Returns
@@ -72,7 +72,7 @@ class AnonAPIContext:
         server_list = {x.name: x for x in self.settings.servers}
         if short_name not in server_list.keys():
             msg = f"Unknown server '{short_name}'. Please choose one of {[x.name for x in self.settings.servers]}"
-            raise AnonAPIContextException(msg)
+            raise AnonAPIContextError(msg)
 
         return server_list[short_name]
 
@@ -86,7 +86,7 @@ class AnonAPIContext:
 
         Raises
         ------
-        AnonAPIContextException
+        AnonAPIContextError
             When there is no active server
         """
         server = self.settings.active_server
@@ -96,7 +96,7 @@ class AnonAPIContext:
                 f"one by using 'server activate <SERVER_NAME>. "
                 f"Available:{str([x.name for x in self.settings.servers])}"
             )
-            raise AnonAPIContextException(msg)
+            raise AnonAPIContextError(msg)
         return server
 
     def current_dir(self):
@@ -110,7 +110,7 @@ class AnonAPIContext:
 
         Raises
         ------
-        NoBatchDefinedException
+        NoBatchDefinedError
 
         Returns
         -------
@@ -119,7 +119,7 @@ class AnonAPIContext:
 
         batch = BatchFolder(self.current_dir).load()
         if not batch:
-            raise NoBatchDefinedException()
+            raise NoBatchDefinedError()
         else:
             return batch
 
@@ -127,7 +127,7 @@ class AnonAPIContext:
         return BatchFolder(self.current_dir)
 
 
-class AnonAPIContextException(AnonAPIException):
+class AnonAPIContextError(AnonAPIError):
     pass
 
 

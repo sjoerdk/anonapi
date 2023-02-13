@@ -17,9 +17,16 @@ from anonapi.cli import (
 )
 from anonapi.context import AnonAPIContext
 from anonapi.client import AnonClientTool
-from anonapi.logging import AnonAPILogController, Verbosities, get_module_logger
+from anonapi.logging import (
+    AnonAPILogController,
+    Verbosities,
+    get_module_logger,
+)
 from anonapi.persistence import DEFAULT_SETTINGS_PATH
-from anonapi.settings import DefaultAnonClientSettings, AnonClientSettingsFromFile
+from anonapi.settings import (
+    DefaultAnonClientSettings,
+    AnonClientSettingsFromFile,
+)
 
 logger = get_module_logger(__name__)
 
@@ -71,7 +78,9 @@ def cli(ctx, verbose):
     Controls remote anonymization servers
     Use the commands below with -h for more info
     """
-    locale.setlocale(locale.LC_ALL, "")  # use local instead of default 'C' locale
+    locale.setlocale(
+        locale.LC_ALL, ""
+    )  # use local instead of default 'C' locale
     configure_logging(verbose)
     ctx.obj = get_context()
 

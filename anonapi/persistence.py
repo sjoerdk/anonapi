@@ -4,7 +4,7 @@ from typing import Dict, TextIO
 
 import yaml
 
-from anonapi.exceptions import AnonAPIException
+from anonapi.exceptions import AnonAPIError
 
 
 DEFAULT_SETTINGS_PATH = pathlib.Path.home() / "AnonWebAPIClientSettings.yml"
@@ -42,7 +42,7 @@ class YAMLSerializable:
 
         Raises
         ------
-        PersistenceException
+        PersistenceError
             If loading does not work
 
         Returns
@@ -52,13 +52,13 @@ class YAMLSerializable:
 
         Raises
         ------
-        PersistenceException
+        PersistenceError
             When anything goes wrong during loading
         """
         content = yaml.safe_load(f)
         # check input here because exceptions later on will not be as informative
         if not isinstance(content, dict):
-            raise PersistenceException(
+            raise PersistenceError(
                 f"Loaded content is not a dictionary,"
                 f" but rather {type(content)}. I can't "
                 f"load this"
@@ -77,5 +77,5 @@ class YAMLSerializable:
         yaml.dump(self.to_dict(), f, default_flow_style=False)
 
 
-class PersistenceException(AnonAPIException):
+class PersistenceError(AnonAPIError):
     pass

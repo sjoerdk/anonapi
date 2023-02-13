@@ -28,8 +28,14 @@ def test_selection_tool_parameters(a_file_folder):
     assert_len(folder.iterate(ignore_dotfiles=False), 6)
     assert_len(folder.iterate(pattern="1"), 2)
     assert_len(folder.iterate(pattern="*.txt"), 1)
-    assert "somedoc.odt" in str(list(folder.iterate(pattern="*", recurse=False))[0])
+    assert "somedoc.odt" in str(
+        list(folder.iterate(pattern="*", recurse=False))[0]
+    )
     assert_len(folder.iterate(pattern="*", exclude_patterns=["2.0*"]), 3)
-    assert_len(folder.iterate(pattern="*", exclude_patterns=["2.0*", "AiCE*"]), 2)
-    assert_len(folder.iterate(pattern="*.*", exclude_patterns=["2.0*", "AiCE*"]), 1)
+    assert_len(
+        folder.iterate(pattern="*", exclude_patterns=["2.0*", "AiCE*"]), 2
+    )
+    assert_len(
+        folder.iterate(pattern="*.*", exclude_patterns=["2.0*", "AiCE*"]), 1
+    )
     assert_len(folder.iterate(pattern="*", exclude_patterns=["*/some*"]), 4)

@@ -7,14 +7,17 @@ import click
 from click.types import ParamType
 from pathlib import Path
 
-from fileselection.fileselection import FileSelectionFile, FileSelectionException
+from fileselection.fileselection import (
+    FileSelectionFile,
+    FileSelectionException,
+)
 
 from anonapi.context import AnonAPIContext
 from anonapi.inputfile import (
     ALL_COLUMN_TYPES,
     AccessionNumberColumn,
     FolderColumn,
-    InputFileException,
+    InputFileError,
     PseudonymColumn,
     as_tabular_file,
     extract_parameter_grid,
@@ -46,7 +49,10 @@ class JobIDRangeParamType(ParamType):
 
         match = re.match("^(?P<start>[0-9]+)-(?P<end>[0-9]+)$", value)
         if match:  # expand range and add each item
-            return [str(x) for x in range(int(match["start"]), int(match["end"]) + 1)]
+            return [
+                str(x)
+                for x in range(int(match["start"]), int(match["end"]) + 1)
+            ]
         else:
             return [value]
 
@@ -119,7 +125,9 @@ class WildcardFolder(ParamType):
             # convert to Path using click's own Path parameter
             convert = click.Path(exists=self.exists).convert
             if "*" in value:
-                paths = [x for x in Path(os.getcwd()).glob(value) if x.is_dir()]
+                paths = [
+                    x for x in Path(os.getcwd()).glob(value) if x.is_dir()
+                ]
                 return [convert(x, param, ctx) for x in paths]
             else:
                 return [convert(value, param, ctx)]
@@ -144,7 +152,7 @@ class TabularParameterFile(ParamType):
                 optional_column_types=self.optional_column_types,
                 required_column_types=self.required_column_types,
             )
-        except InputFileException as e:
+        except InputFileError as e:
             self.fail(str(e), param, ctx)
 
 

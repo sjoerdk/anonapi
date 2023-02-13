@@ -92,7 +92,8 @@ class SphinxTable:
             )
 
         line = self.format_row(
-            value="=" * self.val_column_width, text="=" * self.text_column_width
+            value="=" * self.val_column_width,
+            text="=" * self.text_column_width,
         )
 
         header = "\n".join(
@@ -134,7 +135,9 @@ class SphinxItemDefinition:
 
     def as_string(self):
         """As text that can be included straight in sphinx"""
-        return "\n\n".join([f"{key}\n\t{value}" for key, value in self.items.items()])
+        return "\n\n".join(
+            [f"{key}\n\t{value}" for key, value in self.items.items()]
+        )
 
 
 ClickCommandInfo = namedtuple("ClickCommandInfo", ["name", "help"])
@@ -211,7 +214,9 @@ class ClickCommandJinjaContext:
         # list all commands/ groups and help for them
         node = ClickCommandOrGroupNode(
             SphinxTable(
-                rows=[TableRow(x.name, x.help) for x in root.commands.values()],
+                rows=[
+                    TableRow(x.name, x.help) for x in root.commands.values()
+                ],
                 max_width=80,
             )
         )
@@ -220,7 +225,9 @@ class ClickCommandJinjaContext:
         for command_or_group in root.commands.values():
             if hasattr(command_or_group, "commands"):
                 # this is a group. recurse into it
-                node[command_or_group.name] = self.populate_nodes(command_or_group)
+                node[command_or_group.name] = self.populate_nodes(
+                    command_or_group
+                )
             else:
                 # this is a command. Add info for that
                 command_node = ClickCommandOrGroupNode()
@@ -232,14 +239,18 @@ class ClickCommandJinjaContext:
                 options = {}
                 # add all switches like --no-print, but not regular arguments
                 candidates = [
-                    x for x in command_or_group.params if isinstance(x, click.Option)
+                    x
+                    for x in command_or_group.params
+                    if isinstance(x, click.Option)
                 ]
                 for option in candidates:
                     key_elements = [
                         ", ".join(option.opts),
                         ", ".join(option.secondary_opts),
                     ]
-                    key_elements = [x for x in key_elements if x]  # remove empty
+                    key_elements = [
+                        x for x in key_elements if x
+                    ]  # remove empty
                     key = "/ ".join(key_elements)
                     try:
                         value = option.help
@@ -279,13 +290,17 @@ class AnonApiContext:
             for x in ALL_COLUMN_TYPES
         ]
         return SphinxTable(
-            rows=rows, max_width=80, header=["Parameter", "Allowed column names"]
+            rows=rows,
+            max_width=80,
+            header=["Parameter", "Allowed column names"],
         )
 
     @staticmethod
     def to_sphinx_table(parameters: List[Parameter]) -> SphinxTable:
         rows = [TableRow(x.field_name, x.description) for x in parameters]
-        return SphinxTable(rows=rows, max_width=80, header=["Parameter", "Description"])
+        return SphinxTable(
+            rows=rows, max_width=80, header=["Parameter", "Description"]
+        )
 
 
 # create contexts that provide the info to render with jinja

@@ -10,7 +10,7 @@ from anonapi.client import (
     WebAPIClient,
     APIClientAPIException,
     APIClientAuthorizationFailedException,
-    APIClientException,
+    APIClientError,
     AnonClientTool,
 )
 from tests.factories import RequestsMock
@@ -83,21 +83,21 @@ def test_404_responses(mocked_requests_client: WebAPIClient):
         text="welcome to totally_unrelated.com, your one-stop shop to oblivion",
         status_code=404,
     )
-    with pytest.raises(APIClientException) as exception:
+    with pytest.raises(APIClientError) as exception:
         client.get("get_job")
     assert "Is this a web API url?" in str(exception.value)
 
 
 def test_server_not_found(mocked_requests_client: WebAPIClient):
-    """Calling a url that does not exist should yield an APIClientException"""
+    """Calling a url that does not exist should yield an APIClientError"""
     client, requests_mock = mocked_requests_client
     requests_mock: RequestsMock
 
     requests_mock.set_response_exception(requests.exceptions.ConnectionError)
-    with pytest.raises(APIClientException):
+    with pytest.raises(APIClientError):
         _ = client.get("anything")
 
-    with pytest.raises(APIClientException):
+    with pytest.raises(APIClientError):
         _ = client.post("anything")
 
 
@@ -129,7 +129,9 @@ def test_wrong_inputs(mocked_requests_client: WebAPIClient):
     )
     with pytest.raises(APIClientAPIException) as exception:
         client.get("sgetdf_jfob")
-    assert "The API call you tried to make is not defined" in str(exception.value)
+    assert "The API call you tried to make is not defined" in str(
+        exception.value
+    )
 
 
 def test_response_code_handling(mocked_requests_client: WebAPIClient):
@@ -138,7 +140,7 @@ def test_response_code_handling(mocked_requests_client: WebAPIClient):
     requests_mock: RequestsMock
 
     requests_mock.set_response_text(text="405 response!", status_code=405)
-    with pytest.raises(APIClientException) as exception:
+    with pytest.raises(APIClientError) as exception:
         client.get("get_jobs")
     assert "Method not allowed" in str(exception.value)
 
@@ -154,7 +156,7 @@ def test_response_code_handling(mocked_requests_client: WebAPIClient):
     requests_mock.set_response_text(
         text="Abandon all hope, ye who receive", status_code=666
     )
-    with pytest.raises(APIClientException) as exception:
+    with pytest.raises(APIClientError) as exception:
         client.get("get_jobs")
     assert "Unexpected response" in str(exception.value)
 
