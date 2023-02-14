@@ -3,7 +3,7 @@ name = "anonapi"
 version = "1.7.0"
 description = "Client and tools for working with the anoymization web API"
 authors = ["sjoerdk <sjoerd.kerkstra@radboudumc.nl>"]
-readme = "README.rst"
+readme = "README.md"
 license = "MIT"
 [tool.poetry.dev-dependencies]
 pytest = "^7.2.1"
