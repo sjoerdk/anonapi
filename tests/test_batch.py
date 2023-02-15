@@ -18,7 +18,6 @@ def a_job_batch(a_server):
 
 
 def test_batch_persisting(a_job_batch):
-
     memfile = StringIO()
     a_job_batch.save_to(memfile)
 
@@ -31,7 +30,6 @@ def test_batch_persisting(a_job_batch):
 
 
 def test_batch_folder(tmpdir, a_job_batch):
-
     # empty folder
     batch_folder = BatchFolder(path=Path(tmpdir))
     assert not batch_folder.has_batch()

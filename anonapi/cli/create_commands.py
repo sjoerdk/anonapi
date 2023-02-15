@@ -375,7 +375,8 @@ def from_mapping(context: CreateCommandsContext, dry_run):
         destination_paths.add(job_set.get_param_by_type(DestinationPath).value)
 
     question = (
-        f"This will create {len(job_sets)} jobs on {context.get_active_server().name},"
+        f"This will create {len(job_sets)} jobs on "
+        f"{context.get_active_server().name},"
         f" for projects '{list(project_names)}', writing data to "
         f"'{[str(x) for x in destination_paths]}'. Are you sure?"
     )
@@ -471,13 +472,13 @@ def set_defaults(context: CreateCommandsContext):
     )
     try:
         project_name = click.prompt(
-            f"Please enter default IDIS project name:",
+            "Please enter default IDIS project name:",
             show_default=True,
             default=job_default_parameters.project_name,
         )
 
         destination_path = click.prompt(
-            f"Please enter default job destination directory:",
+            "Please enter default job destination directory:",
             show_default=True,
             default=job_default_parameters.destination_path,
         )

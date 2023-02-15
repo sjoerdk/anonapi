@@ -84,7 +84,6 @@ class SphinxTable:
         self.rows = self.sort_rows(self.rows)
 
     def as_string(self):
-
         if self.text_column_width < 2:
             raise ValueError(
                 f"Max width is {self.max_width} but Values take up"

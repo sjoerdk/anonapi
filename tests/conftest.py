@@ -56,7 +56,8 @@ def mock_requests(monkeypatch):
 
 @fixture
 def mocked_requests_client():
-    """A WebAPIClient instance that does not actually do http calls but uses mocked responses
+    """A WebAPIClient instance that does not actually do http calls but uses
+    mocked responses
 
     Returns
     -------
@@ -235,7 +236,6 @@ class MockContextCliRunner(CliRunner):
     """a click.testing.CliRunner that always passes a mocked context to any call"""
 
     def __init__(self, *args, mock_context, **kwargs):
-
         super().__init__(*args, **kwargs)
         self.mock_context = mock_context
 

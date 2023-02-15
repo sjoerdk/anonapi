@@ -38,7 +38,6 @@ def test_unc_path_reject(path):
 
 
 def test_unc_mapping():
-
     local1 = Path("/mnt/thatshare")
     unc1 = UNCPath(r"\\server\thatshare")
     local2 = Path("/mnt/othershare")

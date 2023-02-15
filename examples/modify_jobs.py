@@ -6,7 +6,8 @@ def modify_jobs():
 
     Notes
     -----
-    For a full list of the job fields that can be modified see example 'get_api_definition'
+    For a full list of the job fields that can be modified see example
+    'get_api_definition'
     """
 
     # Create a client that will talk to the web API

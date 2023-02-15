@@ -33,7 +33,8 @@ class JobIDRangeParamType(ParamType):
     name = "job_id"
 
     def convert(self, value, param, ctx) -> List[str]:
-        """If it looks like 'int-int' try to turn into range. Otherwise just leave as is and put in list
+        """If it looks like 'int-int' try to turn into range. Otherwise just
+        leave as is and put in list
 
         Returns
         -------
@@ -45,7 +46,8 @@ class JobIDRangeParamType(ParamType):
             return value
 
         if type(value) is list:
-            return value  # Make sure function is idempotent. Feeding output into convert() again will not change output
+            return value  # Make sure function is idempotent. Feeding output
+            # into convert() again will not change output
 
         match = re.match("^(?P<start>[0-9]+)-(?P<end>[0-9]+)$", value)
         if match:  # expand range and add each item
@@ -73,7 +75,8 @@ class AnonServerKeyParamType(ParamType):
         allowed = [x.name for x in context.settings.servers]
         if value not in allowed:
             self.fail(
-                f"'{value}' is not a registered anonymization server. Options: {allowed}"
+                f"'{value}' is not a registered anonymization server. "
+                f"Options: {allowed}"
             )
         return value
 

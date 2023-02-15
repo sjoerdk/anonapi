@@ -2,7 +2,6 @@ from anonapi.client import WebAPIClient
 
 
 def cancel_job():
-
     # Create a client that will talk to the web API
     client = WebAPIClient(
         hostname="https://umcradanonp11.umcn.nl/sandbox",

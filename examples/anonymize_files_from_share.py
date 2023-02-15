@@ -28,9 +28,10 @@ def anonymize_files_from_share():
         destination_path=destination_path,
         anonymizedpatientname=anon_name,
         anonymizedpatientid=anon_id,
-        description=f"A test root_path job",
+        description="A test root_path job",
     )
-    # new_job_info response contains extended info on the new job that has just been created
+    # new_job_info response contains extended info on the new job that has
+    # just been created
     print(
         f"Succesfully created a job in {client}, job_id={network_job_info['job_id']}"
     )

@@ -71,7 +71,10 @@ class AnonAPIContext:
         """
         server_list = {x.name: x for x in self.settings.servers}
         if short_name not in server_list.keys():
-            msg = f"Unknown server '{short_name}'. Please choose one of {[x.name for x in self.settings.servers]}"
+            msg = (
+                f"Unknown server '{short_name}'. Please choose one "
+                f"of {[x.name for x in self.settings.servers]}"
+            )
             raise AnonAPIContextError(msg)
 
         return server_list[short_name]

@@ -129,7 +129,7 @@ def add(
 
     Excludes 'fileselection.txt'
     """
-    logger.info(f"Finding files...")
+    logger.info("Finding files...")
     current_folder = FileFolder(context.current_path)
     paths = list(
         tqdm(

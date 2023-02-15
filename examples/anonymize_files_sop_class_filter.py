@@ -23,13 +23,14 @@ def anonymize_files_sop_class_filter():
         source_type="WADO",
         source_name="IDC_WADO",
         source_instance_id=sid,
-        source_sop_class_filter_list="1.2.840.10008.5.1.4.1.1.88.67, 1.2.840.10008.5.1.4.1.1.7",
+        source_sop_class_filter_list="1.2.840.10008.5.1.4.1.1.88.67, "
+        "1.2.840.10008.5.1.4.1.1.7",
         anonymizedpatientname=anon_name,
         anonymizedpatientid=anon_id,
         destination_type="PATH",
         project_name="Wetenschap-Algemeen",
         destination_path=destination_path,
-        description=f"A test idc job",
+        description="A test idc job",
     )
     print(
         f"Succesfully created a job in {client}, job_id={idc_job_info['job_id']}"

@@ -117,19 +117,16 @@ class ParameterColumn:
 
 
 class AccessionNumberColumn(ParameterColumn):
-
     header_names = ["accession number", "acc nr"]
     parameter_type: Type[Parameter] = AccessionNumber
 
 
 class PseudonymColumn(ParameterColumn):
-
     header_names = ["pseudoID", "pseudonym", "name"]
     parameter_type: Type[Parameter] = PseudoName
 
 
 class FolderColumn(ParameterColumn):
-
     header_names = ["folder", "map", "path"]
     parameter_type: Type[Parameter] = PathParameter
 
@@ -343,7 +340,7 @@ def find_column_headers(
         When no column headers can be found
 
     """
-    logger.debug(f"Starting column header search..")
+    logger.debug("Starting column header search..")
 
     for idx, row in enumerate(row_iterator):
         columns = parse_columns(row, column_types=column_types)

@@ -21,7 +21,8 @@ def main():
 def info(context: AnonAPIContext):
     """Show current credentials"""
     logger.info(
-        f"username is {context.settings.user_name}\nAPI token: {context.settings.user_token}"
+        f"username is {context.settings.user_name}\nAPI token: "
+        f"{context.settings.user_token}"
     )
 
 

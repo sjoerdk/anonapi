@@ -146,7 +146,6 @@ def test_cli_batch_status_errors(mock_main_runner_with_batch, mock_requests):
 
 
 def test_cli_batch_reset(mock_main_runner_with_batch, mock_requests):
-
     runner = mock_main_runner_with_batch
 
     runner.invoke(entrypoint.cli, "batch reset", input="Yes")
@@ -164,7 +163,6 @@ def test_cli_batch_reset(mock_main_runner_with_batch, mock_requests):
 
 
 def test_cli_batch_show_errors(mock_main_runner_with_batch, mock_requests):
-
     runner = mock_main_runner_with_batch
     mock_requests.set_response_text(
         text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST_WITH_ERROR

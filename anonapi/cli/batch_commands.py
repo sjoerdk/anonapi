@@ -57,7 +57,7 @@ def info(context: AnonAPIContext):
 def delete(context: AnonAPIContext):
     """Delete batch in current folder"""
     context.get_batch_folder().delete_batch()
-    logger.info(f"Removed batch in current dir")
+    logger.info("Removed batch in current dir")
 
 
 @click.command()

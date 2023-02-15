@@ -118,8 +118,8 @@ class WebAPIClient:
             when authorization fails
 
         APIClientAPIException:
-            when API call is successful, but the API returns some reason for error (for example 'job_id not found',
-            or 'missing parameter')
+            when API call is successful, but the API returns some reason for error
+            (for example 'job_id not found', or 'missing parameter')
 
         ServerNotResponding(APIClientError):
             When server is not responding at all
@@ -143,8 +143,8 @@ class WebAPIClient:
         return json.loads(response.text)
 
     def add_user_name_to_args(self, args_in):
-        """Add parameter 'user_name' to args_in using username found in settings, unless 'user_name' is is already
-        defined
+        """Add parameter 'user_name' to args_in using username found in settings,
+        unless 'user_name' is already defined
 
         Parameters
         ----------
@@ -154,7 +154,8 @@ class WebAPIClient:
         Returns
         -------
         Dict(str,str)
-            args_in plus an additional dict tag_action 'user_name':<username from settings>
+            args_in plus an additional dict tag_action
+            'user_name':<username from settings>
 
         """
 

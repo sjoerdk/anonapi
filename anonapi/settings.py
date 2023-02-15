@@ -180,7 +180,6 @@ class AnonClientSettings(YAMLSerializable):
     def determine_active_server(
         settings: "AnonClientSettings", active_server_name: Optional[str]
     ) -> Optional[RemoteAnonServer]:
-
         if active_server_name is None:
             return None
         else:

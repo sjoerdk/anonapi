@@ -323,7 +323,6 @@ class JobParameterGrid:
     """A persistable 2D grid of job rows. Each row belongs to one job"""
 
     def __init__(self, rows: List[List[Parameter]]):
-
         self.rows = rows
 
     def __len__(self):
@@ -521,7 +520,7 @@ class MappingFile:
             try:
                 return Mapping.load(f)
             except FileNotFoundError as e:
-                raise MappingLoadError(f"Could not load mapping") from e
+                raise MappingLoadError("Could not load mapping") from e
 
     def get_mapping(self) -> Mapping:
         """Load default mapping from this folder
@@ -621,8 +620,8 @@ class MappingParameterSet(ParameterSet):
             self.get_source_parameter()
         except ParameterError as e:
             raise MapperError(
-                f"Invalid set of parameters for mapping: no source found. Where"
-                f" should the data come from? Original error"
+                "Invalid set of parameters for mapping: no source found. Where"
+                " should the data come from? Original error"
             ) from e
 
     @staticmethod

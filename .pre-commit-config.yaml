@@ -2,21 +2,30 @@ default_language_version:
   python: python3
 repos:
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.32.0
+    rev: v3.3.1
     hooks:
       - id: pyupgrade
         language: python
         args: [--py36-plus]
   - repo: https://github.com/ambv/black
-    rev: 22.3.0
+    rev: 23.1.0
     hooks:
       - id: black
         language: python
   - repo: https://github.com/PyCQA/flake8
-    rev: 5.0.4
+    rev: 6.0.0
     hooks:
       - id: flake8
-        exclude: dicomtrolley/xml_templates.py
+        # I want to keep very long lines csv example variables.
+        # NOTE: this exlude is also set in pre-commit-config.yaml as pre-commit seems to ignore this here
+
+        exclude: |
+            (?x)^(
+                tests/resources/test_mapper/example_mapping_inputs.py|
+                tests/resources/test_mapper/example_sniffer_inputs.py|
+                tests/mock_responses.py
+            )$ 
+
         language: python
         additional_dependencies:
           - flake8-bugbear

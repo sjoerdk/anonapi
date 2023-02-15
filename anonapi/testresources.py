@@ -85,7 +85,6 @@ class MockAnonClientTool(AnonClientTool):
         anon_id=None,
         pims_keyfile_id=None,
     ) -> JobInfo:
-
         return next(self.response_generator)
 
     def create_pacs_job(
@@ -99,7 +98,6 @@ class MockAnonClientTool(AnonClientTool):
         anon_id=None,
         pims_keyfile_id=None,
     ) -> JobInfo:
-
         return next(self.response_generator)
 
 

@@ -26,7 +26,7 @@ def anonymize_files_from_idc():
         destination_type="PATH",
         project_name="Wetenschap-Algemeen",
         destination_path=destination_path,
-        description=f"A test idc job",
+        description="A test idc job",
     )
     print(
         f"Succesfully created a job in {client}, job_id={idc_job_info['job_id']}"

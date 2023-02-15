@@ -132,7 +132,8 @@ class RequestsMock:
         self.requests = Mock()  # for keeping track of past requests
 
     def set_response_text(self, text, status_code=200):
-        """Any call to get() or post() will yield a Response() object with the given rows
+        """Any call to get() or post() will yield a Response() object with the
+        given rows
 
         Parameters
         ----------
@@ -160,8 +161,8 @@ class RequestsMock:
         self.set_responses([response])
 
     def set_responses(self, responses: List[RequestMockResponse]):
-        """Any call to get() or post() will yield the given response. A list of responses will be looped over
-        indefinitely
+        """Any call to get() or post() will yield the given response. A list of
+        responses will be looped over indefinitely
 
         Parameters
         ----------

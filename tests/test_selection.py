@@ -10,7 +10,6 @@ def a_file_folder():
 
 
 def test_selection_tool(a_file_folder):
-
     files = list(a_file_folder.iterate())
     assert len(files) == 5
     assert len(find_dicom_files(files)) == 3

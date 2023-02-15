@@ -110,9 +110,15 @@ def test_select_add_exclude(mock_main_runner, folder_with_some_dicom_files):
 
     mock_main_runner.invoke(
         main,
-        args="add * --no-check-dicom --exclude-pattern 2.0* --exclude-pattern *1".split(
-            " "
-        ),
+        args=[
+            "add",
+            "*",
+            "--no-check-dicom",
+            "--exclude-pattern",
+            "2.0*",
+            "--exclude-pattern",
+            "*1",
+        ],
         catch_exceptions=False,
     )
     assert len(selection_folder.load_file_selection().selected_paths) == 2
@@ -121,7 +127,6 @@ def test_select_add_exclude(mock_main_runner, folder_with_some_dicom_files):
 def test_select_edit(
     mock_main_runner, initialised_selection_folder, mock_launch
 ):
-
     result = mock_main_runner.invoke(main, "edit")
     assert result.exit_code == 0
     assert mock_launch.called

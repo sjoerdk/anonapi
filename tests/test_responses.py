@@ -31,7 +31,6 @@ def test_jobs_response():
 
 
 def test_jobs_response_exception():
-
     with pytest.raises(APIParseResponseError):
         parse_job_infos_response("definitly a wrong response")
 

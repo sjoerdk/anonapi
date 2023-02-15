@@ -100,7 +100,6 @@ def test_command_line_tool_add_remove_server(mock_main_runner):
 
 
 def test_command_line_tool_list_servers(mock_main_runner):
-
     runner = mock_main_runner
     result = runner.invoke(
         entrypoint.cli, "server list", catch_exceptions=False
@@ -239,7 +238,8 @@ def test_command_line_tool_activate_server(mock_main_runner, mock_requests):
     assert "Set active server to" in result.output
     assert context.get_active_server().name == "testserver2"
 
-    # activating a non-existant server name should just give a nice message, no crashes
+    # activating a non-existant server name should just give a nice message,
+    # no crashes
     result = runner.invoke(entrypoint.cli, "server activate yomomma")
     assert "Invalid value" in result.output
 
@@ -333,7 +333,8 @@ def test_job_id_parameter_type(mock_main_runner, mock_requests):
         "5",
     ]
 
-    # test range and weird input argument (not sure whether this is a good idea to allow)
+    # test range and weird input argument (not sure whether this is a good idea
+    # to allow)
     get_job_info_mock.reset()
     runner.invoke(entrypoint.cli, "job list 1-4 hallo")
     assert get_job_info_mock.call_args[1]["job_ids"] == [
@@ -383,7 +384,6 @@ def test_get_server_when_none_is_active(mock_main_runner):
 
 
 def test_command_line_tool_user_commands(mock_main_runner):
-
     runner = mock_main_runner
     context = mock_main_runner.get_context()
 
