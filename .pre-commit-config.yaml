@@ -1,8 +1,8 @@
 default_language_version:
-  python: python3.8
+  python: python3
 repos:
   - repo: https://github.com/asottile/pyupgrade
-    rev: v1.5.1
+    rev: v2.32.0
     hooks:
       - id: pyupgrade
         language: python
@@ -12,13 +12,15 @@ repos:
     hooks:
       - id: black
         language: python
-  - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.8.0
+  - repo: https://github.com/PyCQA/flake8
+    rev: 5.0.4
     hooks:
       - id: flake8
+        exclude: dicomtrolley/xml_templates.py
         language: python
         additional_dependencies:
           - flake8-bugbear
           - pep8-naming
           - flake8-docstrings
           - mccabe
+          - yesqa

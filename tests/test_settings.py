@@ -124,7 +124,7 @@ def test_settings_save_with_none_active(test_settings_folder):
     settings.save()
 
     # And also load
-    with open(test_settings_folder / "settings.yml", "r") as f:
+    with open(test_settings_folder / "settings.yml") as f:
         new_settings = AnonClientSettings.load_from(f)
     assert new_settings.active_server is None
 

@@ -245,7 +245,7 @@ class CSVFile(TabularFile):
         """
         logger.info(f"Parsing '{self.path}'..")
         try:
-            with open(self.path, "r") as f:
+            with open(self.path) as f:
                 lines = f.readlines()
                 rows = [
                     row

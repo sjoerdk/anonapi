@@ -76,7 +76,7 @@ def test_write(tmpdir, a_grid_of_parameters):
     with open(Path(tmpdir) / "mapping.csv", "w") as f:
         mapping_list.save(f)
 
-    with open(Path(tmpdir) / "mapping.csv", "r") as f:
+    with open(Path(tmpdir) / "mapping.csv") as f:
         loaded_list = JobParameterGrid.load(f)
 
     # loaded should have the same patientIDs as the original
@@ -86,14 +86,14 @@ def test_write(tmpdir, a_grid_of_parameters):
 
 def test_job_parameter_grid_load():
     mapping_file = RESOURCE_PATH / "test_mapper" / "example_job_grid.csv"
-    with open(mapping_file, "r", newline="") as f:
+    with open(mapping_file, newline="") as f:
         grid = JobParameterGrid.load(f)
     assert len(grid.rows) == 20
 
 
 def test_job_parameter_grid_load_colon():
     mapping_file = RESOURCE_PATH / "test_mapper" / "example_job_grid_colon.csv"
-    with open(mapping_file, "r", newline="") as f:
+    with open(mapping_file, newline="") as f:
         grid = JobParameterGrid.load(f)
     assert len(grid.rows) == 4
 
@@ -103,7 +103,7 @@ def test_mapping_load_save():
     mapping_file = (
         RESOURCE_PATH / "test_mapper" / "with_mapping_wide_settings.csv"
     )
-    with open(mapping_file, "r") as f:
+    with open(mapping_file) as f:
         mapping = Mapping.load(f)
     assert "some comment" in mapping.description
     assert len(mapping.rows) == 20
@@ -160,7 +160,7 @@ def test_load_pims_only():
     mapping_file = (
         RESOURCE_PATH / "test_mapper" / "example_pims_only_job_grid.csv"
     )
-    with open(mapping_file, "r") as f:
+    with open(mapping_file) as f:
         JobParameterGrid.load(f)
 
 
@@ -176,7 +176,7 @@ def test_load_pims_only():
 def test_load_exceptions(file_to_open, expected_exception):
     mapping_file = RESOURCE_PATH / "test_mapper" / file_to_open
     with pytest.raises(expected_exception):
-        with open(mapping_file, "r") as f:
+        with open(mapping_file) as f:
             JobParameterGrid.load(f)
 
 
@@ -302,7 +302,7 @@ def test_mapping_folder_read_write(tmpdir, a_grid_of_parameters):
 
 def test_os_error():
     with open(
-        RESOURCE_PATH / "test_mapper" / "anon_mapping_os_error.csv", "r"
+        RESOURCE_PATH / "test_mapper" / "anon_mapping_os_error.csv"
     ) as f:
         _ = Mapping.load(f)
 

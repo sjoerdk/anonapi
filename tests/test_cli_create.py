@@ -406,7 +406,7 @@ def test_create_from_mapping_syntax_error():
     )
 
     # opening this should not raise an error
-    with open(mapping_path, "r") as f:
+    with open(mapping_path) as f:
         mapping = Mapping.load(f)
     # this trailing space should nog be in the parsed parameter. This will generate
     # a preventable error when trying to create a job with this

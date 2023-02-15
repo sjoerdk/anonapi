@@ -115,7 +115,7 @@ class FileSelectionIdentifier(PathIdentifier):
             When the fileselection file cannot be found on local disk
 
         """
-        with open(self.identifier, "r") as f:
+        with open(self.identifier) as f:
             return FileSelectionFile.load(f, datafile=self.identifier)
 
 

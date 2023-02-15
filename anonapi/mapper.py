@@ -331,7 +331,7 @@ class JobParameterGrid:
 
     def width(self) -> int:
         """Maximum number of columns in this grid"""
-        return max([len(x) for x in self.rows])
+        return max(len(x) for x in self.rows)
 
     def append_row(self, row: List[Parameter]):
         """Append the given row to this grid"""
@@ -517,7 +517,7 @@ class MappingFile:
             If mapping cannot be loaded
 
         """
-        with open(self.file_path, "r", newline="") as f:
+        with open(self.file_path, newline="") as f:
             try:
                 return Mapping.load(f)
             except FileNotFoundError as e:
@@ -538,7 +538,7 @@ class MappingFile:
 
         """
         try:
-            with open(self.file_path, "r", newline="") as f:
+            with open(self.file_path, newline="") as f:
                 return Mapping.load(f)
         except (FileNotFoundError, MapperError) as e:
             raise MapperError(

@@ -91,7 +91,7 @@ class FileSelectionFileParam(ParamType):
         if not filepath.exists():
             self.fail(f"No file selection found at '{filepath}'")
         try:
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 return FileSelectionFile.load(f, datafile=filepath)
         except FileSelectionException as e:
             self.fail(f"Error reading file selection: {e}")

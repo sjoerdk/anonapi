@@ -80,7 +80,7 @@ class BatchFolder:
     def load(self) -> JobBatch:
         """Load batch from the current folder"""
         if self.has_batch():
-            with open(self.batch_file_path, "r") as f:
+            with open(self.batch_file_path) as f:
                 return JobBatch.load_from(f)
         else:
             raise NoBatchDefinedError()

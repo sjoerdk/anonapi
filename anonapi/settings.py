@@ -258,7 +258,7 @@ class AnonClientSettingsFromFile(AnonClientSettings):
     def __init__(self, path: str):
         self.path = path
         # read settings file and set all
-        with open(self.path, "r") as f:
+        with open(self.path) as f:
             settings: AnonClientSettings = AnonClientSettings.load_from(f)
         super().__init__(
             servers=settings.servers,

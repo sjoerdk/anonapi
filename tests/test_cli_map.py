@@ -121,7 +121,7 @@ def test_cli_map(mock_main_runner, mock_cli_base_context, tmpdir):
     result = mock_main_runner.invoke(
         entrypoint.cli, "map init", catch_exceptions=False
     )
-    with open(Path(tmpdir) / "anon_mapping.csv", "r") as f:
+    with open(Path(tmpdir) / "anon_mapping.csv") as f:
         f.read()
 
     assert result.exit_code == 0

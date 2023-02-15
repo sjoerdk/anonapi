@@ -142,6 +142,6 @@ def command_group_function(**kwargs):
     """
 
     def decorator(func):
-        return click.command(**kwargs)((click.pass_obj(func)))
+        return click.command(**kwargs)(click.pass_obj(func))
 
     return decorator

@@ -316,7 +316,7 @@ template_mapping = {
 }
 
 for template_path, output_path in template_mapping.items():
-    with open(template_path, "r") as f:
+    with open(template_path) as f:
         output = Template(f.read()).render(
             context={"click": click_context, "anonapi": anonapi_context}
         )
