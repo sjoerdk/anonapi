@@ -6,6 +6,9 @@ authors = ["sjoerdk <sjoerd.kerkstra@radboudumc.nl>"]
 readme = "README.md"
 license = "MIT"
 
+[tool.poetry.scripts]
+anon = "anonapi.cli.entrypoint:cli"
+
 [tool.poetry.dev-dependencies]
 pytest = "^7.2.1"
 factory-boy = "^3.2.1"
