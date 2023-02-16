@@ -3,11 +3,11 @@
 ## v2.0.0 (2023-02-16)
 Dusting-off/ updating after 17 months
 
-** Breaking changes **
+**Breaking changes:**
 - Renamed all exceptions to end in 'Error' to be consistent with 
 - Drops python 3.7
 
-** Other changes **
+**Other changes:**
 - CHANGELOG.md now updated manually, drops automated github-based changelogs.
 - Package management now consistent with [pep 517](https://peps.python.org/pep-0517/), using poetry
 - Replaces module-level rst files like README with markup (md) files. Docs are still rst/sphinx based though
