@@ -1,5 +1,20 @@
 # Changelog
 
+## v2.0.0 (2023-02-16)
+Dusting-off/ updating after 17 months
+
+** Breaking changes **
+- Renamed all exceptions to end in 'Error' to be consistent with 
+- Drops python 3.7
+
+** Other changes **
+- CHANGELOG.md now updated manually, drops automated github-based changelogs.
+- Package management now consistent with [pep 517](https://peps.python.org/pep-0517/), using poetry
+- Replaces module-level rst files like README with markup (md) files. Docs are still rst/sphinx based though
+- Updates pre-commit enforced static flake8 and black versions
+- Updates all requirements, now manages dev requirements with poetry instead of separate requirements_dev
+
+
 ## [v1.7.0](https://github.com/sjoerdk/anonapi/tree/v1.7.0) (2021-09-29)
 
 [Full Changelog](https://github.com/sjoerdk/anonapi/compare/v1.6.0...v1.7.0)
