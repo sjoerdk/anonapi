@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.0.1 (2023-02-16)
+- bugfix: re-added missing anon cli entrypoint
+
 ## v2.0.0 (2023-02-16)
 Dusting-off/ updating after 17 months
 
