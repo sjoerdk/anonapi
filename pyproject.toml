@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "anonapi"
-version = "2.0.0"
+version = "2.0.1"
 description = "Client and tools for working with the anoymization web API"
 authors = ["sjoerdk <sjoerd.kerkstra@radboudumc.nl>"]
 readme = "README.md"
