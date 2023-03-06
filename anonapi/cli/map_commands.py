@@ -156,7 +156,7 @@ def init(context: MapCommandContext):
     mapping_file = MappingFile(
         Path(context.current_dir) / DEFAULT_MAPPING_NAME
     )
-    mapping_file.save_mapping(create_empty_mapping(context))
+    mapping_file.save_mapping(create_example_mapping(context))
     logger.info(f"Initialised example mapping in {mapping_file.file_path}")
     _activate(context.settings, mapping_path=mapping_file.file_path)
 

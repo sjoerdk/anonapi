@@ -24,8 +24,6 @@ from tabulate import tabulate
 from anonapi.exceptions import AnonAPIError
 from anonapi.logging import get_module_logger
 from anonapi.parameters import (
-    FolderIdentifier,
-    FileSelectionIdentifier,
     Parameter,
     ParameterError,
     ParameterSet,
@@ -41,7 +39,6 @@ from anonapi.parameters import (
 from collections import defaultdict
 from io import StringIO
 from pathlib import Path
-from os import path
 
 DEFAULT_MAPPING_NAME = (
     "anon_mapping.csv"  # Filename for mapping if not specified
@@ -554,18 +551,9 @@ class ExampleJobParameterGrid(JobParameterGrid):
         rows = [
             [
                 SourceIdentifierParameter(
-                    FolderIdentifier(
-                        identifier=path.sep.join(["example", "folder1"])
-                    )
-                ),
-                PseudoName("Patient1"),
-                Description("All files from folder1"),
-            ],
-            [
-                SourceIdentifierParameter(
                     StudyInstanceUIDIdentifier("123.12121212.12345678")
                 ),
-                PseudoName("Patient2"),
+                PseudoName("PatientA"),
                 Description(
                     "A study which should be retrieved from PACS, "
                     "identified by StudyInstanceUID"
@@ -575,18 +563,11 @@ class ExampleJobParameterGrid(JobParameterGrid):
                 SourceIdentifierParameter(
                     AccessionNumberIdentifier("12345678.1234567")
                 ),
-                PseudoName("Patient3"),
+                PseudoName("PatientB"),
                 Description(
                     "A study which should be retrieved from PACS, "
                     "identified by AccessionNumber"
                 ),
-            ],
-            [
-                SourceIdentifierParameter(
-                    FileSelectionIdentifier(Path("folder2/fileselection.txt"))
-                ),
-                PseudoName("Patient4"),
-                Description("A selection of files in folder2"),
             ],
         ]
 

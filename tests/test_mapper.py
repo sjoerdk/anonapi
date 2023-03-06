@@ -392,7 +392,7 @@ def test_write_new_mapping(monkeypatch, locale_setting, delimiter):
         assert sniff_dialect(lines).delimiter == delimiter
 
         # Check that the correct delimiter is used in different parts of mapping
-        assert sniff_dialect(lines[10:12]).delimiter == delimiter
+        assert sniff_dialect(lines[9]).delimiter == delimiter
 
 
 def test_example_job_grid_save_correct_csv():
@@ -407,7 +407,7 @@ def test_example_job_grid_save_correct_csv():
 
 
 def test_cli_map_add_paths_file(a_mapping):
-    """Add an xls file containing several paths and potentially pseudonyms
+    """Add a xls file containing several paths and potentially pseudonyms
     to an existing mapping
     """
 
