@@ -181,7 +181,7 @@ class JobParameterSet(ParameterSet):
             self.make_unc_paths(params)
         except ParameterMappingError as e:
             raise JobSetValidationError(
-                "Source and destination need to be absolute windows"
+                "Source and destination need to be absolute windows paths"
             ) from e
 
     def make_unc_paths(self, parameters: List[Parameter]):
@@ -455,7 +455,7 @@ def extract_job_sets(
         try:
             job_set.validate()
         except JobSetValidationError as e:
-            raise ClickException("Error validating parameters") from e
+            raise ClickException(f"Error validating parameters: {e}") from e
     return job_sets
 
 

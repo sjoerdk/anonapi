@@ -153,9 +153,11 @@ def get_initial_options(settings: AnonClientSettings) -> List[Parameter]:
 @handle_anonapi_exceptions
 def init(context: MapCommandContext):
     """Save a default mapping in a default location in the current folder"""
-    mapping_file = MappingFile(
-        Path(context.current_dir) / DEFAULT_MAPPING_NAME
-    )
+    mapping_file_path = Path(context.current_dir) / DEFAULT_MAPPING_NAME
+    if mapping_file_path.exists():
+        click.confirm("Mapping file already exists. Overwrite?")
+
+    mapping_file = MappingFile(mapping_file_path)
     mapping_file.save_mapping(create_example_mapping(context))
     logger.info(f"Initialised example mapping in {mapping_file.file_path}")
     _activate(context.settings, mapping_path=mapping_file.file_path)
