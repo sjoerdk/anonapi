@@ -396,7 +396,7 @@ class JobParameterGrid:
                     JobParameterGrid.parse_job_parameter_row(row)
                 )
         except ParameterParsingError as e:
-            raise MappingLoadError("Problem parsing '{row}'") from e
+            raise MappingLoadError(f"Problem parsing '{row}: {e}'") from e
 
         return cls(parameters)
 
@@ -538,7 +538,7 @@ class MappingFile:
                 return Mapping.load(f)
         except (FileNotFoundError, MapperError) as e:
             raise MapperError(
-                f"Could not load mapping at '{self.file_path}'"
+                f"Could not load mapping at '{self.file_path}': {e}"
             ) from e
 
 

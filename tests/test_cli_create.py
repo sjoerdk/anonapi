@@ -411,3 +411,36 @@ def test_create_from_mapping_syntax_error():
     # this trailing space should nog be in the parsed parameter. This will generate
     # a preventable error when trying to create a job with this
     assert not str(mapping.grid.rows[2][0]).endswith(" ")
+
+
+def test_create_from_mapping_filter_pseudonym(
+    mock_from_mapping_runner, mock_requests_for_job_creation
+):
+    """Create from mapping only if pseudonym matches the one(s) given"""
+
+    # give one pseudoID value and one patientName value to filter on
+    result = mock_from_mapping_runner.invoke(
+        main,
+        ["from-mapping", "--filter", "patient2", "--filter", "patientName3"],
+        input="Y",
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+    # Only two lines from mapping match. Only two jobs should be created
+    assert mock_requests_for_job_creation.requests.post.call_count == 2
+
+
+def test_create_from_mapping_filter_pseudonym_no_match(
+    mock_from_mapping_runner, mock_requests_for_job_creation
+):
+    """Filtering without any match should yield helpful message"""
+
+    result = mock_from_mapping_runner.invoke(
+        main,
+        ["from-mapping", "--filter", "unknown", "--filter", "patientname"],
+        input="Y",
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+    assert mock_requests_for_job_creation.requests.post.call_count == 0
+    assert "No pseudonyms matching" in result.output

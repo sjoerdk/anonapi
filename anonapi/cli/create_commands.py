@@ -1,34 +1,33 @@
 """Click group and commands for the 'create' subcommand"""
-from typing import Dict, List, Optional
 from pathlib import Path, PureWindowsPath
+from typing import Dict, List, Optional
 
 import click
-
 from click.exceptions import Abort, ClickException
+
 from anonapi.batch import BatchFolder, JobBatch
-from anonapi.context import AnonAPIContext
 from anonapi.client import APIClientError
-from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
+from anonapi.context import AnonAPIContext
+from anonapi.decorators import handle_anonapi_exceptions, pass_anonapi_context
 from anonapi.exceptions import AnonAPIError
 from anonapi.logging import get_module_logger
 from anonapi.mapper import MapperError, Mapping, MappingFile
 from anonapi.parameters import (
-    Parameter,
+    Description,
     DestinationPath,
+    PIMSKey,
+    Parameter,
+    ParameterSet,
+    Project,
     PseudoID,
     PseudoName,
-    Project,
-    Description,
-    SourceIdentifierParameter,
-    PIMSKey,
-    ParameterSet,
     RootSourcePath,
-    is_unc_path,
+    SourceIdentifierParameter,
     get_legacy_idis_value,
+    is_unc_path,
 )
 from anonapi.persistence import PersistenceError
 from anonapi.testresources import JobInfoFactory
-
 
 logger = get_module_logger(__name__)
 
@@ -354,7 +353,14 @@ def mock_create(*args, **kwargs):
     default=False,
     help="Do not post to server, just print",
 )
-def from_mapping(context: CreateCommandsContext, dry_run):
+@click.option(
+    "--filter",
+    "-f",
+    multiple=True,
+    help="Create only jobs matching pseudonym given. Multiple space-seperated "
+    "pseudonyms allowed",
+)
+def from_mapping(context: CreateCommandsContext, dry_run, filter):
     """Create jobs from mapping in current folder"""
     if dry_run:
         logger.info("** Dry run, nothing will be sent to server **")
@@ -366,6 +372,23 @@ def from_mapping(context: CreateCommandsContext, dry_run):
     job_sets = extract_job_sets(
         context.default_parameters(), context.get_mapping()
     )
+    if filter:
+        logger.info(
+            f"Creating jobs for only for pseudonyms matching any of "
+            f"[{','.join(filter)}]"
+        )
+        job_sets = [
+            x
+            for x in job_sets
+            if x.as_kwargs().get("anon_id", None) in filter
+            or x.as_kwargs().get("anon_name", None) in filter
+        ]
+        if not job_sets:
+            logger.error(
+                f"No pseudonyms matching any of [{','.join(filter)}] found "
+                f"in mapping"
+            )
+            return
 
     # inspect project name and destination to present the next question to the user
     project_names = set()
