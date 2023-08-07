@@ -1,13 +1,13 @@
 """Generates command_reference.rst
 
 I want to include CLI command tables that are generated from the CLI definitions.
-You can just copy paste, but there are 50 commands that will probably change and
+You can just copy-paste, but there are 50 commands that will probably change and
 keeping everything up to date will be impossible. So it needs auto-generating.
 
 I looked into Sphinx for this but my impression is that with Sphinx you just don't
-want to get into creating custom directives. Its just way to convoluted, and you
+want to get into creating custom directives. It's just way to convoluted, and you
  run the risk of standard CI servers not understanding your non-standard sphinx.
- Therefore another solution:
+ Therefore, another solution:
 
 * Use click introspection to get info on function groups, functions and help texts
 * Use this info with jinja to generate standard rst
