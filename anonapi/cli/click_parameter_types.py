@@ -33,7 +33,7 @@ class JobIDRangeParamType(ParamType):
     name = "job_id"
 
     def convert(self, value, param, ctx) -> List[str]:
-        """If it looks like 'int-int' try to turn into range. Otherwise just
+        """If it looks like 'int-int' try to turn into range. Otherwise, just
         leave as is and put in list
 
         Returns
