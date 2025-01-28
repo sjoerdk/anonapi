@@ -62,6 +62,72 @@ class JobIDRangeParamType(ParamType):
         return "JOB_ID_RANGE"
 
 
+class JobIDCollectionParamType(ParamType):
+    """A comma-separated list of job ids and job id ranges
+
+    For example:
+    * 123 -> single job
+    * 123-140 -> range
+    * 123,125 -> multiple
+    * 123,125,127-140 -> multiple + range
+    """
+
+    name = "job_id_collection"
+
+    def convert(self, value, param, ctx) -> List[str]:
+        """If it looks like 'int-int' try to turn into range. Otherwise, just
+        leave as is and put in list
+
+        Raises
+        ------
+        click.exceptions.BadParameter
+            If a number range is ill formatted (non-int elements) or a range is
+            reversed
+
+        Returns
+        -------
+        List[str]
+            The value passed, or expanded range of ints represented by value passed
+        """
+        if value is None:
+            return value
+
+        if type(value) is list:
+            return value  # Make sure function is idempotent. Feeding output
+            # into convert() again will not change output
+
+        all_jobs = set()
+        for element in value.split(","):  # split on commas
+            match = re.match("^(?P<start>[0-9]+)-(?P<end>[0-9]+)$", element)
+            if match:  # expand range and add each item
+                start = int(match["start"])
+                end = int(match["end"])
+                ids = [str(x) for x in range(start, end + 1)]
+                if len(ids) == 0:
+                    self.fail(
+                        f"'{element}' looks like a number range, but cannot be "
+                        f"expanded. Maybe a typo?"
+                    )
+                all_jobs.update(ids)
+            elif "-" in element:
+                self.fail(
+                    f"'{element}' looks like a number range (with a '-'), but "
+                    f"cannot be expanded. Maybe a typo?"
+                )
+            elif " " in element:
+                self.fail(
+                    f"'{element}' has a space in it, but this is not allowed. "
+                    f"Looks too much like parameter separator."
+                )
+            else:
+                all_jobs.add(element)  # this was a regular job id
+
+        return sorted(list(all_jobs))
+
+    def __repr__(self):
+        return "JOB_ID_COLLECTION"
+
+
 class AnonServerKeyParamType(ParamType):
     """A key to a registered anonapi server. Yields nice message when not found"""
 

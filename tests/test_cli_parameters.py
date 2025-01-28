@@ -1,10 +1,12 @@
 import os
 
+import click.exceptions
 import pytest
 from click.exceptions import BadParameter
 
 from anonapi.cli.click_parameter_types import (
     AccessionNumberFile,
+    JobIDCollectionParamType,
     PathParameterFile,
     TabularParameterFile,
     WildcardFolder,
@@ -77,3 +79,38 @@ def test_tabular_parameter_file_errors():
         AccessionNumberFile().convert(
             value="/doesnotexist.xlsx", param=None, ctx=None
         )
+
+
+@pytest.mark.parametrize(
+    "input_str,expected_output",
+    [
+        ("123", ["123"]),
+        ("12abc", ["12abc"]),
+        ("123,124", ["123", "124"]),
+        ("123AB,124", ["123AB", "124"]),
+        ("123-125", ["123", "124", "125"]),
+        ("123,126-128", ["123", "126", "127", "128"]),
+        ("123,126-128,abc", ["123", "126", "127", "128", "abc"]),
+    ],
+)
+def test_job_collection(input_str, expected_output):
+    """These are all valid inputs for the JobIDCollection parameter"""
+    param = JobIDCollectionParamType()
+    result = param.convert(value=input_str, param=None, ctx=None)
+    assert result == expected_output
+
+
+@pytest.mark.parametrize(
+    "input_str",
+    [
+        ("123a-125"),  # range with non-int part
+        ("100-99"),  # reversed range
+        ("39,100-99"),  # OK+reversed
+        ("39, 99-100"),  # space in range
+    ],
+)
+def test_job_collection_fails(input_str):
+    """These inputs should not be accepted"""
+    param = JobIDCollectionParamType()
+    with pytest.raises(click.exceptions.BadParameter):
+        param.convert(value=input_str, param=None, ctx=None)
