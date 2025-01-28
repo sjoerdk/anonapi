@@ -75,7 +75,7 @@ def reset(context: AnonAPIContext, job_id):
 @click.argument("job_ids", type=JobIDCollectionParamType())
 @click.argument("reason", type=str)
 def set_opt_out_ignore(context: AnonAPIContext, job_ids, reason):
-    """Set opt-out ignore with given reason for job_id"""
+    """Set opt-out ignore with given reason for job ids (format 1,2,4-5,...)"""
     if click.confirm(
         f"This will set opt-out ignore '{reason}' for the following {len(job_ids)} "
         f"job ids on {context.get_active_server().name}: {job_ids}. Are you sure?"

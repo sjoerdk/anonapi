@@ -50,7 +50,7 @@ cancel             Set job status to inactive
 info               Print full info for one or more jobs                          
 list               List info for multiple jobs                                   
 reset              Reset job, process again                                      
-set-opt-out-ignore Set opt-out ignore with given reason for job_id               
+set-opt-out-ignore Set opt-out ignore with given reason for job ids (format 1,2,4
 ================== ==============================================================
 
 
