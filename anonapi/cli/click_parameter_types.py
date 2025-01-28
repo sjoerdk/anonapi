@@ -87,7 +87,9 @@ class JobIDCollectionParamType(ParamType):
         Returns
         -------
         List[str]
-            The value passed, or expanded range of ints represented by value passed
+            A list of string values. For ranges, these are expanded, for non-ranges
+            the value could be non-int. Sorting is all ints sorted by int value,
+            followed by all non-int values sorted alphabetically
         """
         if value is None:
             return value
@@ -122,7 +124,20 @@ class JobIDCollectionParamType(ParamType):
             else:
                 all_jobs.add(element)  # this was a regular job id
 
-        return sorted(list(all_jobs))
+        # sort ints and non-ints separately
+
+        return self.sort_numbers_strings(all_jobs)
+
+    @staticmethod
+    def sort_numbers_strings(input_list: List[str]):
+        """Sort a list of strings which might contain integer strings. Respect
+        integers so that you won't get 10001 as lower than 2 (true for alphabetic
+        sorting)
+        """
+        ints, non_ints = [], []
+        for x in input_list:
+            ints.append(int(x)) if x.isdigit() else non_ints.append(x)
+        return [str(x) for x in sorted(ints)] + sorted(non_ints)
 
     def __repr__(self):
         return "JOB_ID_COLLECTION"

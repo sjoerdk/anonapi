@@ -4,7 +4,10 @@ from typing import List
 
 import click
 
-from anonapi.cli.click_parameter_types import JobIDRangeParamType
+from anonapi.cli.click_parameter_types import (
+    JobIDCollectionParamType,
+    JobIDRangeParamType,
+)
 from anonapi.context import AnonAPIContext, command_group_function
 from anonapi.decorators import pass_anonapi_context, handle_anonapi_exceptions
 from anonapi.logging import get_module_logger
@@ -69,14 +72,24 @@ def reset(context: AnonAPIContext, job_id):
 
 @click.command()
 @pass_anonapi_context
-@click.argument("job_id", type=str)
+@click.argument("job_ids", type=JobIDCollectionParamType())
 @click.argument("reason", type=str)
-def set_opt_out_ignore(context: AnonAPIContext, job_id, reason):
+def set_opt_out_ignore(context: AnonAPIContext, job_ids, reason):
     """Set opt-out ignore with given reason for job_id"""
-    job_info = context.client_tool.set_opt_out_ignore(
-        server=context.get_active_server(), job_id=job_id, reason=reason
-    )
-    logger.info(job_info)
+    if click.confirm(
+        f"This will set opt-out ignore '{reason}' for the following {len(job_ids)} "
+        f"job ids on {context.get_active_server().name}: {job_ids}. Are you sure?"
+    ):
+        for job_id in job_ids:
+            job_info = context.client_tool.set_opt_out_ignore(
+                server=context.get_active_server(),
+                job_id=job_id,
+                reason=reason,
+            )
+            logger.info(job_info)
+
+    else:
+        logger.info("Cancelled")
 
 
 @click.command()
