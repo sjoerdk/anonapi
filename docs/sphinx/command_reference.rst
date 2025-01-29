@@ -46,10 +46,10 @@ Overview of job functions:
 ================== ==============================================================
 Command            Description                                                   
 ================== ==============================================================
-cancel             Set job status to inactive                                    
+cancel             Set jobs' status to inactive                                  
 info               Print full info for one or more jobs                          
 list               List info for multiple jobs                                   
-reset              Reset job, process again                                      
+reset              Reset jobs, process again                                     
 set-opt-out-ignore Set opt-out ignore with given reason for job ids (format 1,2,4
 ================== ==============================================================
 

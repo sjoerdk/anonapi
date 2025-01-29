@@ -252,19 +252,19 @@ def test_command_line_tool_job_functions(mock_main_runner, mock_requests):
     runner = mock_main_runner
 
     mock_requests.set_response_text(text=RequestsMockResponseExamples.JOB_INFO)
-    runner.invoke(entrypoint.cli, "job info 1234")
+    runner.invoke(entrypoint.cli, "job info 1234", input="Yes")
     assert mock_requests.requests.get.called is True
     assert "1234" in str(mock_requests.requests.get.call_args)
 
     mock_requests.reset()
-    runner.invoke(entrypoint.cli, "job reset 1234")
+    runner.invoke(entrypoint.cli, "job reset 1234", input="Yes")
     assert mock_requests.requests.post.called is True
     assert "'files_downloaded': 0" in str(
         mock_requests.requests.post.call_args
     )
 
     mock_requests.reset()
-    runner.invoke(entrypoint.cli, "job cancel 1234")
+    runner.invoke(entrypoint.cli, "job cancel 1234", input="Yes")
     assert mock_requests.requests.post.called is True
     assert "cancel" in str(mock_requests.requests.post.call_args)
 
@@ -457,7 +457,8 @@ def test_client_tool_exception_response(
         mock_requests_response("Terrible error with " + command)
     )
 
-    result = runner.invoke(entrypoint.cli, command.split(" "))
+    # input="Yes" answers yes to 'are you sure?' questions that some commands pose
+    result = runner.invoke(entrypoint.cli, command.split(" "), input="Yes")
     assert expected_output in result.output
 
 

@@ -62,12 +62,23 @@ def job_list(context: AnonAPIContext, job_ids):
 
 @click.command()
 @pass_anonapi_context
-@click.argument("job_id", type=str)
-def reset(context: AnonAPIContext, job_id):
-    """Reset job, process again"""
-    server = context.get_active_server()
-    job_info = context.client_tool.reset_job(server=server, job_id=job_id)
-    logger.info(job_info)
+@click.argument("job_ids", type=JobIDCollectionParamType())
+def reset(context: AnonAPIContext, job_ids):
+    """Reset jobs, process again"""
+
+    if click.confirm(
+        f"This will reset the following {len(job_ids)} jobs on "
+        f"{context.get_active_server().name}: {job_ids}. Are you sure?"
+    ):
+        server = context.get_active_server()
+        for job_id in job_ids:
+            job_info = context.client_tool.reset_job(
+                server=server, job_id=job_id
+            )
+            logger.info(job_info)
+
+    else:
+        logger.info("Cancelled")
 
 
 @click.command()
@@ -80,9 +91,10 @@ def set_opt_out_ignore(context: AnonAPIContext, job_ids, reason):
         f"This will set opt-out ignore '{reason}' for the following {len(job_ids)} "
         f"job ids on {context.get_active_server().name}: {job_ids}. Are you sure?"
     ):
+        server = (context.get_active_server(),)
         for job_id in job_ids:
             job_info = context.client_tool.set_opt_out_ignore(
-                server=context.get_active_server(),
+                server=server,
                 job_id=job_id,
                 reason=reason,
             )
@@ -94,12 +106,22 @@ def set_opt_out_ignore(context: AnonAPIContext, job_ids, reason):
 
 @click.command()
 @pass_anonapi_context
-@click.argument("job_id", type=str)
-def cancel(context: AnonAPIContext, job_id):
-    """Set job status to inactive"""
-    server = context.get_active_server()
-    job_info = context.client_tool.cancel_job(server=server, job_id=job_id)
-    logger.info(job_info)
+@click.argument("job_ids", type=JobIDCollectionParamType())
+def cancel(context: AnonAPIContext, job_ids):
+    """Set jobs' status to inactive"""
+    if click.confirm(
+        f"This will cancel the following {len(job_ids)} jobs on "
+        f"{context.get_active_server().name}: {job_ids}. Are you sure?"
+    ):
+        server = context.get_active_server()
+        for job_id in job_ids:
+            job_info = context.client_tool.cancel_job(
+                server=server, job_id=job_id
+            )
+            logger.info(job_info)
+
+    else:
+        logger.info("Operation cancelled")
 
 
 for func in [info, reset, cancel, job_list, set_opt_out_ignore]:
