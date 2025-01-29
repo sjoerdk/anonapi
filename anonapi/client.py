@@ -486,7 +486,7 @@ class AnonClientTool:
         Returns
         -------
         str
-            a input describing success or any API error
+            an input describing success or any API error
         """
 
         client = self.get_client(server.url)
