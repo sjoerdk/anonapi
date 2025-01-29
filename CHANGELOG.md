@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.1.0 (2025-01-25)
+- CLI now allows multiple jobs as input for job cancel, reset and set-opt-out-ignore
+
 ## v2.0.1 (2023-02-16)
 - bugfix: re-added missing anon cli entrypoint
 
