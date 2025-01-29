@@ -34,7 +34,7 @@ class PatientNameFactory(factory.Factory):
     class Meta:
         model = PseudoName
 
-    value = factory.sequence(lambda n: f"patientName{n}")
+    value = "patientName0"
 
 
 class ProjectFactory(factory.Factory):
