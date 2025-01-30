@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.1.1 (2025-01-30)
+- Adds missing dependency that was marked as dev-only
+
 ## v2.1.0 (2025-01-25)
 - CLI now allows multiple jobs as input for job cancel, reset and set-opt-out-ignore
 
