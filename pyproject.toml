@@ -11,7 +11,6 @@ anon = "anonapi.cli.entrypoint:cli"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.2.1"
-factory-boy = "^3.2.1"
 Jinja2 = "^3.1.2"
 pytest-cov = "^4.0.0"
 tox = "^4.4.5"
@@ -29,6 +28,7 @@ tabulate = "^0.9.0"
 openpyxl = "^3.1.0"
 pydicom = "^2.3.1"
 tqdm = "^4.64.1"
+factory-boy = "^3.2.1"
 
 [tool.tox]
 legacy_tox_ini = """
