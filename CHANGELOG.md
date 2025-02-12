@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.1.2 (2025-02-12)
+- Fixes bug in job set-opt-out-ignore
+
 ## v2.1.1 (2025-01-30)
 - Adds missing dependency that was marked as dev-only
 
