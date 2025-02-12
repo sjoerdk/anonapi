@@ -236,10 +236,10 @@ def test_cli_job_set_opt_out_ignore(mock_main_runner, mock_requests):
     result = runner.invoke(
         entrypoint.cli,
         "job set-opt-out-ignore 1000,1002 'A reason'",
-        input="Yes",
+        input="Yes",  # answer yes I am sure
         catch_exceptions=False,
-    )  # answer yes I am sure
-    assert result
+    )
+    assert result  # No exception at this point is enough
 
 
 def test_command_line_tool_activate_server(mock_main_runner, mock_requests):

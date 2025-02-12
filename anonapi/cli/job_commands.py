@@ -91,7 +91,7 @@ def set_opt_out_ignore(context: AnonAPIContext, job_ids, reason):
         f"This will set opt-out ignore '{reason}' for the following {len(job_ids)} "
         f"job ids on {context.get_active_server().name}: {job_ids}. Are you sure?"
     ):
-        server = (context.get_active_server(),)
+        server = context.get_active_server()
         for job_id in job_ids:
             job_info = context.client_tool.set_opt_out_ignore(
                 server=server,
