@@ -226,6 +226,22 @@ def test_cli_job_list_errors(mock_main_runner, mock_requests):
     assert result.exit_code == 0
 
 
+def test_cli_job_set_opt_out_ignore(mock_main_runner, mock_requests):
+    """Try operations actually calling server"""
+    runner = mock_main_runner
+
+    mock_requests.set_response_text(
+        text=RequestsMockResponseExamples.JOBS_LIST_GET_JOBS_LIST
+    )
+    result = runner.invoke(
+        entrypoint.cli,
+        "job set-opt-out-ignore 1000,1002 'A reason'",
+        input="Yes",
+        catch_exceptions=False,
+    )  # answer yes I am sure
+    assert result
+
+
 def test_command_line_tool_activate_server(mock_main_runner, mock_requests):
     """Test activating a server"""
 
